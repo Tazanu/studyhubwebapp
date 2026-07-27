@@ -41,7 +41,7 @@ export default function SocketTest() {
         console.log('🔌 Initializing Socket.IO connection...');
 
         // Create socket connection with authentication
-        const socketInstance = io('http://localhost:5000', {
+        const socketInstance = io(import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000', {
             auth: { token },
             transports: ['websocket', 'polling'], // Try WebSocket first, fall back to polling
         });

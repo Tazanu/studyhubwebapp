@@ -12,9 +12,16 @@ const typingStatus = new Map();
  * @returns {SocketIO.Server} Configured Socket.IO instance
  */
 function initializeSocket(httpServer) {
+    const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL || 'http://localhost:5173')
+        .split(',')
+        .map(o => o.trim());
+
     const io = new Server(httpServer, {
         cors: {
-            origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+            origin: (origin, callback) => {
+                if (!origin || allowedOrigins.includes(origin)) callback(null, true);
+                else callback(new Error('Not allowed by CORS'));
+            },
             credentials: true,
             methods: ['GET', 'POST']
         },
