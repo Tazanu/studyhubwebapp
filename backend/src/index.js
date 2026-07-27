@@ -24,6 +24,9 @@ const premiumRoutes = require('./routes/premium');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Required for express-rate-limit and secure cookies behind Render's reverse proxy
+app.set('trust proxy', 1);
+
 const server = http.createServer(app);
 const io = initializeSocket(server);
 app.set('io', io);
