@@ -475,7 +475,7 @@ export default function TutorDashboard() {
                     </div>
                 )}
 
-                {/* ── bookings ── */}}
+                {/* ── bookings ── */}
                 <div>
                     <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
                         <h2 className="text-lg font-bold" style={{ fontFamily: "'Space Grotesk',sans-serif" }}>
