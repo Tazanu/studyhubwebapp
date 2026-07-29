@@ -10,12 +10,16 @@ cloudinary.config({
 
 const storage = new CloudinaryStorage({
     cloudinary,
-    params: (req, file) => ({
-        folder: 'studyhub',
-        allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'txt', 'md'],
-        resource_type: file.mimetype.startsWith('image/') ? 'image' : 'raw',
-        public_id: `${Date.now()}-${Math.round(Math.random() * 1e9)}`,
-    }),
+    params: (req, file) => {
+        const isImage = file.mimetype.startsWith('image/');
+        const isPdf = file.mimetype === 'application/pdf';
+        return {
+            folder: 'studyhub',
+            resource_type: isImage ? 'image' : 'raw',
+            public_id: `${Date.now()}-${Math.round(Math.random() * 1e9)}`,
+            ...(isPdf && { format: 'pdf' }),
+        };
+    },
 });
 
 const ALLOWED_MIME_TYPES = new Set([

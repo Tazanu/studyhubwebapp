@@ -27,6 +27,7 @@ export default function NoteDetail() {
     const [deleting, setDeleting] = useState(false);
     const [showPayment, setShowPayment] = useState(false);
     const [purchased, setPurchased] = useState(false);
+    const [viewerUrl, setViewerUrl] = useState(null);
 
     useEffect(() => {
         const loadNote = async () => {
@@ -52,22 +53,15 @@ export default function NoteDetail() {
         }
 
         setDownloading(true);
-        const win = window.open('', '_blank');
         try {
             const { data } = await api.post(`/notes/${id}/download`);
-            
             const fileUrl = data.file_path.startsWith('http')
                 ? data.file_path
                 : `${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '')}${data.file_path}`;
-            win.location.href = fileUrl;
-            
-            toast.success('Download started!');
-            
-            // Update local download count
+            setViewerUrl(fileUrl);
             setNote(prev => ({ ...prev, downloads: (prev.downloads || 0) + 1 }));
         } catch (err) {
-            win.close();
-            toast.error(err.response?.data?.error || 'Failed to download note');
+            toast.error(err.response?.data?.error || 'Failed to open note');
         } finally {
             setDownloading(false);
         }
@@ -227,7 +221,7 @@ export default function NoteDetail() {
                                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white text-sm disabled:opacity-60"
                                 style={{ background: 'linear-gradient(135deg, #0052cc, #0066ff)' }}
                             >
-                                <Download size={16} /> {downloading ? 'Opening...' : 'Download Note'}
+                                <Download size={16} /> {downloading ? 'Opening...' : 'Open Note'}
                             </motion.button>
                         )}
 
@@ -275,6 +269,42 @@ export default function NoteDetail() {
                     </div>
                 </motion.div>
             </div>
+
+            {/* File Viewer Modal */}
+            <AnimatePresence>
+                {viewerUrl && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex flex-col"
+                        style={{ background: 'rgba(0,0,0,0.85)' }}
+                    >
+                        <div className="flex items-center justify-between px-4 py-3" style={{ background: 'var(--bg-card)' }}>
+                            <span className="font-semibold text-sm truncate">{note.title}</span>
+                            <div className="flex items-center gap-3">
+                                <a href={viewerUrl} download target="_blank" rel="noreferrer"
+                                    className="text-sm px-3 py-1.5 rounded-lg font-semibold"
+                                    style={{ background: 'var(--accent-blue)', color: 'white' }}>
+                                    <Download size={14} className="inline mr-1" />Download
+                                </a>
+                                <button onClick={() => setViewerUrl(null)}
+                                    className="text-sm px-3 py-1.5 rounded-lg border"
+                                    style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                        {['jpg','jpeg','png','gif','webp','svg'].includes(note.file_type?.toLowerCase()) ? (
+                            <div className="flex-1 flex items-center justify-center p-4">
+                                <img src={viewerUrl} alt={note.title} className="max-h-full max-w-full object-contain rounded-xl" />
+                            </div>
+                        ) : (
+                            <iframe src={viewerUrl} className="flex-1 w-full border-0" title={note.title} />
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <PaymentModal
                 open={showPayment}
