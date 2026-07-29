@@ -18,12 +18,14 @@ export default function Navbar() {
 
     return (
         <nav
-            className="fixed top-0 z-40 border-b px-4 sm:px-6 py-3 flex items-center justify-between"
+            className={`fixed top-0 z-40 border-b py-3 flex items-center justify-between ${isDash ? 'lg:left-60' : ''}`}
             style={{
-                left:        isDash ? '240px' : 0,
-                right:       0,
-                background:  theme === 'dark' ? 'rgba(18,18,18,0.98)' : 'rgba(255,255,255,0.98)',
-                borderColor: 'var(--border-subtle)',
+                left:           isDash ? undefined : 0,
+                right:          0,
+                paddingLeft:    isDash ? '1rem' : '3.5rem',
+                paddingRight:   '1.5rem',
+                background:     theme === 'dark' ? 'rgba(18,18,18,0.98)' : 'rgba(255,255,255,0.98)',
+                borderColor:    'var(--border-subtle)',
                 backdropFilter: 'blur(12px)',
             }}
         >
@@ -65,12 +67,12 @@ export default function Navbar() {
                     /* on public pages show compact user chip */
                     !isDash && (
                         <>
-                            <Link to="/dashboard" className="hidden sm:inline-flex px-5 py-2 rounded-lg font-semibold border-2 transition-all hover:bg-blue-600 hover:text-white text-sm text-center"
+                            <Link to="/dashboard" className="px-4 py-2 rounded-lg font-semibold border-2 transition-all hover:bg-blue-600 hover:text-white text-sm text-center"
                                 style={{ borderColor: 'var(--accent-blue)', color: 'var(--text-primary)' }}>
                                 Dashboard
                             </Link>
                             <button onClick={handleLogout}
-                                className="hidden sm:inline-flex px-5 py-2 rounded-lg font-semibold border-2 transition-all hover:bg-red-500 hover:text-white hover:border-red-500 text-sm"
+                                className="px-4 py-2 rounded-lg font-semibold border-2 transition-all hover:bg-red-500 hover:text-white hover:border-red-500 text-sm"
                                 style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}>
                                 Logout
                             </button>
@@ -79,7 +81,7 @@ export default function Navbar() {
                 ) : (
                     <>
                         <Link to="/login"
-                            className="hidden sm:inline-flex px-5 py-2 rounded-lg font-semibold border-2 transition-all hover:bg-blue-600 hover:text-white text-center"
+                            className="px-4 py-2 rounded-lg font-semibold border-2 transition-all hover:bg-blue-600 hover:text-white text-center text-sm"
                             style={{ borderColor: 'var(--accent-blue)', color: 'var(--text-primary)' }}>
                             Log in
                         </Link>

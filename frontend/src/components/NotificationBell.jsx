@@ -83,8 +83,8 @@ export default function NotificationBell() {
                 <>
                     <div className="fixed inset-0 z-40" onClick={() => setShowPanel(false)} />
                     <div
-                        className="absolute right-0 mt-2 w-80 sm:w-96 rounded-xl border shadow-xl z-50 max-h-[28rem] overflow-y-auto"
-                        style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+                        className="absolute right-0 mt-2 w-screen max-w-sm rounded-xl border shadow-xl z-50 max-h-[28rem] overflow-y-auto"
+                        style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)', minWidth: '280px' }}
                     >
                         {/* header */}
                         <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
