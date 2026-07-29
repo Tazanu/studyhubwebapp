@@ -55,9 +55,9 @@ export default function NoteDetail() {
         try {
             const { data } = await api.post(`/notes/${id}/download`);
             
-            // Open file in new tab
-            const base = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '');
-            const fileUrl = `${base}${data.file_path}`;
+            const fileUrl = data.file_path.startsWith('http')
+                ? data.file_path
+                : `${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '')}${data.file_path}`;
             window.open(fileUrl, '_blank');
             
             toast.success('Download started!');
