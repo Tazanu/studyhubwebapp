@@ -2,11 +2,16 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { ArrowLeft, Download, Trash2, FileText, Image as ImageIcon, File, Lock, Calendar, User, Tag } from 'lucide-react';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
+import { ArrowLeft, Download, Trash2, FileText, Image as ImageIcon, File, Lock, Calendar, User, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
 import PaymentModal from '../components/tutor/PaymentModal';
+
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 function getFileIcon(fileType) {
     const type = (fileType || '').toLowerCase();
@@ -28,6 +33,8 @@ export default function NoteDetail() {
     const [showPayment, setShowPayment] = useState(false);
     const [purchased, setPurchased] = useState(false);
     const [viewerUrl, setViewerUrl] = useState(null);
+    const [numPages, setNumPages] = useState(null);
+    const [pageNumber, setPageNumber] = useState(1);
 
     useEffect(() => {
         const loadNote = async () => {
@@ -278,34 +285,60 @@ export default function NoteDetail() {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-50 flex flex-col"
-                        style={{ background: 'rgba(0,0,0,0.85)' }}
+                        style={{ background: 'rgba(0,0,0,0.92)' }}
                     >
-                        <div className="flex items-center justify-between px-4 py-3" style={{ background: 'var(--bg-card)' }}>
-                            <span className="font-semibold text-sm truncate">{note.title}</span>
+                        {/* Top bar */}
+                        <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ background: 'var(--bg-card)' }}>
+                            <span className="font-semibold text-sm truncate max-w-xs">{note.title}</span>
                             <div className="flex items-center gap-3">
+                                {numPages && (
+                                    <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                                        <button onClick={() => setPageNumber(p => Math.max(1, p - 1))} disabled={pageNumber <= 1}>
+                                            <ChevronLeft size={18} />
+                                        </button>
+                                        <span>{pageNumber} / {numPages}</span>
+                                        <button onClick={() => setPageNumber(p => Math.min(numPages, p + 1))} disabled={pageNumber >= numPages}>
+                                            <ChevronRight size={18} />
+                                        </button>
+                                    </div>
+                                )}
                                 <a href={viewerUrl} download target="_blank" rel="noreferrer"
-                                    className="text-sm px-3 py-1.5 rounded-lg font-semibold"
+                                    className="text-sm px-3 py-1.5 rounded-lg font-semibold inline-flex items-center gap-1"
                                     style={{ background: 'var(--accent-blue)', color: 'white' }}>
-                                    <Download size={14} className="inline mr-1" />Download
+                                    <Download size={14} /> Download
                                 </a>
-                                <button onClick={() => setViewerUrl(null)}
+                                <button onClick={() => { setViewerUrl(null); setNumPages(null); setPageNumber(1); }}
                                     className="text-sm px-3 py-1.5 rounded-lg border"
                                     style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-secondary)' }}>
                                     Close
                                 </button>
                             </div>
                         </div>
-                        {['jpg','jpeg','png','gif','webp','svg'].includes(note.file_type?.toLowerCase()) ? (
-                            <div className="flex-1 flex items-center justify-center p-4">
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-auto flex justify-center p-4">
+                            {['jpg','jpeg','png','gif','webp','svg'].includes(note.file_type?.toLowerCase()) ? (
                                 <img src={viewerUrl} alt={note.title} className="max-h-full max-w-full object-contain rounded-xl" />
-                            </div>
-                        ) : (
-                            <iframe
-                                src={`https://docs.google.com/viewer?url=${encodeURIComponent(viewerUrl)}&embedded=true`}
-                                className="flex-1 w-full border-0"
-                                title={note.title}
-                            />
-                        )}
+                            ) : note.file_type?.toLowerCase() === 'pdf' ? (
+                                <Document
+                                    file={viewerUrl}
+                                    onLoadSuccess={({ numPages }) => { setNumPages(numPages); setPageNumber(1); }}
+                                    onLoadError={() => toast.error('Failed to load PDF')}
+                                    loading={<p className="text-white mt-10">Loading PDF...</p>}
+                                >
+                                    <Page pageNumber={pageNumber} width={Math.min(window.innerWidth - 32, 800)} />
+                                </Document>
+                            ) : (
+                                <div className="text-white mt-20 text-center">
+                                    <p className="mb-4">Preview not available for this file type.</p>
+                                    <a href={viewerUrl} download target="_blank" rel="noreferrer"
+                                        className="px-4 py-2 rounded-lg font-semibold"
+                                        style={{ background: 'var(--accent-blue)', color: 'white' }}>
+                                        Download File
+                                    </a>
+                                </div>
+                            )}
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>

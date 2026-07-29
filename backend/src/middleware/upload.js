@@ -11,13 +11,13 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
     cloudinary,
     params: (req, file) => {
-        const isImage = file.mimetype.startsWith('image/');
         const isPdf = file.mimetype === 'application/pdf';
+        const isImage = file.mimetype.startsWith('image/');
         return {
             folder: 'studyhub',
-            resource_type: isImage ? 'image' : 'raw',
+            resource_type: (isImage || isPdf) ? 'image' : 'raw',
+            format: isPdf ? 'pdf' : undefined,
             public_id: `${Date.now()}-${Math.round(Math.random() * 1e9)}`,
-            ...(isPdf && { format: 'pdf' }),
         };
     },
 });
