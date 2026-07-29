@@ -117,6 +117,30 @@ router.post('/:id/download', async (req, res) => {
     }
 });
 
+// ===================== PROXY NOTE FILE =====================
+router.get('/:id/file', async (req, res) => {
+    try {
+        const note = await prisma.notes.findUnique({ where: { id: parseInt(req.params.id) } });
+        if (!note) return res.status(404).json({ error: 'Note not found' });
+
+        const axios = require('axios');
+        const response = await axios.get(note.file_path, { responseType: 'stream' });
+
+        const ext = note.file_type?.toLowerCase();
+        const contentType = ext === 'pdf' ? 'application/pdf'
+            : ['jpg','jpeg'].includes(ext) ? 'image/jpeg'
+            : ext === 'png' ? 'image/png'
+            : 'application/octet-stream';
+
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Disposition', `inline; filename="${note.title}.${ext}"`);
+        response.data.pipe(res);
+    } catch (error) {
+        console.error('File proxy error:', error);
+        res.status(500).json({ error: 'Failed to fetch file' });
+    }
+});
+
 // ===================== DELETE NOTE =====================
 router.delete('/:id', authenticate, async (req, res) => {
     try {

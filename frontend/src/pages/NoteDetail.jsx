@@ -62,10 +62,9 @@ export default function NoteDetail() {
         setDownloading(true);
         try {
             const { data } = await api.post(`/notes/${id}/download`);
-            const fileUrl = data.file_path.startsWith('http')
-                ? data.file_path
-                : `${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '')}${data.file_path}`;
-            setViewerUrl(fileUrl);
+            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+            const proxyUrl = `${baseUrl}/notes/${id}/file`;
+            setViewerUrl({ proxy: proxyUrl, direct: data.file_path });
             setNote(prev => ({ ...prev, downloads: (prev.downloads || 0) + 1 }));
         } catch (err) {
             toast.error(err.response?.data?.error || 'Failed to open note');
@@ -302,7 +301,7 @@ export default function NoteDetail() {
                                         </button>
                                     </div>
                                 )}
-                                <a href={viewerUrl} download target="_blank" rel="noreferrer"
+                                <a href={viewerUrl.direct} download target="_blank" rel="noreferrer"
                                     className="text-sm px-3 py-1.5 rounded-lg font-semibold inline-flex items-center gap-1"
                                     style={{ background: 'var(--accent-blue)', color: 'white' }}>
                                     <Download size={14} /> Download
@@ -318,10 +317,10 @@ export default function NoteDetail() {
                         {/* Content */}
                         <div className="flex-1 overflow-auto flex justify-center p-4">
                             {['jpg','jpeg','png','gif','webp','svg'].includes(note.file_type?.toLowerCase()) ? (
-                                <img src={viewerUrl} alt={note.title} className="max-h-full max-w-full object-contain rounded-xl" />
+                                <img src={viewerUrl.proxy} alt={note.title} className="max-h-full max-w-full object-contain rounded-xl" />
                             ) : note.file_type?.toLowerCase() === 'pdf' ? (
                                 <Document
-                                    file={viewerUrl}
+                                    file={viewerUrl.proxy}
                                     onLoadSuccess={({ numPages }) => { setNumPages(numPages); setPageNumber(1); }}
                                     onLoadError={() => toast.error('Failed to load PDF')}
                                     loading={<p className="text-white mt-10">Loading PDF...</p>}
@@ -331,7 +330,7 @@ export default function NoteDetail() {
                             ) : (
                                 <div className="text-white mt-20 text-center">
                                     <p className="mb-4">Preview not available for this file type.</p>
-                                    <a href={viewerUrl} download target="_blank" rel="noreferrer"
+                                    <a href={viewerUrl.direct} download target="_blank" rel="noreferrer"
                                         className="px-4 py-2 rounded-lg font-semibold"
                                         style={{ background: 'var(--accent-blue)', color: 'white' }}>
                                         Download File
