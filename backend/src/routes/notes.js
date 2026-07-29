@@ -73,9 +73,10 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
         }
 
         if (isPremium === 'true') {
-            const user = await prisma.users.findUnique({ where: { id: req.userId }, select: { role: true } });
-            if (!user || !['admin', 'tutor'].includes(user.role)) {
-                return res.status(403).json({ error: 'Only tutors and admins can upload premium notes' });
+            const tutor = await prisma.tutors.findFirst({ where: { user_id: req.userId, status: 'approved' } });
+            const user  = await prisma.users.findUnique({ where: { id: req.userId }, select: { role: true } });
+            if (!tutor && user?.role !== 'admin') {
+                return res.status(403).json({ error: 'Only approved tutors and admins can upload premium notes' });
             }
         }
 
@@ -84,8 +85,8 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
                 title,
                 description,
                 subject,
-                file_path: `/uploads/${req.file.filename}`,
-                file_type: path.extname(req.file.originalname).replace('.', ''),
+                file_path: req.file.path,
+                file_type: req.file.mimetype.startsWith('image/') ? req.file.mimetype.split('/')[1] : path.extname(req.file.originalname).replace('.', ''),
                 uploaded_by: req.userId,
                 group_id: groupId ? parseInt(groupId) : null,
                 is_premium: isPremium === 'true',
