@@ -52,19 +52,21 @@ export default function NoteDetail() {
         }
 
         setDownloading(true);
+        const win = window.open('', '_blank');
         try {
             const { data } = await api.post(`/notes/${id}/download`);
             
             const fileUrl = data.file_path.startsWith('http')
                 ? data.file_path
                 : `${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '')}${data.file_path}`;
-            window.open(fileUrl, '_blank');
+            win.location.href = fileUrl;
             
             toast.success('Download started!');
             
             // Update local download count
             setNote(prev => ({ ...prev, downloads: (prev.downloads || 0) + 1 }));
         } catch (err) {
+            win.close();
             toast.error(err.response?.data?.error || 'Failed to download note');
         } finally {
             setDownloading(false);
