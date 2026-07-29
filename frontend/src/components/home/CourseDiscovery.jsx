@@ -29,14 +29,17 @@ export default function CourseDiscovery() {
     const [tutors, setTutors] = useState([]);
     const [ref, inView] = useInView();
 
-    useEffect(() => {
+    const fetchTutors = () => {
         api.get('/tutors')
-            .then(r => {
-                if (r.data?.length) {
-                    setTutors(r.data.map(normalizeTutorList).slice(0, 6));
-                }
-            })
+            .then(r => { if (r.data?.length) setTutors(r.data.map(normalizeTutorList).slice(0, 6)); })
             .catch(() => {});
+    };
+
+    useEffect(() => {
+        fetchTutors();
+        const onVisible = () => { if (document.visibilityState === 'visible') fetchTutors(); };
+        document.addEventListener('visibilitychange', onVisible);
+        return () => document.removeEventListener('visibilitychange', onVisible);
     }, []);
 
     return (

@@ -137,6 +137,21 @@ router.patch('/tutors/:id/status', async (req, res) => {
             data: { status },
             include: { users: { select: { id: true, first_name: true, last_name: true, email: true } } },
         });
+
+        // Notify the tutor
+        if (status === 'approved' || status === 'rejected') {
+            await prisma.notifications.create({
+                data: {
+                    user_id: tutor.user_id,
+                    type: status === 'approved' ? 'tutor_approved' : 'tutor_rejected',
+                    message: status === 'approved'
+                        ? '🎉 Your tutor application has been approved! You can now accept bookings and post premium notes.'
+                        : 'Your tutor application was not approved at this time. You may reapply after updating your profile.',
+                    is_read: false,
+                },
+            });
+        }
+
         res.json(tutor);
     } catch (err) {
         res.status(500).json({ error: 'Failed to update tutor status' });

@@ -31,7 +31,7 @@ router.patch('/profile', authenticate, upload.single('profile_picture'), async (
         if (university)   data.university    = university.trim();
         if (fieldOfStudy) data.field_of_study = fieldOfStudy.trim();
         if (bio !== undefined) data.bio      = bio.trim().slice(0, 300);
-        if (req.file)     data.profile_picture = `/uploads/${req.file.filename}`;
+        if (req.file)     data.profile_picture = req.file.path;
 
         const user = await prisma.users.update({
             where: { id: req.userId },
@@ -108,6 +108,7 @@ router.get('/:id', async (req, res) => {
                 profile_picture: true,
                 bio: true,
                 created_at: true,
+                tutors: { select: { status: true } },
             },
         });
         if (!user) return res.status(404).json({ error: 'User not found' });

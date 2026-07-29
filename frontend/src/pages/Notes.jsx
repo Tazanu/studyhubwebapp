@@ -84,7 +84,7 @@ function NoteCard({ note }) {
 
 export default function Notes() {
     const { user } = useAuth();
-    const canMarkPremium = user?.role === 'admin' || user?.role === 'tutor';
+    const canMarkPremium = user?.role === 'admin' || user?.tutor_status === 'approved';
     const navigate = useNavigate();
     const isOnline = useOnlineStatus();
 

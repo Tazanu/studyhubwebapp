@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, ArrowLeft, RefreshCw, Loader2, WifiOff, Paperclip, X, Image as ImageIcon, FileText, File, Reply, Edit2, Check, Search } from 'lucide-react';
+import { Send, ArrowLeft, RefreshCw, Loader2, WifiOff, Paperclip, X, Image as ImageIcon, FileText, File, Reply, Edit2, Check, Search, Settings, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -36,6 +36,9 @@ export default function GroupChat() {
     const [searchOpen, setSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
+    const [showEditGroup, setShowEditGroup] = useState(false);
+    const [editGroupForm, setEditGroupForm] = useState({ name: '', description: '' });
+    const [editGroupSaving, setEditGroupSaving] = useState(false);
 
     const bottomRef      = useRef(null);
     const scrollAreaRef  = useRef(null);
@@ -56,6 +59,7 @@ export default function GroupChat() {
                 console.log('Group data loaded:', data);
                 console.log('Current user ID:', user?.id);
                 setGroup(data);
+                setEditGroupForm({ name: data.name || '', description: data.description || '' });
                 // Check if current user is admin
                 const membership = data.user_groups?.find(ug => ug.user_id === user?.id);
                 console.log('Found membership:', membership);
@@ -130,6 +134,33 @@ export default function GroupChat() {
     }, [messages]);
 
     /* ── send (with optional file/reply) ─────────────────────── */
+    const handleEditGroup = async (e) => {
+        e.preventDefault();
+        if (!editGroupForm.name.trim()) return toast.error('Group name is required');
+        setEditGroupSaving(true);
+        try {
+            const { data } = await api.patch(`/groups/${id}`, editGroupForm);
+            setGroup(prev => ({ ...prev, ...data }));
+            setShowEditGroup(false);
+            toast.success('Group updated!');
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Failed to update group');
+        } finally {
+            setEditGroupSaving(false);
+        }
+    };
+
+    const handleDeleteGroup = async () => {
+        if (!window.confirm('Delete this group permanently? This cannot be undone.')) return;
+        try {
+            await api.delete(`/groups/${id}`);
+            toast.success('Group deleted');
+            navigate('/groups');
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Failed to delete group');
+        }
+    };
+
     const handleSend = async e => {
         e.preventDefault();
         const text = input.trim();
@@ -272,8 +303,17 @@ export default function GroupChat() {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        {isAdmin && (
+                            <button
+                                onClick={() => setShowEditGroup(v => !v)}
+                                className="p-2 rounded-lg transition-colors"
+                                style={{ color: showEditGroup ? 'var(--accent-blue)' : 'var(--text-secondary)' }}
+                                title="Edit group"
+                            >
+                                <Settings size={16} />
+                            </button>
+                        )}
                         <button
-                            onClick={() => setSearchOpen(!searchOpen)}
                             className="p-2 rounded-lg transition-colors"
                             style={{ color: searchOpen ? 'var(--accent-blue)' : 'var(--text-secondary)' }}
                             aria-label="Search messages"
@@ -299,6 +339,51 @@ export default function GroupChat() {
                     </div>
                 </div>
                 
+                {/* Edit Group Panel */}
+                <AnimatePresence>
+                    {showEditGroup && isAdmin && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="border-b overflow-hidden"
+                            style={{ background: 'var(--bg-hover)', borderColor: 'var(--border-subtle)' }}
+                        >
+                            <form onSubmit={handleEditGroup} className="px-5 py-4 flex flex-col gap-3">
+                                <p className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>Edit Group</p>
+                                <input
+                                    value={editGroupForm.name}
+                                    onChange={e => setEditGroupForm(f => ({ ...f, name: e.target.value }))}
+                                    placeholder="Group name"
+                                    className="w-full px-3 py-2 rounded-lg border text-sm outline-none"
+                                    style={{ background: 'var(--bg-main)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
+                                />
+                                <textarea
+                                    value={editGroupForm.description}
+                                    onChange={e => setEditGroupForm(f => ({ ...f, description: e.target.value }))}
+                                    placeholder="Description"
+                                    rows={2}
+                                    className="w-full px-3 py-2 rounded-lg border text-sm outline-none resize-none"
+                                    style={{ background: 'var(--bg-main)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
+                                />
+                                <div className="flex gap-2">
+                                    <button type="submit" disabled={editGroupSaving}
+                                        className="px-4 py-1.5 rounded-lg text-sm font-semibold text-white disabled:opacity-60"
+                                        style={{ background: 'var(--accent-blue)' }}>
+                                        {editGroupSaving ? 'Saving…' : 'Save'}
+                                    </button>
+                                    <button type="button" onClick={handleDeleteGroup}
+                                        className="px-4 py-1.5 rounded-lg text-sm font-semibold flex items-center gap-1.5"
+                                        style={{ background: 'rgba(248,113,113,0.12)', color: '#f87171' }}>
+                                        <Trash2 size={13} /> Delete Group
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
                 {/* Search bar */}
                 <AnimatePresence>
                     {searchOpen && (

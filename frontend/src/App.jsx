@@ -32,6 +32,7 @@ const QAForum        = lazy(() => import('./pages/QAForum'));
 const AskQuestion    = lazy(() => import('./pages/AskQuestion'));
 const QuestionDetail = lazy(() => import('./pages/QuestionDetail'));
 const BecomeTutor    = lazy(() => import('./pages/BecomeTutor'));
+const TutorDashboard = lazy(() => import('./pages/TutorDashboard'));
 const Settings       = lazy(() => import('./pages/Settings'));
 const SocketTest     = lazy(() => import('./pages/SocketTest'));
 const TutorProfilePage = lazy(() => import('./pages/TutorProfilePage'));
@@ -39,7 +40,7 @@ const Tutors         = lazy(() => import('./pages/Tutors'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const PremiumPage    = lazy(() => import('./pages/PremiumPage'));
 
-const DASH_ROUTES = ['/dashboard', '/groups', '/notes', '/qa', '/tutors', '/profile', '/settings', '/become-tutor', '/socket-test', '/admin', '/premium'];
+const DASH_ROUTES = ['/dashboard', '/groups', '/notes', '/qa', '/tutors', '/profile', '/settings', '/become-tutor', '/socket-test', '/admin', '/premium', '/tutor-dashboard'];
 
 const Protected = ({ children }) => <ProtectedRoute>{children}</ProtectedRoute>;
 
@@ -86,6 +87,7 @@ function Layout() {
                     <Route path="/tutor/:id"           element={<Protected><TutorProfilePage /></Protected>} />
                     <Route path="/admin"               element={<AdminRoute><AdminDashboard /></AdminRoute>} />
                     <Route path="/premium"             element={<Protected><PremiumPage /></Protected>} />
+                    <Route path="/tutor-dashboard"     element={<Protected><TutorDashboard /></Protected>} />
                 </Routes>
             </Suspense>
             {!isDash && pathname !== '/' && pathname !== '/about' && pathname !== '/login' && pathname !== '/register' && pathname !== '/terms' && pathname !== '/privacy' && <Footer />}

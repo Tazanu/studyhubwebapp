@@ -371,7 +371,7 @@ function NoteCard({ note, onPurchase, isAdmin }) {
 export default function PremiumPage() {
     const { user } = useAuth();
     const isAdmin = user?.role === 'admin';
-    const canPublish = isAdmin || user?.role === 'tutor';
+    const canPublish = isAdmin || user?.tutor_status === 'approved';
 
     const [notes, setNotes] = useState([]);
     const [loading, setLoading] = useState(true);

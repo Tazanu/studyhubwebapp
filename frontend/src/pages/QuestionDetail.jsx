@@ -158,7 +158,7 @@ export default function QuestionDetail() {
         <div className="lg:pl-60" style={{ background: 'var(--bg-main)', minHeight: '100vh' }}>
             <Sidebar />
             <div className="min-h-screen" style={{ background: 'var(--bg-main)', color: 'var(--text-primary)', paddingTop: '80px' }}>
-                <div className="max-w-5xl mx-auto px-6 py-8">
+                <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
                 
                 {/* Header */}
                 <button
@@ -172,17 +172,17 @@ export default function QuestionDetail() {
 
                 {/* Question */}
                 <div className="mb-8">
-                    <div className="flex items-start gap-4">
+                    <div className="flex flex-col sm:flex-row items-start gap-4">
                         {/* Votes */}
-                        <div className="flex flex-col items-center gap-2">
+                        <div className="flex sm:flex-col flex-row items-center gap-2 shrink-0">
                             <button
                                 onClick={() => handleVote(1)}
                                 className={`p-2 rounded-lg transition-all ${question.userVote === 1 ? 'text-green-500' : 'hover:bg-green-500 hover:text-white'}`}
                                 style={{ color: question.userVote === 1 ? '#34d399' : 'var(--text-secondary)' }}
                             >
-                                <ThumbsUp size={24} />
+                                <ThumbsUp size={22} />
                             </button>
-                            <span className="text-2xl font-bold" style={{ color: question.votes > 0 ? '#34d399' : 'var(--text-primary)' }}>
+                            <span className="text-xl font-bold" style={{ color: question.votes > 0 ? '#34d399' : 'var(--text-primary)' }}>
                                 {question.votes}
                             </span>
                             <button
@@ -190,21 +190,21 @@ export default function QuestionDetail() {
                                 className={`p-2 rounded-lg transition-all ${question.userVote === -1 ? 'text-red-500' : 'hover:bg-red-500 hover:text-white'}`}
                                 style={{ color: question.userVote === -1 ? '#ef4444' : 'var(--text-secondary)' }}
                             >
-                                <ThumbsDown size={24} />
+                                <ThumbsDown size={22} />
                             </button>
                             <button
                                 onClick={handleBookmark}
                                 className="p-2 rounded-lg transition-all hover:text-blue-500"
                                 style={{ color: question.isBookmarked ? 'var(--accent-blue)' : 'var(--text-secondary)' }}
                             >
-                                <Bookmark size={20} fill={question.isBookmarked ? 'currentColor' : 'none'} />
+                                <Bookmark size={18} fill={question.isBookmarked ? 'currentColor' : 'none'} />
                             </button>
                         </div>
 
                         {/* Content */}
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-4 mb-4">
-                                <h1 className="text-3xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                                <h1 className="text-xl sm:text-3xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                                     {question.title}
                                 </h1>
                                 {question.is_solved && (
@@ -269,9 +269,9 @@ export default function QuestionDetail() {
                     </h2>
 
                     {question.answers.map(answer => (
-                        <div key={answer.id} className="mb-6 p-6 rounded-lg border" style={{ background: 'var(--bg-card)', borderColor: answer.is_accepted ? '#34d399' : 'var(--border-subtle)' }}>
-                            <div className="flex gap-4">
-                                <div className="flex flex-col items-center gap-2">
+                        <div key={answer.id} className="mb-6 p-4 sm:p-6 rounded-lg border" style={{ background: 'var(--bg-card)', borderColor: answer.is_accepted ? '#34d399' : 'var(--border-subtle)' }}>
+                            <div className="flex flex-col sm:flex-row gap-4">
+                                <div className="flex sm:flex-col flex-row items-center gap-2 shrink-0">
                                     <button onClick={() => handleVote(1, true, answer.id)} className="p-2 rounded-lg transition-all hover:bg-green-500 hover:text-white">
                                         <ThumbsUp size={20} />
                                     </button>

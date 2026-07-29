@@ -11,7 +11,14 @@ const PLATFORM_FEE = 1000; // FCFA/month
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 async function getUser(userId) {
-    return prisma.users.findUnique({ where: { id: userId }, select: { id: true, role: true } });
+    return prisma.users.findUnique({
+        where: { id: userId },
+        select: {
+            id: true,
+            role: true,
+            tutors: { select: { status: true } },
+        },
+    });
 }
 
 async function hasActiveSubscription(userId) {
@@ -269,12 +276,11 @@ router.get('/notes', authenticate, async (req, res) => {
 router.post('/notes', authenticate, upload.single('file'), async (req, res) => {
     try {
         const user = await getUser(req.userId);
+        const isAdmin = user.role === 'admin';
+        const isApprovedTutor = user.tutors?.status === 'approved';
 
-        if (user.role !== 'admin') {
-            const subscribed = await hasActiveSubscription(req.userId);
-            if (!subscribed) {
-                return res.status(403).json({ error: 'You need an active premium subscription to post premium notes' });
-            }
+        if (!isAdmin && !isApprovedTutor) {
+            return res.status(403).json({ error: 'Only approved tutors can post premium notes' });
         }
 
         const { title, description, subject, price, tags } = req.body;

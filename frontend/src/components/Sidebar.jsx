@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     LayoutDashboard, Users, FileText, MessageSquare,
-    GraduationCap, User, Settings, LogOut, Menu, X, ShieldCheck, Crown,
+    GraduationCap, User, Settings, LogOut, Menu, X, ShieldCheck, Crown, BookOpen,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -78,6 +78,7 @@ function SidebarContent({ onClose }) {
     const NAV = [
         ...BASE_NAV,
         { to: '/premium', icon: Crown, label: 'Premium' },
+        ...(user?.tutor_status ? [{ to: '/tutor-dashboard', icon: BookOpen, label: 'Tutor Dashboard' }] : []),
         ...(user?.role === 'admin' ? [{ to: '/admin', icon: ShieldCheck, label: 'Admin' }] : []),
     ];
 

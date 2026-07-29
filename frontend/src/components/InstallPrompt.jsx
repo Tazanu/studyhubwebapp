@@ -55,8 +55,8 @@ export default function InstallPrompt() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 20, scale: 0.95 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                    className="fixed bottom-6 left-1/2 z-50 w-full max-w-md px-4"
-                    style={{ transform: 'translateX(-50%)' }}
+                    className="fixed bottom-6 z-50 w-full max-w-sm px-4"
+                    style={{ left: '50%', transform: 'translateX(-50%)' }}
                 >
                     <div
                         className="rounded-xl p-4 border shadow-2xl flex items-center gap-3"

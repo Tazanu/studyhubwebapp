@@ -134,6 +134,51 @@ router.post('/', authenticate, async (req, res) => {
     }
 });
 
+// ===================== UPDATE GROUP (owner only) =====================
+router.patch('/:id', authenticate, async (req, res) => {
+    try {
+        const groupId = parseInt(req.params.id);
+        const membership = await prisma.user_groups.findUnique({
+            where: { user_id_group_id: { user_id: req.userId, group_id: groupId } }
+        });
+        if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
+            return res.status(403).json({ error: 'Only group owners can edit this group' });
+        }
+        const { name, description, subject, maxMembers } = req.body;
+        const updated = await prisma.groups.update({
+            where: { id: groupId },
+            data: {
+                ...(name        && { name }),
+                ...(description && { description }),
+                ...(subject     && { subject }),
+                ...(maxMembers  && { max_members: parseInt(maxMembers) }),
+            }
+        });
+        res.json(updated);
+    } catch (error) {
+        console.error('Update group error:', error);
+        res.status(500).json({ error: 'Failed to update group' });
+    }
+});
+
+// ===================== DELETE GROUP (owner only) =====================
+router.delete('/:id', authenticate, async (req, res) => {
+    try {
+        const groupId = parseInt(req.params.id);
+        const membership = await prisma.user_groups.findUnique({
+            where: { user_id_group_id: { user_id: req.userId, group_id: groupId } }
+        });
+        if (!membership || membership.role !== 'owner') {
+            return res.status(403).json({ error: 'Only the group owner can delete this group' });
+        }
+        await prisma.groups.update({ where: { id: groupId }, data: { is_active: false } });
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Delete group error:', error);
+        res.status(500).json({ error: 'Failed to delete group' });
+    }
+});
+
 // ===================== JOIN GROUP (with approval workflow) =====================
 router.post('/:id/join', authenticate, async (req, res) => {
     try {

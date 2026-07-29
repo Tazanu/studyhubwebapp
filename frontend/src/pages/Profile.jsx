@@ -275,7 +275,7 @@ export default function Profile() {
                                             <BookOpen size={13} /> {profile.field_of_study}
                                         </span>
                                     )}
-                                    {profile.role === 'tutor' && (
+                                    {profile.tutors?.status === 'approved' && (
                                         <span className="flex items-center gap-1.5">
                                             <GraduationCap size={13} /> Tutor
                                         </span>

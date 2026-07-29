@@ -66,13 +66,17 @@ export default defineConfig(({ mode }) => {
               }
             },
             {
-              urlPattern: new RegExp(`^${apiOrigin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\/api\\/(groups|notes|tutors|questions)`),
+              urlPattern: new RegExp(`^${apiOrigin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\/api\\/(groups|notes|questions)`),
               handler: 'NetworkFirst',
               options: {
                 cacheName: 'studyhub-content-cache',
                 networkTimeoutSeconds: 5,
                 expiration: { maxEntries: 100, maxAgeSeconds: 86400 }
               }
+            },
+            {
+              urlPattern: new RegExp(`^${apiOrigin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\/api\\/tutors`),
+              handler: 'NetworkOnly'
             },
             {
               urlPattern: new RegExp(`^${apiOrigin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\/api\\/(auth|payments|.*\\/messages|notes\\/.*\\/download)`),

@@ -5,12 +5,6 @@ import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 
-// NOTE — "Remember me" is currently cosmetic only.
-// Real persistence would require either:
-//   (a) extending the JWT expiry server-side when the flag is sent, or
-//   (b) issuing a long-lived refresh token stored in an httpOnly cookie.
-// Ask if you want either approach built — it requires a small backend change.
-
 function FieldError({ id, msg }) {
     if (!msg) return null;
     return (
@@ -25,10 +19,11 @@ export default function Login() {
     const navigate   = useNavigate();
     const isOnline   = useOnlineStatus();
 
-    const [email,      setEmail]      = useState('');
-    const [password,   setPassword]   = useState('');
+    const saved = JSON.parse(localStorage.getItem('rememberedLogin') || 'null');
+    const [email,      setEmail]      = useState(saved?.email    || '');
+    const [password,   setPassword]   = useState(saved?.password || '');
     const [showPw,     setShowPw]     = useState(false);
-    const [remember,   setRemember]   = useState(false);
+    const [remember,   setRemember]   = useState(!!saved);
     const [errors,     setErrors]     = useState({});   // { email, password, general }
     const [touched,    setTouched]    = useState({});   // tracks which fields have been blurred
     const [loading,    setLoading]    = useState(false);
@@ -68,6 +63,11 @@ export default function Login() {
         setLoading(true);
         try {
             const { data } = await api.post('/auth/login', { email, password });
+            if (remember) {
+                localStorage.setItem('rememberedLogin', JSON.stringify({ email, password }));
+            } else {
+                localStorage.removeItem('rememberedLogin');
+            }
             login(data.user, data.token);
             navigate('/dashboard');
         } catch (err) {

@@ -116,7 +116,7 @@ export default function BecomeTutor() {
                         We'll notify you within 24 to 48 hours once approved.
                     </p>
                     <button
-                        onClick={() => navigate('/dashboard')}
+                        onClick={() => navigate('/tutor-dashboard')}
                         className="px-8 py-3 rounded-xl font-semibold text-white"
                         style={{ background: 'linear-gradient(135deg,#0052cc,#0066ff)' }}
                     >

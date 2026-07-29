@@ -1,23 +1,21 @@
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('cloudinary').v2;
 
-const uploadDir = path.join(__dirname, '..', '..', 'uploads');
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key:    process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
-// Create uploads folder if it doesn't exist
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        const ext = path.extname(file.originalname);
-        cb(null, `${uniqueSuffix}${ext}`);
-    }
+const storage = new CloudinaryStorage({
+    cloudinary,
+    params: (req, file) => ({
+        folder: 'studyhub',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'txt', 'md'],
+        resource_type: file.mimetype.startsWith('image/') ? 'image' : 'raw',
+        public_id: `${Date.now()}-${Math.round(Math.random() * 1e9)}`,
+    }),
 });
 
 const ALLOWED_MIME_TYPES = new Set([
@@ -32,18 +30,12 @@ const ALLOWED_MIME_TYPES = new Set([
     'image/webp',
 ]);
 
-const fileFilter = (req, file, cb) => {
-    if (ALLOWED_MIME_TYPES.has(file.mimetype)) {
-        cb(null, true);
-    } else {
-        cb(new Error('File type not allowed'), false);
-    }
-};
-
 const upload = multer({
     storage,
-    limits: { fileSize: 20 * 1024 * 1024 }, // 20MB max
-    fileFilter,
+    limits: { fileSize: 20 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        ALLOWED_MIME_TYPES.has(file.mimetype) ? cb(null, true) : cb(new Error('File type not allowed'), false);
+    },
 });
 
 module.exports = upload;
