@@ -123,15 +123,7 @@ router.get('/:id/file', async (req, res) => {
         const note = await prisma.notes.findUnique({ where: { id: parseInt(req.params.id) } });
         if (!note) return res.status(404).json({ error: 'Note not found' });
 
-        console.log('Proxying file for note', note.id, ':', note.file_path);
-
-        const axios = require('axios');
-        const response = await axios.get(note.file_path, {
-            responseType: 'stream',
-            headers: { 'User-Agent': 'StudyHub/1.0' }
-        });
-
-        const ext = note.file_type?.toLowerCase();
+        const ext = (note.file_type || '').toLowerCase();
         const contentType = ext === 'pdf' ? 'application/pdf'
             : ['jpg','jpeg'].includes(ext) ? 'image/jpeg'
             : ext === 'png' ? 'image/png'
@@ -141,10 +133,19 @@ router.get('/:id/file', async (req, res) => {
 
         res.setHeader('Content-Type', contentType);
         res.setHeader('Content-Disposition', `inline; filename="${note.title}.${ext}"`);
-        res.setHeader('Access-Control-Allow-Origin', '*');
+
+        if (!note.file_path.startsWith('http')) {
+            return res.status(410).json({ error: 'File no longer available. Please re-upload.' });
+        }
+
+        const axios = require('axios');
+        const response = await axios.get(note.file_path, {
+            responseType: 'stream',
+            headers: { 'User-Agent': 'StudyHub/1.0' }
+        });
         response.data.pipe(res);
     } catch (error) {
-        console.error('File proxy error:', error.message, error.response?.status, error.response?.data);
+        console.error('File proxy error:', error.message, error.response?.status);
         res.status(500).json({ error: 'Failed to fetch file', detail: error.message });
     }
 });

@@ -324,6 +324,7 @@ export default function NoteDetail() {
                                     onLoadSuccess={({ numPages }) => { setNumPages(numPages); setPageNumber(1); }}
                                     onLoadError={() => toast.error('Failed to load PDF')}
                                     loading={<p className="text-white mt-10">Loading PDF...</p>}
+                                    error={<div className="text-white mt-20 text-center"><p className="mb-4">This file was uploaded before our storage migration and is no longer available.</p><p className="text-sm" style={{color:'var(--text-secondary)'}}>Please delete this note and re-upload the file.</p></div>}
                                 >
                                     <Page pageNumber={pageNumber} width={Math.min(window.innerWidth - 32, 800)} />
                                 </Document>
