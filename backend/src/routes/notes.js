@@ -123,21 +123,29 @@ router.get('/:id/file', async (req, res) => {
         const note = await prisma.notes.findUnique({ where: { id: parseInt(req.params.id) } });
         if (!note) return res.status(404).json({ error: 'Note not found' });
 
+        console.log('Proxying file for note', note.id, ':', note.file_path);
+
         const axios = require('axios');
-        const response = await axios.get(note.file_path, { responseType: 'stream' });
+        const response = await axios.get(note.file_path, {
+            responseType: 'stream',
+            headers: { 'User-Agent': 'StudyHub/1.0' }
+        });
 
         const ext = note.file_type?.toLowerCase();
         const contentType = ext === 'pdf' ? 'application/pdf'
             : ['jpg','jpeg'].includes(ext) ? 'image/jpeg'
             : ext === 'png' ? 'image/png'
+            : ext === 'gif' ? 'image/gif'
+            : ext === 'webp' ? 'image/webp'
             : 'application/octet-stream';
 
         res.setHeader('Content-Type', contentType);
         res.setHeader('Content-Disposition', `inline; filename="${note.title}.${ext}"`);
+        res.setHeader('Access-Control-Allow-Origin', '*');
         response.data.pipe(res);
     } catch (error) {
-        console.error('File proxy error:', error);
-        res.status(500).json({ error: 'Failed to fetch file' });
+        console.error('File proxy error:', error.message, error.response?.status, error.response?.data);
+        res.status(500).json({ error: 'Failed to fetch file', detail: error.message });
     }
 });
 
