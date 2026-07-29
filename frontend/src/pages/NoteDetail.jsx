@@ -300,7 +300,11 @@ export default function NoteDetail() {
                                 <img src={viewerUrl} alt={note.title} className="max-h-full max-w-full object-contain rounded-xl" />
                             </div>
                         ) : (
-                            <iframe src={viewerUrl} className="flex-1 w-full border-0" title={note.title} />
+                            <iframe
+                                src={`https://docs.google.com/viewer?url=${encodeURIComponent(viewerUrl)}&embedded=true`}
+                                className="flex-1 w-full border-0"
+                                title={note.title}
+                            />
                         )}
                     </motion.div>
                 )}
