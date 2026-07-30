@@ -23,7 +23,7 @@ export default function Navbar() {
             style={{
                 left:           isDash ? undefined : 0,
                 right:          0,
-                paddingLeft:    isDash ? '1rem' : '3.5rem',
+                paddingLeft:    isDash ? '1rem' : undefined,
                 paddingRight:   '1.5rem',
                 background:     theme === 'dark' ? 'rgba(18,18,18,0.98)' : 'rgba(255,255,255,0.98)',
                 borderColor:    'var(--border-subtle)',
@@ -32,7 +32,7 @@ export default function Navbar() {
         >
             {/* logo — only shown on public pages; dashboard has it in sidebar */}
             {!isDash && (
-                <Link to="/" className="flex items-center">
+                <Link to="/" className="flex items-center ml-4 sm:ml-0">
                     <StudyHubLogo size="md" showText={true} />
                 </Link>
             )}
