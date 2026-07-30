@@ -74,8 +74,7 @@ export default function Navbar() {
                             <button onClick={handleLogout}
                                 className="px-3 sm:px-4 py-2 rounded-lg font-semibold border-2 transition-all hover:bg-red-500 hover:text-white hover:border-red-500 text-xs sm:text-sm whitespace-nowrap"
                                 style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}>
-                                <span className="hidden sm:inline">Logout</span>
-                                <span className="sm:hidden">↩</span>
+                                Logout
                             </button>
                         </>
                     )
