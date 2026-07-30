@@ -308,7 +308,7 @@ function TutorsTab() {
 
                                     {/* proof doc */}
                                     {t.proof_document_url && (
-                                        <a href={`${import.meta.env.VITE_API_URL?.replace('/api','') || 'http://localhost:5000'}${t.proof_document_url}`} target="_blank" rel="noreferrer"
+                                        <a href={t.proof_document_url} target="_blank" rel="noreferrer"
                                             className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold"
                                             style={{ color: 'var(--accent-blue)' }}>
                                             <FileText size={13} /> View proof document

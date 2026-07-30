@@ -74,7 +74,7 @@ router.post('/register', (req, res, next) => {
 
         let tutorStatus = null;
         if (isTutorApp && tutorData) {
-            const proofUrl = req.file ? `/uploads/${req.file.filename}` : null;
+            const proofUrl = req.file ? req.file.path : null;
             await prisma.tutors.create({
                 data: {
                     user_id: user.id,
