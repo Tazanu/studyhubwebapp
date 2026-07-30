@@ -194,11 +194,11 @@ router.post('/', authenticate, upload.fields([{ name: 'audio', maxCount: 1 }, { 
         };
 
         if (req.files?.audio) {
-            data.audio_url = `/uploads/${req.files.audio[0].filename}`;
+            data.audio_url = req.files.audio[0].path;
         }
 
         if (req.files?.images) {
-            data.images = req.files.images.map(f => `/uploads/${f.filename}`);
+            data.images = req.files.images.map(f => f.path);
         }
 
         const question = await prisma.questions.create({
@@ -239,11 +239,11 @@ router.patch('/:id', authenticate, upload.fields([{ name: 'audio', maxCount: 1 }
         if (tags) data.tags = JSON.parse(tags);
 
         if (req.files?.audio) {
-            data.audio_url = `/uploads/${req.files.audio[0].filename}`;
+            data.audio_url = req.files.audio[0].path;
         }
 
         if (req.files?.images) {
-            data.images = req.files.images.map(f => `/uploads/${f.filename}`);
+            data.images = req.files.images.map(f => f.path);
         }
 
         const updated = await prisma.questions.update({
@@ -415,11 +415,11 @@ router.post('/:id/answers', authenticate, upload.fields([{ name: 'audio', maxCou
         };
 
         if (req.files?.audio) {
-            data.audio_url = `/uploads/${req.files.audio[0].filename}`;
+            data.audio_url = req.files.audio[0].path;
         }
 
         if (req.files?.images) {
-            data.images = req.files.images.map(f => `/uploads/${f.filename}`);
+            data.images = req.files.images.map(f => f.path);
         }
 
         const answer = await prisma.answers.create({

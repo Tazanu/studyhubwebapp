@@ -13,9 +13,10 @@ const storage = new CloudinaryStorage({
     params: (req, file) => {
         const isPdf = file.mimetype === 'application/pdf';
         const isImage = file.mimetype.startsWith('image/');
+        const isAudio = file.mimetype.startsWith('audio/');
         return {
             folder: 'studyhub',
-            resource_type: (isImage || isPdf) ? 'image' : 'raw',
+            resource_type: isImage ? 'image' : isAudio ? 'video' : isPdf ? 'image' : 'raw',
             format: isPdf ? 'pdf' : undefined,
             public_id: `${Date.now()}-${Math.round(Math.random() * 1e9)}`,
         };
@@ -32,6 +33,11 @@ const ALLOWED_MIME_TYPES = new Set([
     'image/png',
     'image/gif',
     'image/webp',
+    'audio/webm',
+    'audio/mp4',
+    'audio/mpeg',
+    'audio/ogg',
+    'audio/wav',
 ]);
 
 const upload = multer({
