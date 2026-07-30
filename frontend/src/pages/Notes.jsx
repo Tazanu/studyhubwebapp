@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { Search, Plus, Download, FileText, Image as ImageIcon, File, Lock, WifiOff } from 'lucide-react';
+import { Search, Plus, Download, FileText, Image as ImageIcon, File, Lock, WifiOff, Trash2 } from 'lucide-react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
@@ -22,9 +22,27 @@ function getFileIcon(fileType) {
     return File;
 }
 
-function NoteCard({ note }) {
+function NoteCard({ note, onDeleted }) {
+    const { user } = useAuth();
     const [hovered, setHovered] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState(false);
+    const [deleting, setDeleting] = useState(false);
     const FileIcon = getFileIcon(note.file_type);
+    const canDelete = user && (user.id === note.uploaded_by || user.role === 'admin');
+
+    const handleDelete = async (e) => {
+        e.preventDefault();
+        setDeleting(true);
+        try {
+            await api.delete(`/notes/${note.id}`);
+            toast.success('Note deleted');
+            onDeleted(note.id);
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Failed to delete note');
+            setDeleting(false);
+            setConfirmDelete(false);
+        }
+    };
 
     return (
         <motion.div
@@ -51,6 +69,13 @@ function NoteCard({ note }) {
                         {note.subject}
                     </span>
                 </div>
+                {canDelete && (
+                    <button onClick={e => { e.preventDefault(); setConfirmDelete(true); }}
+                        className="shrink-0 p-1.5 rounded-lg transition-colors hover:text-red-500"
+                        style={{ color: 'var(--text-muted)' }}>
+                        <Trash2 size={15} />
+                    </button>
+                )}
             </div>
 
             <p className="text-xs mb-4 flex-1 line-clamp-2" style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>
@@ -71,13 +96,28 @@ function NoteCard({ note }) {
                 </div>
             )}
 
-            <Link
-                to={`/notes/${note.id}`}
-                className="block text-center text-xs py-2 rounded-lg font-semibold text-white transition-all"
-                style={{ background: 'linear-gradient(135deg, #0052cc, #0066ff)' }}
-            >
-                View Details
-            </Link>
+            {confirmDelete ? (
+                <div className="flex gap-2">
+                    <button onClick={handleDelete} disabled={deleting}
+                        className="flex-1 text-xs py-2 rounded-lg font-semibold text-white disabled:opacity-60"
+                        style={{ background: 'var(--error)' }}>
+                        {deleting ? 'Deleting...' : 'Yes, delete'}
+                    </button>
+                    <button onClick={() => setConfirmDelete(false)}
+                        className="flex-1 text-xs py-2 rounded-lg font-semibold border"
+                        style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                        Cancel
+                    </button>
+                </div>
+            ) : (
+                <Link
+                    to={`/notes/${note.id}`}
+                    className="block text-center text-xs py-2 rounded-lg font-semibold text-white transition-all"
+                    style={{ background: 'linear-gradient(135deg, #0052cc, #0066ff)' }}
+                >
+                    View Details
+                </Link>
+            )}
         </motion.div>
     );
 }
@@ -275,7 +315,7 @@ export default function Notes() {
                         variants={stagger} initial="hidden" animate="show"
                     >
                         {filtered.map(note => (
-                            <NoteCard key={note.id} note={note} />
+                            <NoteCard key={note.id} note={note} onDeleted={id => setNotes(prev => prev.filter(n => n.id !== id))} />
                         ))}
                     </motion.div>
                 )}

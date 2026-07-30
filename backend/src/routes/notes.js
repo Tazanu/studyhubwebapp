@@ -160,7 +160,10 @@ router.delete('/:id', authenticate, async (req, res) => {
         }
 
         if (note.uploaded_by !== req.userId) {
-            return res.status(403).json({ error: 'Not authorized to delete this note' });
+            const user = await prisma.users.findUnique({ where: { id: req.userId }, select: { role: true } });
+            if (user?.role !== 'admin') {
+                return res.status(403).json({ error: 'Not authorized to delete this note' });
+            }
         }
 
         await prisma.notes.delete({ where: { id: parseInt(req.params.id) } });
