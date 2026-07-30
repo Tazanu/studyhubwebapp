@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, LogOut } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import NotificationBell from './NotificationBell';
@@ -67,14 +68,16 @@ export default function Navbar() {
                     !isDash && (
                         <>
                             <Link to="/dashboard"
-                                className="px-3 sm:px-4 py-2 rounded-lg font-semibold border-2 transition-all hover:bg-blue-600 hover:text-white text-xs sm:text-sm text-center whitespace-nowrap"
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-lg font-semibold border-2 transition-all hover:bg-blue-600 hover:text-white text-xs sm:text-sm whitespace-nowrap"
                                 style={{ borderColor: 'var(--accent-blue)', color: 'var(--text-primary)' }}>
-                                Dashboard
+                                <LayoutDashboard size={15} />
+                                <span className="hidden sm:inline">Dashboard</span>
                             </Link>
                             <button onClick={handleLogout}
-                                className="px-3 sm:px-4 py-2 rounded-lg font-semibold border-2 transition-all hover:bg-red-500 hover:text-white hover:border-red-500 text-xs sm:text-sm whitespace-nowrap"
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-lg font-semibold border-2 transition-all hover:bg-red-500 hover:text-white hover:border-red-500 text-xs sm:text-sm whitespace-nowrap"
                                 style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}>
-                                Logout
+                                <LogOut size={15} />
+                                <span className="hidden sm:inline">Logout</span>
                             </button>
                         </>
                     )
