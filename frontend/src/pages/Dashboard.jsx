@@ -173,7 +173,7 @@ function ContentCard({ item, type }) {
                 {type === 'notes'  && <><span>{item.downloads} downloads</span><span>{item.subject}</span></>}
             </div>
             <Link
-                to={type === 'groups' ? `/groups/${item.id}` : `/notes/${item.id}`}
+                to={type === 'groups' ? `/groups/${item.id}/chat` : `/notes/${item.id}`}
                 className="block text-center text-xs py-2 rounded-lg font-semibold text-white transition-all"
                 style={{ background: 'linear-gradient(135deg, #0052cc, #0066ff)' }}
             >

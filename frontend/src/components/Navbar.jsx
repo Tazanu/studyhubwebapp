@@ -52,7 +52,7 @@ export default function Navbar() {
             {/* dashboard page title placeholder — keeps topbar from being empty */}
             {isDash && <div />}
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-3">
                 {user && isDash && <NotificationBell />}
                 <button
                     onClick={toggleTheme}
@@ -64,17 +64,18 @@ export default function Navbar() {
                 </button>
 
                 {user ? (
-                    /* on public pages show compact user chip */
                     !isDash && (
                         <>
-                            <Link to="/dashboard" className="px-4 py-2 rounded-lg font-semibold border-2 transition-all hover:bg-blue-600 hover:text-white text-sm text-center"
+                            <Link to="/dashboard"
+                                className="px-3 sm:px-4 py-2 rounded-lg font-semibold border-2 transition-all hover:bg-blue-600 hover:text-white text-xs sm:text-sm text-center whitespace-nowrap"
                                 style={{ borderColor: 'var(--accent-blue)', color: 'var(--text-primary)' }}>
                                 Dashboard
                             </Link>
                             <button onClick={handleLogout}
-                                className="px-4 py-2 rounded-lg font-semibold border-2 transition-all hover:bg-red-500 hover:text-white hover:border-red-500 text-sm"
+                                className="px-3 sm:px-4 py-2 rounded-lg font-semibold border-2 transition-all hover:bg-red-500 hover:text-white hover:border-red-500 text-xs sm:text-sm whitespace-nowrap"
                                 style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}>
-                                Logout
+                                <span className="hidden sm:inline">Logout</span>
+                                <span className="sm:hidden">↩</span>
                             </button>
                         </>
                     )
