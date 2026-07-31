@@ -32,8 +32,8 @@ export default function Navbar() {
         >
             {/* logo — only shown on public pages; dashboard has it in sidebar */}
             {!isDash && (
-                <Link to="/" className="flex items-center ml-4 sm:ml-0">
-                    <StudyHubLogo size="md" showText={true} />
+                <Link to="/" className="flex items-center ml-6 sm:ml-8">
+                    <StudyHubLogo size="lg" showText={true} />
                 </Link>
             )}
 
