@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { Search, Plus, Download, FileText, Image as ImageIcon, File, Lock, WifiOff, Trash2, BookX } from 'lucide-react';
-import api from '../api/client';
+import api, { apiError } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import Sidebar from '../components/Sidebar';
@@ -43,7 +43,7 @@ function NoteCard({ note, onDeleted }) {
             toast.success('Note deleted');
             onDeleted(note.id);
         } catch (err) {
-            toast.error(err.response?.data?.error || 'Failed to delete note');
+            toast.error(apiError(err, 'Failed to delete note'));
             setDeleting(false);
         }
     };

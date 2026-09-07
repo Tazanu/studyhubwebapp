@@ -6,7 +6,7 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { ArrowLeft, Download, Trash2, FileText, Image as ImageIcon, File, Lock, Calendar, User, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
-import api from '../api/client';
+import api, { apiError } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
 import PaymentModal from '../components/tutor/PaymentModal';
@@ -95,7 +95,7 @@ export default function NoteDetail() {
             }
             setNote(prev => ({ ...prev, downloads: (prev.downloads || 0) + 1 }));
         } catch (err) {
-            toast.error(err.response?.data?.error || err.message || 'Failed to open note');
+            toast.error(apiError(err, err.message || 'Failed to open note'));
         } finally {
             setDownloading(false);
         }
@@ -113,7 +113,7 @@ export default function NoteDetail() {
             toast.success('Note deleted');
             navigate('/notes');
         } catch (err) {
-            toast.error(err.response?.data?.error || 'Failed to delete note');
+            toast.error(apiError(err, 'Failed to delete note'));
             setDeleting(false);
         }
     };

@@ -9,6 +9,33 @@ const api = axios.create({
     timeout: 45000,
 });
 
+// ── Cold-start recovery ─────────────────────────────────────────────────────
+// A free-tier host sleeps after ~15 minutes idle. The first request to reach it
+// is usually dropped or times out while the container boots, so a visitor
+// arriving from a shared link sees a failure on a perfectly healthy service.
+// Retrying transport failures turns that into a slow load rather than an error.
+//
+// Deliberately narrow: only requests that never got a response are retried.
+// Anything the server actually answered — including a 500 — is left alone,
+// because retrying a POST the server did process could duplicate it.
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 4000;
+
+/** True when the request failed in transit and can be safely repeated. */
+function isRetriableTransportFailure(error) {
+    if (error.response) return false;            // server answered; not a transport issue
+    if (axios.isCancel?.(error)) return false;   // caller aborted on purpose
+    return error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK';
+}
+
+/** Lets the UI show "waking the server up" instead of a generic spinner. */
+let wakingListeners = new Set();
+export function onServerWaking(fn) {
+    wakingListeners.add(fn);
+    return () => wakingListeners.delete(fn);
+}
+const emitWaking = state => wakingListeners.forEach(fn => { try { fn(state); } catch { /* listener's problem */ } });
+
 api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
@@ -19,8 +46,24 @@ api.interceptors.request.use(
 );
 
 api.interceptors.response.use(
-    (response) => response,
-    (error) => {
+    (response) => {
+        emitWaking(false); // a successful response means the server is awake
+        return response;
+    },
+    async (error) => {
+        const config = error.config;
+
+        if (config && isRetriableTransportFailure(error)) {
+            config.__retryCount = config.__retryCount || 0;
+            if (config.__retryCount < MAX_RETRIES) {
+                config.__retryCount += 1;
+                emitWaking(true);
+                await new Promise(r => setTimeout(r, RETRY_DELAY_MS * config.__retryCount));
+                return api(config);
+            }
+        }
+        emitWaking(false);
+
         console.error('❌ API Error:', {
             url: error.config?.url,
             status: error.response?.status,
@@ -35,7 +78,7 @@ api.interceptors.response.use(
         if (!error.response) {
             error.userMessage =
                 error.code === 'ECONNABORTED'
-                    ? 'The server took too long to respond. It may be starting up — try again in a moment.'
+                    ? 'The server is taking too long to respond. It may be starting up after a period of inactivity — please try again in a minute.'
                     : 'Could not reach the server. Check your connection and try again.';
         }
         // On 401, clear stale auth and redirect to login

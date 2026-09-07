@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { GraduationCap, DollarSign, Plus, X, Check, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import api from '../api/client';
+import api, { apiError } from '../api/client';
 import Field from '../components/ui/Field';
 import Input from '../components/ui/Input';
 import Textarea from '../components/ui/Textarea';
@@ -90,7 +90,7 @@ export default function BecomeTutor() {
             });
             setSubmitted(true);
         } catch (err) {
-            const msg = err.response?.data?.error || 'Failed to submit application';
+            const msg = apiError(err, 'Failed to submit application');
             toast.error(msg);
         } finally {
             setLoading(false);

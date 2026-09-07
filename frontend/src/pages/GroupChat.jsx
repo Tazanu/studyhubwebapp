@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, ArrowLeft, RefreshCw, Loader2, WifiOff, Paperclip, X, Image as ImageIcon, FileText, File, Reply, Edit2, Check, Search, Settings, Trash2, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import api from '../api/client';
+import api, { apiError } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import JoinRequestsPanel from '../components/JoinRequestsPanel';
@@ -143,7 +143,7 @@ export default function GroupChat() {
             setShowEditGroup(false);
             toast.success('Group updated!');
         } catch (err) {
-            toast.error(err.response?.data?.error || 'Failed to update group');
+            toast.error(apiError(err, 'Failed to update group'));
         } finally {
             setEditGroupSaving(false);
         }
@@ -156,7 +156,7 @@ export default function GroupChat() {
             toast.success('Group deleted');
             navigate('/groups');
         } catch (err) {
-            toast.error(err.response?.data?.error || 'Failed to delete group');
+            toast.error(apiError(err, 'Failed to delete group'));
         }
     };
 
@@ -201,7 +201,7 @@ export default function GroupChat() {
             setMessages(prev => prev.filter(m => m.id !== optimistic.id));
             setInput(text);
             setSelectedFile(null);
-            toast.error(err.response?.data?.error || 'Failed to send message');
+            toast.error(apiError(err, 'Failed to send message'));
         } finally {
             setSending(false);
         }
@@ -218,7 +218,7 @@ export default function GroupChat() {
             setEditText('');
             toast.success('Message edited');
         } catch (err) {
-            toast.error(err.response?.data?.error || 'Failed to edit message');
+            toast.error(apiError(err, 'Failed to edit message'));
         }
     };
 

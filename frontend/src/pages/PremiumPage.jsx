@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Crown, Lock, Unlock, Upload, Loader2, Star, AlertCircle, FileText, Image as ImageIcon, File, Download } from 'lucide-react';
 import { toast } from 'sonner';
-import api from '../api/client';
+import api, { apiError } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
 import Modal from '../components/ui/Modal';
@@ -240,7 +240,7 @@ function UploadModal({ open, onClose, onUploaded }) {
             await api.post('/premium/notes', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
             onUploaded();
         } catch (err) {
-            toast.error(err.response?.data?.error || 'Upload failed');
+            toast.error(apiError(err, 'Upload failed'));
             setUploading(false);
         }
     };
@@ -453,7 +453,7 @@ export default function PremiumPage() {
             }, 3000);
         } catch (err) {
             setPaying(false);
-            toast.error(err.response?.data?.error || 'Payment failed. Please try again.');
+            toast.error(apiError(err, 'Payment failed. Please try again.'));
         }
     };
 

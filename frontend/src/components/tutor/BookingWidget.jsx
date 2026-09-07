@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Users, Clock, Globe, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import api from '../../api/client';
+import api, { apiError } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import PaymentModal from './PaymentModal';
 import Modal from '../ui/Modal';
@@ -128,7 +128,7 @@ export default function BookingWidget({ tutor }) {
       }
       setShowPayment(true);
     } catch (err) {
-      const msg = err.response?.data?.error || 'Failed to create booking. Please try again.';
+      const msg = apiError(err, 'Failed to create booking. Please try again.');
       toast.error(msg);
     }
   };

@@ -12,6 +12,7 @@ import UpdateNotification from './components/UpdateNotification';
 import OfflineBanner from './components/OfflineBanner';
 import InstallPrompt from './components/InstallPrompt';
 import CookieNotice from './components/CookieNotice';
+import ServerWakingBanner from './components/ServerWakingBanner';
 import usePageTracking from './hooks/usePageTracking';
 
 // Eagerly loaded — always needed on first paint
@@ -141,6 +142,7 @@ function App() {
                     <OfflineBanner />
                     <InstallPrompt />
                     <CookieNotice />
+                    <ServerWakingBanner />
                 </BrowserRouter>
             </AuthProvider>
         </ThemeProvider>

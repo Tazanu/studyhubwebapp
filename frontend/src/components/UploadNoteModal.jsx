@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import api from '../api/client';
+import api, { apiError } from '../api/client';
 import Modal from './ui/Modal';
 import Field from './ui/Field';
 import Input from './ui/Input';
@@ -118,7 +118,7 @@ export default function UploadNoteModal({ open, onClose, onUploaded, canMarkPrem
 
             onUploaded();
         } catch (err) {
-            toast.error(err.response?.data?.error || 'Failed to upload note');
+            toast.error(apiError(err, 'Failed to upload note'));
             setUploading(false);
             setUploadProgress(0);
         }

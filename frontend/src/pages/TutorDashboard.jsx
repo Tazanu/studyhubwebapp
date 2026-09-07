@@ -6,7 +6,7 @@ import {
     Plus, Trash2, Edit3, Save,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import api from '../api/client';
+import api, { apiError } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
@@ -40,7 +40,7 @@ function AvailabilityManager({ tutorId }) {
             setShowForm(false);
             toast.success('Availability added!');
         } catch (err) {
-            toast.error(err.response?.data?.error || 'Failed to add slot');
+            toast.error(apiError(err, 'Failed to add slot'));
         } finally { setAdding(false); }
     };
 
@@ -140,7 +140,7 @@ function ProfileEditor({ tutor, onSaved }) {
             onSaved();
             setOpen(false);
         } catch (err) {
-            toast.error(err.response?.data?.error || 'Failed to save');
+            toast.error(apiError(err, 'Failed to save'));
         } finally { setSaving(false); }
     };
 

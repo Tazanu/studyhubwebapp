@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { CheckCircle, XCircle, Lock, Smartphone, Clock } from 'lucide-react';
-import api from '../../api/client';
+import api, { apiError } from '../../api/client';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 
@@ -130,7 +130,7 @@ export default function PaymentModal({
             });
             txId = data.txId;
         } catch (err) {
-            return fail(err.response?.data?.error || 'Could not start the payment. Please try again.');
+            return fail(apiError(err, 'Could not start the payment. Please try again.'));
         }
 
         setStatus('waiting');

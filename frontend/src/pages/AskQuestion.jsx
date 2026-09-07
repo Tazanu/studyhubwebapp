@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mic, MicOff, Image as ImageIcon, X } from 'lucide-react';
 import { toast } from 'sonner';
-import api from '../api/client';
+import api, { apiError } from '../api/client';
 import Sidebar from '../components/Sidebar';
 import Field from '../components/ui/Field';
 import Input from '../components/ui/Input';
@@ -73,7 +73,7 @@ export default function AskQuestion() {
             navigate(`/qa/${data.question.id}`);
         } catch (error) {
             console.error('Submit error:', error);
-            toast.error(error.response?.data?.error || 'Failed to post question');
+            toast.error(apiError(error, 'Failed to post question'));
         } finally {
             setSubmitting(false);
         }

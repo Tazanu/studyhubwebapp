@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Check, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import api from '../api/client';
+import api, { apiError } from '../api/client';
 import Button from './ui/Button';
 
 const API_ORIGIN = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '');
@@ -37,7 +37,7 @@ export default function JoinRequestsPanel({ groupId, isAdmin }) {
             toast.success('Request approved');
             fetchRequests();
         } catch (err) {
-            toast.error(err.response?.data?.error || 'Failed to approve request');
+            toast.error(apiError(err, 'Failed to approve request'));
         } finally {
             setProcessing(null);
         }
@@ -50,7 +50,7 @@ export default function JoinRequestsPanel({ groupId, isAdmin }) {
             toast.success('Request denied');
             fetchRequests();
         } catch (err) {
-            toast.error(err.response?.data?.error || 'Failed to deny request');
+            toast.error(apiError(err, 'Failed to deny request'));
         } finally {
             setProcessing(null);
         }

@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { Search, Plus, Users, UserCheck, SearchX,
     Laptop2, Calculator, FlaskConical, Cog, Briefcase,
     Scale, TrendingUp, Dna, Atom, WifiOff, Clock } from 'lucide-react';
-import api from '../api/client';
+import api, { apiError } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
 import MembersModal from '../components/MembersModal';
@@ -125,7 +125,7 @@ export default function Groups() {
                 ));
             }
         } catch (err) {
-            const msg = err.response?.data?.error || 'Failed to join group';
+            const msg = apiError(err, 'Failed to join group');
             // Already pending
             if (err.response?.data?.requestStatus === 'pending') {
                 toast.info('Your join request is already pending approval.');
@@ -155,7 +155,7 @@ export default function Groups() {
                     ? { ...g, isMember: true, memberRole: 'member', current_members: (g.current_members || 0) + 1 }
                     : g
             ));
-            toast.error(err.response?.data?.error || 'Failed to leave group');
+            toast.error(apiError(err, 'Failed to leave group'));
         }
     };
 
@@ -423,7 +423,7 @@ function CreateGroupModal({ open, onClose, onCreated }) {
             await api.post('/groups', form);
             onCreated();
         } catch (err) {
-            toast.error(err.response?.data?.error || 'Failed to create group');
+            toast.error(apiError(err, 'Failed to create group'));
         } finally {
             setSubmitting(false);
         }

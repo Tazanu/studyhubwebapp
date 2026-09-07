@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { User, Lock, Palette, Trash2, Eye, EyeOff, Sun, Moon, Shield, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import api from '../api/client';
+import api, { apiError } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import Sidebar from '../components/Sidebar';
@@ -107,7 +107,7 @@ function PasswordSection() {
             toast.success('Password changed!');
             setForm({ current: '', next: '', confirm: '' });
         } catch (err) {
-            toast.error(err.response?.data?.error || 'Failed to change password');
+            toast.error(apiError(err, 'Failed to change password'));
         } finally { setLoading(false); }
     };
 
