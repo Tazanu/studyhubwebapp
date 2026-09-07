@@ -2,6 +2,7 @@ const express = require('express');
 const prisma = require('../prisma');
 const authenticate = require('../middleware/auth');
 const upload = require('../middleware/upload');
+const { storedPathFor } = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -194,11 +195,11 @@ router.post('/', authenticate, upload.fields([{ name: 'audio', maxCount: 1 }, { 
         };
 
         if (req.files?.audio) {
-            data.audio_url = req.files.audio[0].path;
+            data.audio_url = storedPathFor(req.files.audio[0]);
         }
 
         if (req.files?.images) {
-            data.images = req.files.images.map(f => f.path);
+            data.images = req.files.images.map(storedPathFor);
         }
 
         const question = await prisma.questions.create({
@@ -239,11 +240,11 @@ router.patch('/:id', authenticate, upload.fields([{ name: 'audio', maxCount: 1 }
         if (tags) data.tags = JSON.parse(tags);
 
         if (req.files?.audio) {
-            data.audio_url = req.files.audio[0].path;
+            data.audio_url = storedPathFor(req.files.audio[0]);
         }
 
         if (req.files?.images) {
-            data.images = req.files.images.map(f => f.path);
+            data.images = req.files.images.map(storedPathFor);
         }
 
         const updated = await prisma.questions.update({
@@ -415,11 +416,11 @@ router.post('/:id/answers', authenticate, upload.fields([{ name: 'audio', maxCou
         };
 
         if (req.files?.audio) {
-            data.audio_url = req.files.audio[0].path;
+            data.audio_url = storedPathFor(req.files.audio[0]);
         }
 
         if (req.files?.images) {
-            data.images = req.files.images.map(f => f.path);
+            data.images = req.files.images.map(storedPathFor);
         }
 
         const answer = await prisma.answers.create({

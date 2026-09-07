@@ -7,7 +7,7 @@ const helmet = require('helmet');
 const http = require('http');
 const path = require('path');
 const { initializeSocket } = require('./socket');
-const { apiLimiter, authLimiter, loginLimiter, paymentLimiter } = require('./middleware/rateLimiter');
+const { apiLimiter, authLimiter, loginLimiter, paymentLimiter, paymentPollLimiter } = require('./middleware/rateLimiter');
 
 const authRoutes = require('./routes/auth');
 const groupRoutes = require('./routes/groups');
@@ -26,6 +26,22 @@ const PORT = process.env.PORT || 5000;
 
 // Required for express-rate-limit and secure cookies behind Render's reverse proxy
 app.set('trust proxy', 1);
+
+// ── Force HTTPS in production ──────────────────────────────────────────────
+// Hosts like Render terminate TLS at the proxy and forward plain HTTP, so
+// `req.secure` is false even on an https:// request — `x-forwarded-proto` is
+// the real signal, and it is trustworthy only because `trust proxy` is set
+// above. Redirect rather than reject so a typed http:// URL still works, and
+// use 308 to preserve the method and body of a non-GET request.
+//
+// This is the redirect; helmet's HSTS header (set below) is what stops the
+// browser making the insecure request a second time.
+if (process.env.NODE_ENV === 'production') {
+    app.use((req, res, next) => {
+        if (req.secure || req.get('x-forwarded-proto') === 'https') return next();
+        res.redirect(308, `https://${req.get('host')}${req.originalUrl}`);
+    });
+}
 
 const server = http.createServer(app);
 const io = initializeSocket(server);
@@ -70,19 +86,33 @@ app.use(cors({
 app.use(express.json({ limit: '1mb' }));
 
 // ── Uploads: served with no-sniff, no-cache for user content ──────────────
+// `uploads/protected/` holds paid content and is NOT public: it is reachable
+// only through routes that check entitlement first. Everything else here
+// (avatars, chat attachments, free notes) stays directly servable.
+const { PROTECTED_DIRNAME } = require('./services/fileAccess');
+
 app.use('/uploads', (req, res, next) => {
+    const first = req.path.split('/').filter(Boolean)[0];
+    if (first && first.toLowerCase() === PROTECTED_DIRNAME) {
+        return res.status(403).json({ error: 'This file requires purchase. Use the note download endpoint.' });
+    }
     res.set('X-Content-Type-Options', 'nosniff');
     res.set('Cache-Control', 'private, no-cache');
     next();
-}, express.static(path.join(__dirname, '..', 'uploads')));
+}, express.static(path.join(__dirname, '..', 'uploads'), { dotfiles: 'deny', index: false }));
 
 // ── Phase 2: Rate limiting ─────────────────────────────────────────────────
 app.use('/api/', apiLimiter);
 app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/change-password', authLimiter);
-app.use('/api/payments', paymentLimiter);
-app.use('/api/premium/pay', paymentLimiter);
+// Status polling is high-frequency by design, so it gets its own loose limiter.
+// It must be registered before the strict limiter below, which covers the
+// money-moving endpoints.
+app.use('/api/payments/status', paymentPollLimiter);
+app.use('/api/premium/pay/status', paymentPollLimiter);
+app.use('/api/payments/initiate', paymentLimiter);
+app.use('/api/premium/pay/initiate', paymentLimiter);
 
 // ── Health (no rate limit needed) ─────────────────────────────────────────
 app.get('/health', (req, res) => {
@@ -106,11 +136,27 @@ app.get('/', (req, res) => {
     res.json({ message: 'StudyHub API', version: '2.0.0' });
 });
 
+// ── 404 for unmatched API routes ───────────────────────────────────────────
+// Without this an unknown /api/* path falls through to the error handler and
+// surfaces as a confusing 500. Scoped to /api so it cannot shadow anything
+// else mounted on this server.
+app.use('/api', (req, res) => {
+    res.status(404).json({ error: `Cannot ${req.method} ${req.originalUrl}` });
+});
+
 // ── Phase 9: Global error handler — no stack traces to client ─────────────
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-    // Log full error server-side
-    console.error(`[${new Date().toISOString()}] ${req.method} ${req.path} —`, err.message);
+    // Log full error server-side. Not everything thrown is an Error — upload
+    // and SDK failures often reject with a plain object, whose `.message` is
+    // undefined — so fall back to dumping the whole value.
+    console.error(
+        `[${new Date().toISOString()}] ${req.method} ${req.path} —`,
+        err?.stack || err?.message || err
+    );
+    if (err && !err.stack && typeof err === 'object') {
+        console.error('  error detail:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
+    }
 
     // CORS errors
     if (err.message === 'Not allowed by CORS') {
@@ -120,10 +166,19 @@ app.use((err, req, res, next) => {
     if (err.message === 'File type not allowed') {
         return res.status(400).json({ error: 'File type not allowed' });
     }
+    // Upload backend misconfigured — say so instead of a blank 500.
+    if (/Must supply api_key|api_secret|cloud_name/i.test(err?.message || '')) {
+        return res.status(500).json({
+            error: 'File storage is not configured on the server. Set the CLOUDINARY_* variables in backend/.env.',
+        });
+    }
     // Generic — never expose internals
     res.status(err.status || 500).json({ error: 'An unexpected error occurred' });
 });
 
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    // Settles payments the browser stopped watching (tab closed, signal lost,
+    // PIN entered late) so a successful charge always grants access.
+    require('./services/reconciler').start();
 });

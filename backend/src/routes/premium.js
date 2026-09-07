@@ -3,10 +3,23 @@ const path = require('path');
 const prisma = require('../prisma');
 const authenticate = require('../middleware/auth');
 const upload = require('../middleware/upload');
-const { getPaymentClient, RandomGenerator } = require('../mesomb');
+const { storedPathFor } = require('../middleware/upload');
+const { validatePayer, initiateCollect, checkStatus } = require('../services/mobileMoney');
+const { protectFile, streamFile } = require('../services/fileAccess');
+const {
+    OrderError,
+    resolveOrder,
+    completeOrder,
+    failOrder,
+    describeGranted,
+    hasActiveSubscription,
+    hasPurchasedPremiumNote,
+} = require('../services/entitlements');
 
 const router = express.Router();
-const PLATFORM_FEE = 1000; // FCFA/month
+
+// How long a pending payment may sit before we give up on it.
+const PAYMENT_TTL_MS = 5 * 60 * 1000;
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -21,20 +34,6 @@ async function getUser(userId) {
     });
 }
 
-async function hasActiveSubscription(userId) {
-    const sub = await prisma.premium_subscriptions.findFirst({
-        where: { user_id: userId, status: 'active', expires_at: { gt: new Date() } },
-    });
-    return !!sub;
-}
-
-async function hasPurchasedNote(userId, noteId) {
-    const p = await prisma.purchased_notes.findUnique({
-        where: { user_id_premium_note_id: { user_id: userId, premium_note_id: noteId } },
-    });
-    return !!p;
-}
-
 // ── GET /premium/subscription/status ─────────────────────────────────────────
 router.get('/subscription/status', authenticate, async (req, res) => {
     try {
@@ -47,169 +46,132 @@ router.get('/subscription/status', authenticate, async (req, res) => {
             : null;
         res.json({ active, expires_at: sub?.expires_at || null });
     } catch (err) {
+        console.error('Subscription status error:', err);
         res.status(500).json({ error: 'Failed to check subscription' });
     }
 });
 
 // ── POST /premium/pay/initiate ────────────────────────────────────────────────
-// Initiates a MeSomb payment and returns a pending transaction ID.
-// The frontend then polls /pay/status/:txId until confirmed.
+// Amounts are resolved server-side by resolveOrder; the client never sends one.
+// Returns immediately with a txId, then the client polls /pay/status/:txId while
+// the payer approves the USSD prompt.
 router.post('/pay/initiate', authenticate, async (req, res) => {
     try {
         const { service, payer, type, noteId } = req.body;
-        // type: 'subscription' | 'note_purchase'
-        if (!service || !payer || !type) {
-            return res.status(400).json({ error: 'service, payer, and type are required' });
+
+        const check = validatePayer(service, payer);
+        if (!check.ok) return res.status(400).json({ error: check.error });
+
+        const order = await resolveOrder(req.userId, { type, noteId });
+        if (!(order.amount > 0)) {
+            return res.status(400).json({ error: 'This item has no price set. Contact support.' });
         }
 
-        const user = await getUser(req.userId);
-
-        let amount;
-        let description;
-        let meta = {};
-
-        if (type === 'subscription') {
-            if (user.role === 'admin') return res.status(400).json({ error: 'Admins do not need a subscription' });
-            const already = await hasActiveSubscription(req.userId);
-            if (already) return res.status(400).json({ error: 'You already have an active subscription' });
-            amount = PLATFORM_FEE;
-            description = 'Monthly premium publisher subscription';
-        } else if (type === 'note_purchase') {
-            if (!noteId) return res.status(400).json({ error: 'noteId is required for note_purchase' });
-            if (user.role === 'admin') return res.status(400).json({ error: 'Admins have free access' });
-            const note = await prisma.premium_notes.findUnique({ where: { id: parseInt(noteId) } });
-            if (!note || !note.is_active) return res.status(404).json({ error: 'Note not found' });
-            const already = await hasPurchasedNote(req.userId, parseInt(noteId));
-            if (already) return res.status(400).json({ error: 'You already own this note' });
-            amount = Number(note.price);
-            description = `Purchase premium note: ${note.title}`;
-            meta = { noteId: note.id, noteTitle: note.title };
-        } else {
-            return res.status(400).json({ error: 'Invalid type' });
-        }
-
-        // Create pending transaction in DB first
         const tx = await prisma.transactions.create({
             data: {
                 user_id: req.userId,
-                amount,
-                type,
+                amount: order.amount,
+                type: order.type,
                 status: 'pending',
-                description,
-                metadata: meta,
+                description: order.description,
+                metadata: order.metadata,
             },
         });
 
-        // Initiate MeSomb collect — this sends the USSD push to the phone
-        const payment = getPaymentClient();
-        let mesombRef = null;
+        let reference;
         try {
-            const response = await payment.makeCollect({
-                amount,
-                service,
-                payer,
-                country: 'CM',
-                currency: 'XAF',
-                nonce: RandomGenerator.nonce(),
-            });
-            mesombRef = response.transaction?.pk || null;
-
-            // Update transaction with MeSomb reference
-            await prisma.transactions.update({
-                where: { id: tx.id },
-                data: { reference: mesombRef },
+            reference = await initiateCollect({
+                amount: order.amount,
+                service: check.service,
+                payer: check.payer,
+                description: order.description,
+                externalId: tx.id,
             });
         } catch (mesombErr) {
-            // MeSomb call itself failed (network, auth, etc.)
-            await prisma.transactions.update({ where: { id: tx.id }, data: { status: 'failed' } });
+            await failOrder(tx.id);
             console.error('MeSomb initiate error:', mesombErr.message);
-            return res.status(500).json({ error: 'Failed to initiate payment. Please try again.' });
+            return res.status(502).json({ error: 'Could not reach the payment provider. Please try again.' });
         }
 
-        res.json({ success: true, txId: tx.id, mesombRef });
+        await prisma.transactions.update({ where: { id: tx.id }, data: { reference } });
+
+        res.json({
+            success: true,
+            txId: tx.id,
+            mesombRef: reference,
+            amount: order.amount,
+            message: 'Check your phone and enter your PIN to approve the payment.',
+        });
     } catch (err) {
+        if (err instanceof OrderError) return res.status(err.status).json({ error: err.message });
         console.error('Initiate payment error:', err);
-        res.status(500).json({ error: 'Failed to initiate payment', details: err.message });
+        res.status(500).json({ error: 'Failed to initiate payment' });
     }
 });
 
 // ── GET /premium/pay/status/:txId ─────────────────────────────────────────────
-// Polls the status of a pending payment. Frontend calls this every 3s.
+// Polled by the Premium page. Granting is idempotent, so overlapping polls are
+// safe: exactly one of them performs the grant.
 router.get('/pay/status/:txId', authenticate, async (req, res) => {
     try {
         const txId = parseInt(req.params.txId);
-        const tx = await prisma.transactions.findUnique({ where: { id: txId } });
+        if (!txId) return res.status(400).json({ error: 'Invalid transaction ID' });
 
+        const tx = await prisma.transactions.findUnique({ where: { id: txId } });
         if (!tx || tx.user_id !== req.userId) {
             return res.status(404).json({ error: 'Transaction not found' });
         }
 
-        // Already resolved
-        if (tx.status === 'completed') return res.json({ status: 'completed' });
-        if (tx.status === 'failed')    return res.json({ status: 'failed', error: 'Payment was declined or timed out.' });
+        if (tx.status === 'completed') {
+            return res.json({ status: 'completed', ...(await describeGranted(tx)) });
+        }
+        if (tx.status === 'failed') {
+            return res.json({ status: 'failed', error: 'Payment was declined or timed out.' });
+        }
 
-        // Still pending — check with MeSomb
+        const age = Date.now() - new Date(tx.created_at).getTime();
+
+        // No reference means the provider never accepted the request, so there
+        // is nothing to poll — expire it rather than stranding the row.
         if (!tx.reference) {
+            if (age > PAYMENT_TTL_MS) {
+                await failOrder(txId);
+                return res.json({ status: 'failed', error: 'Payment could not be started. Please try again.' });
+            }
             return res.json({ status: 'pending' });
         }
 
-        const payment = getPaymentClient();
-        let mesombStatus = 'PENDING';
+        let providerStatus;
         try {
-            const result = await payment.checkTransactions([tx.reference]);
-            // result is an array of transaction objects
-            const found = Array.isArray(result) ? result[0] : result;
-            mesombStatus = found?.status || found?.data?.status || 'PENDING';
+            providerStatus = await checkStatus(tx.reference);
         } catch (e) {
-            console.error('checkTransactions error:', e.message);
-            return res.json({ status: 'pending' }); // keep polling
+            console.error('checkStatus error:', e.message);
+            return res.json({ status: 'pending' }); // transient — keep polling
         }
 
-        if (mesombStatus === 'SUCCESS') {
-            // Grant access
-            await prisma.transactions.update({ where: { id: txId }, data: { status: 'completed' } });
-
-            if (tx.type === 'subscription') {
-                const expiresAt = new Date();
-                expiresAt.setMonth(expiresAt.getMonth() + 1);
-                const sub = await prisma.premium_subscriptions.create({
-                    data: {
-                        user_id: req.userId,
-                        expires_at: expiresAt,
-                        status: 'active',
-                        tx_ref: tx.reference,
-                    },
-                });
-                return res.json({ status: 'completed', type: 'subscription', subscription: sub });
-            }
-
-            if (tx.type === 'note_purchase') {
-                const noteId = tx.metadata?.noteId;
-                const note = await prisma.premium_notes.findUnique({ where: { id: noteId } });
-                await prisma.purchased_notes.create({
-                    data: {
-                        user_id: req.userId,
-                        premium_note_id: noteId,
-                        tx_ref: tx.reference,
-                        amount_paid: tx.amount,
-                    },
-                });
-                await prisma.premium_notes.update({
-                    where: { id: noteId },
-                    data: { downloads: { increment: 1 } },
-                });
-                return res.json({ status: 'completed', type: 'note_purchase', file_path: note?.file_path });
-            }
+        if (providerStatus === 'SUCCESS') {
+            const granted = await completeOrder(txId);
+            return res.json({ status: 'completed', ...granted });
         }
 
-        if (mesombStatus === 'FAILED' || mesombStatus === 'REVERSED') {
-            await prisma.transactions.update({ where: { id: txId }, data: { status: 'failed' } });
+        if (providerStatus === 'FAILED') {
+            await failOrder(txId);
             return res.json({ status: 'failed', error: 'Payment was declined. Please try again.' });
         }
 
-        // Still PENDING on MeSomb side
+        // Do NOT mark it failed here - the payer may still be approving, and the
+        // money could land after the page gives up. The background reconciler
+        // settles it either way.
+        if (age > PAYMENT_TTL_MS) {
+            return res.json({
+                status: 'processing',
+                message: 'Still waiting on the operator. If you approved the payment, access is granted automatically within a few minutes.',
+            });
+        }
+
         res.json({ status: 'pending' });
     } catch (err) {
+        if (err instanceof OrderError) return res.status(err.status).json({ error: err.message });
         console.error('Poll status error:', err);
         res.status(500).json({ error: 'Failed to check payment status' });
     }
@@ -237,6 +199,7 @@ router.get('/pay/receipt/:txId', authenticate, async (req, res) => {
             status: tx.status,
         });
     } catch (err) {
+        console.error('Receipt error:', err);
         res.status(500).json({ error: 'Failed to fetch receipt' });
     }
 });
@@ -259,15 +222,25 @@ router.get('/notes', authenticate, async (req, res) => {
             select: { premium_note_id: true },
         });
         const purchasedIds = new Set(purchases.map(p => p.premium_note_id));
-        const user = await getUser(req.userId);
 
-        const result = notes.map(n => ({
-            ...n,
-            purchased: user.role === 'admin' || purchasedIds.has(n.id),
-        }));
+        // A token can outlive its user (deleted account, restored database), so
+        // treat a missing record as an ordinary signed-in user rather than
+        // throwing on `user.role`.
+        const user = await getUser(req.userId);
+        const isAdmin = user?.role === 'admin';
+
+        const result = notes.map(n => {
+            // Free access: admins (everything) and each note's own uploader
+            // (their own notes only). Everyone else must buy it.
+            const purchased = isAdmin || n.uploaded_by === req.userId || purchasedIds.has(n.id);
+            // Never ship the storage path — access is through /notes/:id/file.
+            const { file_path, ...safe } = n;
+            return { ...safe, purchased };
+        });
 
         res.json(result);
     } catch (err) {
+        console.error('Fetch premium notes error:', err);
         res.status(500).json({ error: 'Failed to fetch premium notes' });
     }
 });
@@ -276,8 +249,8 @@ router.get('/notes', authenticate, async (req, res) => {
 router.post('/notes', authenticate, upload.single('file'), async (req, res) => {
     try {
         const user = await getUser(req.userId);
-        const isAdmin = user.role === 'admin';
-        const isApprovedTutor = user.tutors?.status === 'approved';
+        const isAdmin = user?.role === 'admin';
+        const isApprovedTutor = user?.tutors?.status === 'approved';
 
         if (!isAdmin && !isApprovedTutor) {
             return res.status(403).json({ error: 'Only approved tutors can post premium notes' });
@@ -289,12 +262,22 @@ router.post('/notes', authenticate, upload.single('file'), async (req, res) => {
         }
         if (!req.file) return res.status(400).json({ error: 'A file is required' });
 
+        // Paid content must not be publicly fetchable, so take it out of the
+        // public namespace before the record exists.
+        const rawPath = storedPathFor(req.file);
+        let storedPath = rawPath;
+        try {
+            storedPath = await protectFile(rawPath);
+        } catch (e) {
+            console.error('Failed to protect premium upload:', e.message);
+        }
+
         const note = await prisma.premium_notes.create({
             data: {
                 title,
                 description,
                 subject,
-                file_path: `/uploads/${req.file.filename}`,
+                file_path: storedPath,
                 file_type: path.extname(req.file.originalname).replace('.', ''),
                 price: parseFloat(price) || 0,
                 tags: tags ? tags.split(',').map(t => t.trim()) : [],
@@ -302,7 +285,7 @@ router.post('/notes', authenticate, upload.single('file'), async (req, res) => {
             },
         });
 
-        res.status(201).json({ success: true, note });
+        res.status(201).json({ success: true, note: { ...note, file_path: undefined } });
     } catch (err) {
         console.error('Premium note upload error:', err);
         res.status(500).json({ error: 'Failed to upload premium note' });
@@ -314,11 +297,54 @@ router.get('/notes/:id/access', authenticate, async (req, res) => {
     try {
         const noteId = parseInt(req.params.id);
         const user = await getUser(req.userId);
-        if (user.role === 'admin') return res.json({ access: true });
-        const purchased = await hasPurchasedNote(req.userId, noteId);
+        if (user?.role === 'admin') return res.json({ access: true });
+
+        // The uploader always has access to their own note; everyone else
+        // (other than admin, above) must have actually paid for it.
+        const note = await prisma.premium_notes.findUnique({ where: { id: noteId } });
+        if (note?.uploaded_by === req.userId) return res.json({ access: true });
+
+        const purchased = await hasPurchasedPremiumNote(req.userId, noteId);
         res.json({ access: purchased });
     } catch (err) {
+        console.error('Premium access check error:', err);
         res.status(500).json({ error: 'Failed to check access' });
+    }
+});
+
+// ── GET /premium/notes/:id/file ──────────────────────────────────────────────
+// Server-side gate for the actual file path. The client must never rely on its
+// own `purchased` flag to unlock a download.
+router.get('/notes/:id/file', authenticate, async (req, res) => {
+    try {
+        const noteId = parseInt(req.params.id);
+        if (!noteId) return res.status(400).json({ error: 'Invalid note ID' });
+
+        const note = await prisma.premium_notes.findUnique({ where: { id: noteId } });
+        if (!note || !note.is_active) return res.status(404).json({ error: 'Note not found' });
+
+        const user = await getUser(req.userId);
+        // Free access: admin, or the user who uploaded this specific note.
+        // Everyone else needs a completed purchase.
+        const allowed =
+            user?.role === 'admin' ||
+            note.uploaded_by === req.userId ||
+            (await hasPurchasedPremiumNote(req.userId, noteId));
+
+        if (!allowed) {
+            return res.status(402).json({ error: 'Purchase this note to download it' });
+        }
+
+        // Stream the bytes rather than returning a path — the client never gets
+        // a durable link to paid content.
+        await streamFile(res, note.file_path, {
+            filename: note.title,
+            fileType: note.file_type,
+            download: req.query.download === '1',
+        });
+    } catch (err) {
+        console.error('Premium note file error:', err.message);
+        if (!res.headersSent) res.status(500).json({ error: 'Failed to fetch note' });
     }
 });
 

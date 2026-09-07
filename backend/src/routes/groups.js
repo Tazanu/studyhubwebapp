@@ -3,6 +3,7 @@ const path = require('path');
 const prisma = require('../prisma');
 const authenticate = require('../middleware/auth');
 const upload = require('../middleware/upload');
+const { storedPathFor } = require('../middleware/upload');
 const { emitNewMessage, emitMessageEdit } = require('../socket');
 
 const router = express.Router();
@@ -349,7 +350,7 @@ router.post('/:id/messages', authenticate, upload.single('file'), async (req, re
         };
 
         if (req.file) {
-            data.file_url = `/uploads/${req.file.filename}`;
+            data.file_url = storedPathFor(req.file);
             data.file_type = path.extname(req.file.originalname).toLowerCase().replace('.', '');
         }
 

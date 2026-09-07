@@ -40,4 +40,15 @@ const paymentLimiter = rateLimit({
     message: { error: 'Too many payment requests. Please try again later.' },
 });
 
-module.exports = { apiLimiter, authLimiter, loginLimiter, paymentLimiter };
+// Payment status polling — the client polls every few seconds for up to five
+// minutes per payment, so this must be far looser than paymentLimiter. Applying
+// the strict limiter here would let a single payment exhaust the whole quota.
+const paymentPollLimiter = rateLimit({
+    windowMs: int('RATE_PAYMENT_POLL_WINDOW_MS', 60 * 60 * 1000), // 1 hour
+    max: int('RATE_PAYMENT_POLL_MAX', 600),
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many status checks. Please try again later.' },
+});
+
+module.exports = { apiLimiter, authLimiter, loginLimiter, paymentLimiter, paymentPollLimiter };

@@ -1,6 +1,7 @@
 const express = require('express');
 const prisma = require('../prisma');
 const authenticate = require('../middleware/auth');
+const { consumeCredit, creditBalance, availableCreditPacks, refundCredit } = require('../services/entitlements');
 
 const router = express.Router();
 
@@ -238,7 +239,7 @@ router.post('/:id/bookings', authenticate, async (req, res) => {
     try {
         const tutorId = parseInt(req.params.id);
         if (isNaN(tutorId)) return res.status(400).json({ error: 'Invalid tutor ID' });
-        const { subject, sessionDate, startTime, endTime, durationHours, totalAmount } = req.body;
+        const { subject, sessionDate, startTime, endTime, durationHours } = req.body;
 
         if (!subject || !sessionDate || !startTime || !endTime || !durationHours) {
             return res.status(400).json({ error: 'Subject, date, start/end time, and duration are required' });
@@ -249,10 +250,12 @@ router.post('/:id/bookings', authenticate, async (req, res) => {
             return res.status(404).json({ error: 'Tutor not found' });
         }
 
-        // Use totalAmount sent from frontend (based on fixed 500/hr rate).
-        // Fall back to hourly_rate from DB only if not provided.
+        // Price is derived server-side only — never trust an amount from the
+        // client, or a booking can be created for any price the caller likes.
         const BASE_RATE = 500;
-        const amount = totalAmount ?? (parseFloat(tutor.hourly_rate) || BASE_RATE) * parseFloat(durationHours);
+        const hours = parseFloat(durationHours);
+        if (!(hours > 0)) return res.status(400).json({ error: 'Invalid session duration' });
+        const amount = (parseFloat(tutor.hourly_rate) || BASE_RATE) * hours;
 
         // Parse times safely — pad to HH:MM if needed
         const parseTime = t => {
@@ -261,6 +264,10 @@ router.post('/:id/bookings', authenticate, async (req, res) => {
             const m = Math.min(parseInt(parts[1]) || 0, 59);
             return new Date(`1970-01-01T${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:00`);
         };
+
+        // If the student has a prepaid pack with this tutor, spend a session
+        // from it instead of sending them to the payment flow.
+        const credit = await consumeCredit(req.userId, tutorId);
 
         const booking = await prisma.bookings.create({
             data: {
@@ -271,12 +278,18 @@ router.post('/:id/bookings', authenticate, async (req, res) => {
                 start_time: parseTime(startTime),
                 end_time: parseTime(endTime),
                 duration_hours: parseFloat(durationHours),
-                total_amount: amount,
-                status: 'pending'
+                total_amount: credit ? 0 : amount,
+                status: credit ? 'confirmed' : 'pending',
+                notes: credit ? `Paid with ${credit.pack.plan} session credit` : undefined,
             }
         });
 
-        res.status(201).json({ success: true, booking });
+        res.status(201).json({
+            success: true,
+            booking,
+            paidWithCredit: !!credit,
+            creditsRemaining: credit ? credit.remaining : await creditBalance(req.userId, tutorId),
+        });
     } catch (error) {
         console.error('Create booking error:', error);
         res.status(500).json({ error: 'Failed to create booking' });
@@ -310,15 +323,54 @@ router.patch('/bookings/:id/status', authenticate, async (req, res) => {
             return res.status(403).json({ error: 'Not authorized to update this booking' });
         }
 
+        // Cancelling a session that was paid with a credit puts it back on the
+        // pack, so the student does not lose what they already bought.
+        let creditRefunded = false;
+        const wasCreditPaid = /session credit/i.test(booking.notes || '');
+        if (status === 'cancelled' && booking.status !== 'cancelled' && wasCreditPaid) {
+            const packs = await availableCreditPacks(booking.student_id, booking.tutor_id);
+            const spent = packs.find(p => p.used > 0)
+                ?? (await prisma.session_credits.findFirst({
+                    where: { user_id: booking.student_id, tutor_id: booking.tutor_id, used: { gt: 0 } },
+                    orderBy: { created_at: 'asc' },
+                }));
+            if (spent) creditRefunded = await refundCredit(spent.id);
+        }
+
         const updated = await prisma.bookings.update({
             where: { id: bookingId },
             data: { status }
         });
 
-        res.json({ success: true, booking: updated });
+        res.json({ success: true, booking: updated, creditRefunded });
     } catch (error) {
         console.error('Update booking error:', error);
         res.status(500).json({ error: 'Failed to update booking' });
+    }
+});
+
+// ── GET /tutors/:id/credits ──────────────────────────────────────────────────
+// Prepaid sessions the signed-in student has left with this tutor.
+router.get('/:id/credits', authenticate, async (req, res) => {
+    try {
+        const tutorId = parseInt(req.params.id);
+        if (isNaN(tutorId)) return res.status(400).json({ error: 'Invalid tutor ID' });
+
+        const packs = await availableCreditPacks(req.userId, tutorId);
+        res.json({
+            balance: packs.reduce((sum, p) => sum + (p.total - p.used), 0),
+            packs: packs.map(p => ({
+                id: p.id,
+                plan: p.plan,
+                total: p.total,
+                used: p.used,
+                remaining: p.total - p.used,
+                expires_at: p.expires_at,
+            })),
+        });
+    } catch (error) {
+        console.error('Get credits error:', error);
+        res.status(500).json({ error: 'Failed to fetch session credits' });
     }
 });
 

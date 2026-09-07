@@ -2,6 +2,7 @@ const express = require('express');
 const prisma = require('../prisma');
 const authenticate = require('../middleware/auth');
 const upload = require('../middleware/upload');
+const { storedPathFor } = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -31,7 +32,7 @@ router.patch('/profile', authenticate, upload.single('profile_picture'), async (
         if (university)   data.university    = university.trim();
         if (fieldOfStudy) data.field_of_study = fieldOfStudy.trim();
         if (bio !== undefined) data.bio      = bio.trim().slice(0, 300);
-        if (req.file)     data.profile_picture = req.file.path;
+        if (req.file)     data.profile_picture = storedPathFor(req.file);
 
         const user = await prisma.users.update({
             where: { id: req.userId },

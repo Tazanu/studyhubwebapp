@@ -3,7 +3,9 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const prisma = require('../prisma');
 const upload = require('../middleware/upload');
+const { storedPathFor } = require('../middleware/upload');
 const authenticate = require('../middleware/auth');
+const honeypot = require('../middleware/honeypot');
 
 const router = express.Router();
 
@@ -24,7 +26,10 @@ router.post('/register', (req, res, next) => {
     } else {
         next();
     }
-}, async (req, res) => {
+// Placed after the multer step: with a multipart submission req.body does not
+// exist until multer has parsed it, so an earlier honeypot check would always
+// see undefined and never fire.
+}, honeypot, async (req, res) => {
     try {
         const { email, password, firstName, lastName, university, fieldOfStudy, becomeTutor, tutorApplication } = req.body;
 
@@ -74,7 +79,7 @@ router.post('/register', (req, res, next) => {
 
         let tutorStatus = null;
         if (isTutorApp && tutorData) {
-            const proofUrl = req.file ? req.file.path : null;
+            const proofUrl = storedPathFor(req.file);
             await prisma.tutors.create({
                 data: {
                     user_id: user.id,
