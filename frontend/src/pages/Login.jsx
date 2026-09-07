@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, WifiOff } from 'lucide-react';
-import api from '../api/client';
+import api, { apiError } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import Field from '../components/ui/Field';
@@ -67,7 +67,7 @@ export default function Login() {
             navigate('/dashboard');
         } catch (err) {
             // Keep email — only flag password field on auth failure
-            setErrors({ general: err.response?.data?.error || 'Login failed. Please try again.' });
+            setErrors({ general: apiError(err, 'Login failed. Please try again.') });
             setPassword('');
         } finally {
             setLoading(false);

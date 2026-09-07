@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, WifiOff, BookOpen, GraduationCap, Plus, X, CheckCircle2 } from 'lucide-react';
-import api from '../api/client';
+import api, { apiError } from '../api/client';
 import HoneypotField, { HONEYPOT_FIELD } from '../components/ui/HoneypotField';
 import { useAuth } from '../context/AuthContext';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
@@ -377,7 +377,7 @@ export default function Register() {
                 navigate('/dashboard');
             }
         } catch (err) {
-            setErrors({ general: err.response?.data?.error || 'Registration failed. Please try again.' });
+            setErrors({ general: apiError(err, 'Registration failed. Please try again.') });
         } finally {
             setLoading(false);
         }

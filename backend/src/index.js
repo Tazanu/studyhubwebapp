@@ -67,7 +67,24 @@ app.use(helmet({
 // ── Phase 6: CORS — no wildcard with credentials ───────────────────────────
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL || 'http://localhost:5173')
     .split(',')
-    .map(o => o.trim());
+    .map(o => o.trim())
+    .filter(Boolean);
+
+// Shout about a deployed server still carrying the localhost default. Left
+// unnoticed it rejects every browser request with an opaque 403, which reads
+// like a frontend bug and is miserable to trace back to a missing env var.
+if (process.env.NODE_ENV === 'production' && allowedOrigins.every(o => /localhost|127\.0\.0\.1/.test(o))) {
+    console.error(
+        '\n*** CORS MISCONFIGURED ***\n' +
+        `  ALLOWED_ORIGINS is ${JSON.stringify(allowedOrigins)} on a production server.\n` +
+        '  Every browser request will be rejected with 403.\n' +
+        '  Set ALLOWED_ORIGINS to the deployed frontend origin, e.g.\n' +
+        '    ALLOWED_ORIGINS=https://your-app.vercel.app\n' +
+        '  (scheme included, no trailing slash, comma-separated for several)\n'
+    );
+} else {
+    console.log('[cors] allowed origins:', allowedOrigins.join(', '));
+}
 
 app.use(cors({
     origin: (origin, callback) => {
@@ -75,6 +92,12 @@ app.use(cors({
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
+            // Name the rejected origin. Without it the logs say only that
+            // something was blocked, and a trailing slash or http-vs-https
+            // mismatch is invisible.
+            console.warn(
+                `[cors] rejected origin ${JSON.stringify(origin)} — not in ${JSON.stringify(allowedOrigins)}`
+            );
             callback(new Error('Not allowed by CORS'));
         }
     },

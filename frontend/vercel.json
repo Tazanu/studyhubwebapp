@@ -1,0 +1,30 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+
+  "//": [
+    "SPA fallback. Without it, a refresh on /login or any deep link 404s:",
+    "Vercel looks for a file at that path and there isn't one, because the",
+    "router resolves these in the browser. Rewrites run only after the",
+    "filesystem check, so real files (assets, sitemap.xml, og-image.png)",
+    "are still served normally and never reach this rule."
+  ],
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+
+  "headers": [
+    {
+      "//": "A cached service worker keeps serving the old app forever, so it must always be revalidated. Same for the HTML shell that points at hashed bundles.",
+      "source": "/sw.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
+    }
+  ]
+}
