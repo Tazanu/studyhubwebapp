@@ -1,11 +1,14 @@
-import { useState } from 'react';
-import { Calendar, Clock, Users, Globe, X, Check } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Users, Clock, Globe, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import PaymentModal from './PaymentModal';
+import Modal from '../ui/Modal';
+import Button from '../ui/Button';
 import { calcSessionPrice } from '../../data/normalizeTutor';
+import { cn } from '../../lib/cn';
 
 const sessionTypes = [
   { id: '1on1', label: '1-on-1', icon: Users },
@@ -15,6 +18,20 @@ const sessionTypes = [
 
 const durations = [1, 2, 3, 4, 5, 6, 7, 8]; // hours per day
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+function Pill({ active, onClick, children }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'px-3 py-2 rounded-lg text-sm font-medium border transition-all whitespace-nowrap',
+        active ? 'border-primary bg-primary-subtle text-primary' : 'border-border bg-surface text-fg',
+      )}
+    >
+      {children}
+    </button>
+  );
+}
 
 export default function BookingWidget({ tutor }) {
   const { user } = useAuth();
@@ -26,7 +43,18 @@ export default function BookingWidget({ tutor }) {
   const [showPayment, setShowPayment] = useState(false);
   const [bookingData, setBookingData] = useState(null);
   const [pendingBookingId, setPendingBookingId] = useState(null);
+  const [credits, setCredits] = useState(0);
   const navigate = useNavigate();
+
+  // Prepaid sessions the student already holds with this tutor.
+  useEffect(() => {
+    if (!user || !tutor?.id) return;
+    let cancelled = false;
+    api.get(`/tutors/${tutor.id}/credits`)
+      .then(({ data }) => { if (!cancelled) setCredits(data.balance || 0); })
+      .catch(() => { /* credits are a bonus, not required to book */ });
+    return () => { cancelled = true; };
+  }, [user, tutor?.id]);
 
   const calculatePrice = () => calcSessionPrice(duration, sessionType);
 
@@ -40,7 +68,7 @@ export default function BookingWidget({ tutor }) {
       toast.error('Please select a time slot');
       return;
     }
-    
+
     const booking = {
       tutor: tutor.name,
       tutorId: tutor.id,
@@ -51,11 +79,11 @@ export default function BookingWidget({ tutor }) {
       price: calculatePrice(),
       date: new Date().toISOString()
     };
-    
+
     setBookingData(booking);
     setShowModal(true);
   };
-  
+
   const confirmBooking = async () => {
     try {
       const dayIndex = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].indexOf(bookingData.day);
@@ -83,6 +111,16 @@ export default function BookingWidget({ tutor }) {
       setPendingBookingId(data.booking?.id ?? null);
       setShowModal(false);
 
+      // A prepaid pack covers the session, so there is nothing left to pay.
+      if (data.paidWithCredit) {
+        setCredits(data.creditsRemaining ?? 0);
+        toast.success(
+          `Session booked with a prepaid credit. ${data.creditsRemaining} session${data.creditsRemaining === 1 ? '' : 's'} left.`
+        );
+        setSelectedTime(null);
+        return;
+      }
+
       if (bookingData.price === 0) {
         toast.success('Free trial session booked!');
         setSelectedTime(null);
@@ -102,190 +140,149 @@ export default function BookingWidget({ tutor }) {
     setSelectedDay('Monday');
     setPendingBookingId(null);
   };
-  
+
   const closeModal = () => {
     setShowModal(false);
     setBookingData(null);
   };
 
   return (
-    <section className="px-4 sm:px-6 py-12 border-t" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}>
+    <section className="px-4 sm:px-6 py-12 border-t border-border bg-surface">
       <div className="max-w-5xl mx-auto">
-        <h2 className="text-2xl font-bold mb-6" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Book a Session</h2>
-        
+        <h2 className="text-2xl font-bold mb-6" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Book a Session</h2>
+
         <div className="grid lg:grid-cols-2 gap-8">
           <div className="space-y-4">
             <div>
               <label className="block font-medium mb-2">Session Type</label>
               <div className="grid grid-cols-3 gap-2">
                 {sessionTypes.map(type => (
-                  <button
-                    key={type.id}
-                    onClick={() => setSessionType(type.id)}
-                    className="p-3 rounded-lg border font-medium transition-all"
-                    style={{
-                      borderColor: sessionType === type.id ? 'var(--accent-blue)' : 'var(--border-subtle)',
-                      background: sessionType === type.id ? 'rgba(96,165,250,0.1)' : 'transparent',
-                      color: sessionType === type.id ? 'var(--accent-blue)' : 'var(--text-primary)'
-                    }}
-                  >
+                  <Pill key={type.id} active={sessionType === type.id} onClick={() => setSessionType(type.id)}>
                     {type.label}
-                  </button>
+                  </Pill>
                 ))}
               </div>
             </div>
-            
+
             <div>
               <label className="block font-medium mb-2">Duration</label>
               <div className="flex flex-wrap gap-2">
                 {durations.map(d => (
-                  <button
-                    key={d}
-                    onClick={() => setDuration(d)}
-                    className="px-3 py-2 rounded-lg border font-medium transition-all min-w-[44px] text-center"
-                    style={{
-                      borderColor: duration === d ? 'var(--accent-blue)' : 'var(--border-subtle)',
-                      background: duration === d ? 'rgba(96,165,250,0.1)' : 'transparent',
-                      color: duration === d ? 'var(--accent-blue)' : 'var(--text-primary)'
-                    }}
-                  >
+                  <Pill key={d} active={duration === d} onClick={() => setDuration(d)}>
                     {d}h
-                  </button>
+                  </Pill>
                 ))}
               </div>
             </div>
-            
+
             <div>
               <label className="flex items-center gap-2 font-medium mb-2">
                 <Globe className="w-4 h-4" />
                 Timezone: {tutor.availability.timezone}
               </label>
             </div>
-            
-            <div className="p-4 rounded-xl" style={{ background: 'rgba(96,165,250,0.05)' }}>
+
+            <div className="p-4 rounded-xl bg-primary-subtle">
               <div className="flex items-baseline gap-2">
                 <span className="font-semibold text-2xl">{calculatePrice().toLocaleString()}</span>
-                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>FCFA</span>
+                <span className="text-sm text-fg-secondary">FCFA</span>
               </div>
-              <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <div className="text-sm text-fg-secondary">
                 per {duration} hour{duration > 1 ? 's' : ''} {sessionType === '1on1' ? '1-on-1' : sessionType} session
               </div>
               {sessionType === 'trial' && (
-                <div className="mt-2 text-xs font-medium" style={{ color: '#34d399' }}>🎉 First trial session is FREE!</div>
+                <div className="mt-2 text-xs font-medium text-success">🎉 First trial session is FREE!</div>
               )}
             </div>
           </div>
-          
+
           <div>
             <label className="block font-medium mb-2">Select Day & Time</label>
             <div className="mb-4 overflow-x-auto">
               <div className="flex gap-2">
                 {days.map(day => (
-                  <button
-                    key={day}
-                    onClick={() => setSelectedDay(day)}
-                    className="px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all"
-                    style={{
-                      borderColor: selectedDay === day ? 'var(--accent-blue)' : 'var(--border-subtle)',
-                      background: selectedDay === day ? 'rgba(96,165,250,0.1)' : 'var(--bg-card)',
-                      color: selectedDay === day ? 'var(--accent-blue)' : 'var(--text-primary)',
-                      border: '1px solid'
-                    }}
-                  >
+                  <Pill key={day} active={selectedDay === day} onClick={() => setSelectedDay(day)}>
                     {day.slice(0, 3)}
-                  </button>
+                  </Pill>
                 ))}
               </div>
             </div>
-            
+
             <div className="grid grid-cols-3 gap-2 mb-4">
               {tutor.availability.schedule[selectedDay]?.map(time => (
                 <button
                   key={time}
                   onClick={() => setSelectedTime(time)}
-                  className="p-2 rounded-lg border text-sm font-medium transition-all hover:shadow-sm"
-                  style={{
-                    borderColor: selectedTime === time ? 'var(--accent-blue)' : 'var(--border-subtle)',
-                    background: selectedTime === time ? 'rgba(96,165,250,0.1)' : 'var(--bg-card)',
-                    color: selectedTime === time ? 'var(--accent-blue)' : 'var(--text-primary)'
-                  }}
+                  className={cn(
+                    'p-2 rounded-lg border text-sm font-medium transition-all hover:shadow-sm',
+                    selectedTime === time ? 'border-primary bg-primary-subtle text-primary' : 'border-border bg-surface text-fg',
+                  )}
                 >
                   {time}
                 </button>
-              )) || <p className="col-span-3 text-center py-4" style={{ color: 'var(--text-secondary)' }}>No available slots</p>}
+              )) || <p className="col-span-3 text-center py-4 text-fg-secondary">No available slots</p>}
             </div>
-            
-            <button
-              onClick={handleBook}
-              disabled={!selectedTime}
-              className="w-full py-3 rounded-xl font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02]"
-              style={{ background: 'linear-gradient(135deg, #0052cc, #0066ff)' }}
-            >
+
+            <Button onClick={handleBook} disabled={!selectedTime} fullWidth size="lg" className="hover:scale-[1.02]">
               Book Now
-            </button>
+            </Button>
           </div>
         </div>
       </div>
-      
-      {showModal && bookingData && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 px-4" style={{ background: 'rgba(0,0,0,0.6)' }} onClick={closeModal}>
-          <div className="p-6 rounded-2xl max-w-md w-full animate-scale" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }} onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-xl font-bold">Confirm Booking</h3>
-              <button onClick={closeModal} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
+
+      <Modal open={showModal && !!bookingData} onClose={closeModal} title="Confirm Booking" size="sm">
+        {bookingData && (
+          <>
             <div className="space-y-3 mb-6">
-              <div className="flex justify-between py-2 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Tutor</span>
+              <div className="flex justify-between py-2 border-b border-border">
+                <span className="text-fg-secondary">Tutor</span>
                 <span className="font-medium">{bookingData.tutor}</span>
               </div>
-              <div className="flex justify-between py-2 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Date</span>
+              <div className="flex justify-between py-2 border-b border-border">
+                <span className="text-fg-secondary">Date</span>
                 <span className="font-medium">{bookingData.day}</span>
               </div>
-              <div className="flex justify-between py-2 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Time</span>
+              <div className="flex justify-between py-2 border-b border-border">
+                <span className="text-fg-secondary">Time</span>
                 <span className="font-medium">{bookingData.time}</span>
               </div>
-              <div className="flex justify-between py-2 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Duration</span>
+              <div className="flex justify-between py-2 border-b border-border">
+                <span className="text-fg-secondary">Duration</span>
                 <span className="font-medium">{bookingData.duration} hour{bookingData.duration > 1 ? 's' : ''}</span>
               </div>
-              <div className="flex justify-between py-2 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Session Type</span>
+              <div className="flex justify-between py-2 border-b border-border">
+                <span className="text-fg-secondary">Session Type</span>
                 <span className="font-medium capitalize">{bookingData.sessionType === '1on1' ? '1-on-1' : bookingData.sessionType}</span>
               </div>
               <div className="flex justify-between py-2">
                 <span className="font-semibold">Total Price</span>
-                <span className="font-bold text-xl" style={{ color: 'var(--accent-blue)' }}>
-                  {bookingData.price === 0 ? 'FREE' : `${bookingData.price.toLocaleString()} FCFA`}
+                <span className="font-bold text-xl text-primary">
+                  {credits > 0
+                    ? 'Prepaid'
+                    : bookingData.price === 0
+                      ? 'FREE'
+                      : `${bookingData.price.toLocaleString()} FCFA`}
                 </span>
               </div>
+              {credits > 0 && (
+                <p className="text-sm text-fg-secondary pt-1">
+                  Covered by your session pack — {credits} session{credits === 1 ? '' : 's'} remaining.
+                </p>
+              )}
             </div>
-            
+
             <div className="flex gap-3">
-              <button
-                onClick={closeModal}
-                className="flex-1 py-3 rounded-xl font-semibold border transition-all hover:bg-gray-100 dark:hover:bg-gray-800"
-                style={{ borderColor: 'var(--border-subtle)' }}
-              >
+              <Button onClick={closeModal} variant="secondary" fullWidth>
                 Cancel
-              </button>
-              <button
-                onClick={confirmBooking}
-                className="flex-1 py-3 rounded-xl font-semibold text-white transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
-                style={{ background: 'linear-gradient(135deg, #0052cc, #0066ff)' }}
-              >
-                <Check className="w-5 h-5" />
+              </Button>
+              <Button onClick={confirmBooking} icon={Check} fullWidth className="hover:scale-[1.02]">
                 Confirm
-              </button>
+              </Button>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
+
       {/* Payment modal */}
       <PaymentModal
         open={showPayment}
@@ -293,8 +290,7 @@ export default function BookingWidget({ tutor }) {
         onSuccess={handlePaymentSuccess}
         amount={bookingData?.price ?? 0}
         description={`Session with ${tutor.name} · ${bookingData?.duration} min`}
-        type="tutor_booking"
-        metadata={{ bookingId: pendingBookingId, tutorId: tutor.id }}
+        order={{ type: 'tutor_booking', bookingId: pendingBookingId }}
       />
     </section>
   );

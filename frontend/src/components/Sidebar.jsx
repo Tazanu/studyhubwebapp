@@ -6,7 +6,6 @@ import {
     GraduationCap, User, Settings, LogOut, Menu, X, ShieldCheck, Crown, BookOpen,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import StudyHubLogo from './StudyHubLogo';
 
 const BASE_NAV = [
@@ -30,27 +29,23 @@ function NavItem({ to, icon: Icon, label, onClick }) {
             onClick={onClick}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
-            className="relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-            style={{
-                color: active ? '#fff' : 'var(--text-secondary)',
-                zIndex: 1,
-                outlineColor: 'var(--accent-blue)',
-            }}
+            className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${active ? 'text-white' : 'text-fg-secondary'}`}
+            style={{ zIndex: 1 }}
         >
             {/* active background pill — animates between items */}
             {active && (
                 <motion.span
                     layoutId="sidebar-active"
-                    className="absolute inset-0 rounded-xl"
-                    style={{ background: 'var(--accent-blue)', zIndex: -1 }}
+                    className="absolute inset-0 rounded-xl bg-primary"
+                    style={{ zIndex: -1 }}
                     transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                 />
             )}
             {/* hover background */}
             {!active && hovered && (
                 <motion.span
-                    className="absolute inset-0 rounded-xl"
-                    style={{ background: 'var(--bg-hover)', zIndex: -1 }}
+                    className="absolute inset-0 rounded-xl bg-surface-hover"
+                    style={{ zIndex: -1 }}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -87,7 +82,7 @@ function SidebarContent({ onClose }) {
     return (
         <div className="flex flex-col h-full">
             {/* logo */}
-            <div className="flex items-center justify-between px-4 py-5 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+            <div className="flex items-center justify-between px-4 py-5 border-b border-border">
                 <Link to="/" className="flex items-center" onClick={onClose}>
                     <StudyHubLogo size="sm" showText={true} />
                 </Link>
@@ -96,8 +91,7 @@ function SidebarContent({ onClose }) {
                         onClick={onClose}
                         whileHover={{ rotate: 90, scale: 1.1 }}
                         transition={{ type: 'spring', stiffness: 300, damping: 18 }}
-                        className="p-1 rounded-lg"
-                        style={{ color: 'var(--text-secondary)' }}
+                        className="p-1 rounded-lg text-fg-secondary"
                     >
                         <X size={20} />
                     </motion.button>
@@ -110,16 +104,15 @@ function SidebarContent({ onClose }) {
             </nav>
 
             {/* user footer */}
-            <div className="px-3 py-4 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+            <div className="px-3 py-4 border-t border-border">
                 <motion.div
-                    className="flex items-center gap-3 px-3 py-2 mb-2 rounded-xl"
-                    style={{ background: 'var(--bg-hover)' }}
+                    className="flex items-center gap-3 px-3 py-2 mb-2 rounded-xl bg-surface-hover"
                     whileHover={{ scale: 1.01 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                 >
                     <motion.div
                         className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
-                        style={{ background: 'linear-gradient(135deg, #0052cc, #0066ff)' }}
+                        style={{ background: 'var(--gradient-primary)' }}
                         whileHover={{ scale: 1.15 }}
                         transition={{ type: 'spring', stiffness: 400, damping: 20 }}
                     >
@@ -127,20 +120,19 @@ function SidebarContent({ onClose }) {
                     </motion.div>
                     <div className="min-w-0">
                         <p className="text-sm font-semibold truncate">{user?.first_name} {user?.last_name}</p>
-                        <p className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>{user?.field_of_study}</p>
+                        <p className="text-xs truncate text-fg-secondary">{user?.field_of_study}</p>
                     </div>
                 </motion.div>
                 <motion.button
                     onClick={handleLogout}
                     onHoverStart={() => setLogoutHover(true)}
                     onHoverEnd={() => setLogoutHover(false)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium focus-visible:outline focus-visible:outline-2"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                     animate={{
-                        background: logoutHover ? 'rgba(239,68,68,0.1)' : 'transparent',
-                        color: logoutHover ? '#ef4444' : 'var(--text-secondary)',
+                        background: logoutHover ? 'var(--status-danger-bg)' : 'transparent',
+                        color: logoutHover ? 'var(--status-danger)' : 'var(--ink-secondary)',
                     }}
                     transition={{ duration: 0.18 }}
-                    style={{ outlineColor: 'var(--accent-blue)' }}
                 >
                     <motion.span
                         animate={logoutHover ? { x: -3 } : { x: 0 }}
@@ -158,8 +150,6 @@ function SidebarContent({ onClose }) {
 
 export default function Sidebar() {
     const [open, setOpen] = useState(false);
-    const { theme } = useTheme();
-    const bg = theme === 'dark' ? 'rgba(18,18,18,0.98)' : 'rgba(255,255,255,0.98)';
 
     return (
         <>
@@ -168,18 +158,14 @@ export default function Sidebar() {
                 onClick={() => setOpen(true)}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="fixed top-4 left-4 z-50 lg:hidden w-10 h-10 rounded-xl border flex items-center justify-center"
-                style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
+                className="fixed top-4 left-4 z-50 lg:hidden w-10 h-10 rounded-xl border border-border bg-surface text-fg flex items-center justify-center"
                 aria-label="Open menu"
             >
                 <Menu size={20} />
             </motion.button>
 
             {/* desktop sidebar */}
-            <aside
-                className="hidden lg:flex flex-col fixed top-0 left-0 h-full w-60 border-r z-40"
-                style={{ background: bg, borderColor: 'var(--border-subtle)' }}
-            >
+            <aside className="hidden lg:flex flex-col fixed top-0 left-0 h-full w-60 border-r border-border bg-surface/95 backdrop-blur-md z-40">
                 <SidebarContent />
             </aside>
 
@@ -198,8 +184,7 @@ export default function Sidebar() {
                         />
                         <motion.aside
                             key="drawer"
-                            className="fixed top-0 left-0 h-full w-72 z-50 flex flex-col border-r lg:hidden"
-                            style={{ background: bg, borderColor: 'var(--border-subtle)' }}
+                            className="fixed top-0 left-0 h-full w-72 z-50 flex flex-col border-r border-border bg-surface/95 backdrop-blur-md lg:hidden"
                             initial={{ x: -288 }}
                             animate={{ x: 0 }}
                             exit={{ x: -288 }}

@@ -1,12 +1,21 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Edit2, GraduationCap, BookOpen, MapPin, Users, FileText, Star, HelpCircle, MessageSquare, CheckCircle, Camera, X, Trophy, ChevronRight, Download, Award } from 'lucide-react';
+import { Edit2, GraduationCap, BookOpen, MapPin, Users, FileText, Star, HelpCircle, MessageSquare, CheckCircle, Camera, X, Trophy, Download, Award } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
+import Button from '../components/ui/Button';
+import Field from '../components/ui/Field';
+import Input from '../components/ui/Input';
+import Textarea from '../components/ui/Textarea';
+import Select from '../components/ui/Select';
+import Skeleton from '../components/ui/Skeleton';
+import { cn } from '../lib/cn';
 
+// Note: this is a distinct, more granular reputation ladder from the one used on the
+// Dashboard widget (src/lib/tiers.js) — different labels, deliberately not unified here.
 const TIERS = [
     { label: 'Newcomer',    color: '#9ca3af', min: 0,    next: 100,  desc: 'Keep engaging to unlock Explorer status.' },
     { label: 'Explorer',    color: '#60a5fa', min: 100,  next: 250,  desc: 'Contributors can pin resources in groups.' },
@@ -27,7 +36,7 @@ function getTier(rep = 0) {
 }
 
 function getInitialsColor(id) {
-    const colors = ['#0066ff','#8b5cf6','#34d399','#f59e0b','#f472b6','#06b6d4','#ef4444','#84cc16'];
+    const colors = ['#3b82f6','#8b5cf6','#34d399','#f59e0b','#f472b6','#06b6d4','#ef4444','#84cc16'];
     return colors[Math.abs(id || 0) % colors.length];
 }
 
@@ -79,7 +88,7 @@ function Avatar({ src, name, userId, size = 96, isOwn, onUpload }) {
                 </div>
             )}
             {isOwn && hovered && (
-                <div className="absolute inset-0 rounded-full flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.5)' }}>
+                <div className="absolute inset-0 rounded-full flex items-center justify-center bg-black/50">
                     <Camera size={size * 0.28} color="white" />
                 </div>
             )}
@@ -186,7 +195,7 @@ export default function Profile() {
     };
 
     return (
-        <div className="lg:pl-60" style={{ background: 'var(--bg-main)', minHeight: '100vh' }}>
+        <div className="lg:pl-60 min-h-screen bg-bg">
             <Sidebar />
 
             <main className="pt-20 pb-16 px-4 md:px-8 max-w-5xl mx-auto">
@@ -194,7 +203,7 @@ export default function Profile() {
                 {loading ? (
                     <HeroSkeleton />
                 ) : !profile ? (
-                    <div className="text-center py-24" style={{ color: 'var(--text-secondary)' }}>
+                    <div className="text-center py-24 text-fg-secondary">
                         User not found.
                     </div>
                 ) : (
@@ -204,20 +213,14 @@ export default function Profile() {
                         transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
                     >
                         {/* ── HERO CARD ── */}
-                        <div
-                            className="rounded-2xl border overflow-hidden mb-6"
-                            style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-card)' }}
-                        >
+                        <div className="rounded-2xl border border-border bg-surface overflow-hidden mb-6">
                             {/* banner */}
-                            <div
-                                className="h-32 w-full"
-                                style={{ background: 'linear-gradient(135deg, #0052cc 0%, #8b5cf6 100%)' }}
-                            />
+                            <div className="h-32 w-full" style={{ background: 'var(--gradient-primary)' }} />
 
                             {/* avatar + info */}
                             <div className="px-6 pb-6">
                                 <div className="flex items-end justify-between -mt-12 mb-4">
-                                    <div className="ring-4 ring-[var(--bg-card)] rounded-full">
+                                    <div className="ring-4 ring-[var(--surface-card)] rounded-full">
                                         <Avatar
                                             src={profile.profile_picture}
                                             name={name}
@@ -229,24 +232,15 @@ export default function Profile() {
                                     </div>
 
                                     {isOwn && (
-                                        <motion.button
-                                            whileHover={{ scale: 1.04 }}
-                                            whileTap={{ scale: 0.96 }}
-                                            onClick={() => setEditOpen(o => !o)}
-                                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border"
-                                            style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-primary)', background: 'var(--bg-hover)' }}
-                                        >
-                                            <Edit2 size={14} /> {editOpen ? 'Close' : 'Edit Profile'}
-                                        </motion.button>
+                                        <Button variant="secondary" size="sm" icon={Edit2} onClick={() => setEditOpen(o => !o)}>
+                                            {editOpen ? 'Close' : 'Edit Profile'}
+                                        </Button>
                                     )}
                                 </div>
 
                                 {/* name + tier */}
                                 <div className="flex items-center gap-3 mb-1 flex-wrap">
-                                    <h1
-                                        className="text-2xl font-bold"
-                                        style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-                                    >
+                                    <h1 className="text-2xl font-bold" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                                         {name}
                                     </h1>
                                     <span
@@ -255,16 +249,13 @@ export default function Profile() {
                                     >
                                         {tier.label}
                                     </span>
-                                    <span
-                                        className="text-xs font-semibold px-2.5 py-1 rounded-full"
-                                        style={{ background: 'rgba(0,102,255,0.1)', color: 'var(--accent-blue)' }}
-                                    >
+                                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-primary-subtle text-primary">
                                         {profile.reputation ?? 0} rep
                                     </span>
                                 </div>
 
                                 {/* meta */}
-                                <div className="flex flex-wrap gap-4 text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+                                <div className="flex flex-wrap gap-4 text-sm mb-4 text-fg-secondary">
                                     {profile.university && (
                                         <span className="flex items-center gap-1.5">
                                             <MapPin size={13} /> {profile.university}
@@ -281,17 +272,17 @@ export default function Profile() {
                                         </span>
                                     )}
                                     {joinDate && (
-                                        <span style={{ color: 'var(--text-muted)' }}>Member since {joinDate}</span>
+                                        <span className="text-fg-muted">Member since {joinDate}</span>
                                     )}
                                 </div>
 
                                 {/* bio */}
                                 {profile.bio ? (
-                                    <p className="text-sm leading-relaxed max-w-2xl" style={{ color: 'var(--text-secondary)' }}>
+                                    <p className="text-sm leading-relaxed max-w-2xl text-fg-secondary">
                                         {profile.bio}
                                     </p>
                                 ) : isOwn && (
-                                    <p className="text-sm italic" style={{ color: 'var(--text-muted)' }}>
+                                    <p className="text-sm italic text-fg-muted">
                                         No bio yet. Add one to let others know who you are.
                                     </p>
                                 )}
@@ -355,7 +346,7 @@ function useCountUp(target, duration = 900) {
 }
 
 const STAT_ITEMS = [
-    { key: 'groupsJoined',    label: 'Groups',           icon: Users,         color: '#0066ff' },
+    { key: 'groupsJoined',    label: 'Groups',           icon: Users,         color: 'var(--brand-600)' },
     { key: 'notesUploaded',   label: 'Notes',            icon: FileText,      color: '#34d399' },
     { key: 'totalDownloads',  label: 'Downloads',        icon: Star,          color: '#fbbf24' },
     { key: 'questionsAsked',  label: 'Questions',        icon: HelpCircle,    color: '#f472b6' },
@@ -372,8 +363,8 @@ function StatPill({ icon: Icon, label, value, color }) {
             onHoverEnd={() => setHovered(false)}
             animate={{ y: hovered ? -3 : 0, boxShadow: hovered ? `0 8px 24px ${color}28` : 'none' }}
             transition={{ type: 'spring', stiffness: 340, damping: 24 }}
-            className="flex flex-col items-center gap-2 rounded-2xl border p-4 cursor-default"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)', flex: '1 1 0' }}
+            className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-surface p-4 cursor-default"
+            style={{ flex: '1 1 0' }}
         >
             <motion.div
                 animate={{ scale: hovered ? 1.15 : 1 }}
@@ -383,10 +374,10 @@ function StatPill({ icon: Icon, label, value, color }) {
             >
                 <Icon size={18} color={color} strokeWidth={1.75} />
             </motion.div>
-            <span className="text-xl font-bold tabular-nums" style={{ fontFamily: "'Space Grotesk',sans-serif", color }}>
+            <span className="text-xl font-bold tabular-nums" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", color }}>
                 {count}
             </span>
-            <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>{label}</span>
+            <span className="text-xs text-fg-secondary">{label}</span>
         </motion.div>
     );
 }
@@ -413,16 +404,16 @@ function StatsRow({ stats }) {
 
 function HeroSkeleton() {
     return (
-        <div className="rounded-2xl border overflow-hidden mb-6" style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-card)' }}>
-            <div className="h-32 w-full" style={{ background: 'var(--bg-hover)' }} />
+        <div className="rounded-2xl border border-border bg-surface overflow-hidden mb-6">
+            <Skeleton className="h-32 w-full rounded-none" />
             <div className="px-6 pb-6">
                 <div className="flex items-end justify-between -mt-12 mb-4">
-                    <div className="w-24 h-24 rounded-full" style={{ background: 'var(--bg-hover)' }} />
-                    <div className="w-28 h-9 rounded-xl" style={{ background: 'var(--bg-hover)' }} />
+                    <Skeleton className="w-24 h-24 rounded-full" />
+                    <Skeleton className="w-28 h-9 rounded-xl" />
                 </div>
-                <div className="w-48 h-6 rounded-lg mb-3" style={{ background: 'var(--bg-hover)' }} />
-                <div className="w-72 h-4 rounded-lg mb-4" style={{ background: 'var(--bg-hover)' }} />
-                <div className="w-full max-w-md h-4 rounded-lg" style={{ background: 'var(--bg-hover)' }} />
+                <Skeleton className="w-48 h-6 mb-3" />
+                <Skeleton className="w-72 h-4 mb-4" />
+                <Skeleton className="w-full max-w-md h-4" />
             </div>
         </div>
     );
@@ -443,45 +434,42 @@ function ReputationCard({ reputation }) {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.1 }}
-            className="rounded-2xl border p-5 mb-6"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+            className="rounded-2xl border border-border bg-surface p-5 mb-6"
         >
             <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                        style={{ background: isMaster ? 'linear-gradient(135deg,#0052cc,#8b5cf6)' : `${tier.color}22` }}>
+                    <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', isMaster && 'bg-premium')}
+                        style={!isMaster ? { background: `${tier.color}22` } : undefined}>
                         <Trophy size={20} color={isMaster ? '#fff' : tier.color} />
                     </div>
                     <div>
-                        <div className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+                        <div className="font-bold text-sm text-fg">
                             Reputation Level
                         </div>
-                        <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                        <div className="text-xs text-fg-secondary">
                             {tier.desc}
                         </div>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <span
-                        className="text-sm font-bold px-3 py-1 rounded-full"
-                        style={isMaster
-                            ? { background: 'linear-gradient(135deg,#0052cc,#8b5cf6)', color: '#fff' }
-                            : { background: `${tier.color}22`, color: tier.color }}
+                        className={cn('text-sm font-bold px-3 py-1 rounded-full', isMaster && 'bg-premium text-white')}
+                        style={!isMaster ? { background: `${tier.color}22`, color: tier.color } : undefined}
                     >
                         {tier.label}
                     </span>
-                    <span className="text-2xl font-bold tabular-nums" style={{ fontFamily: "'Space Grotesk',sans-serif", color: tier.color || 'var(--accent-blue)' }}>
+                    <span className="text-2xl font-bold tabular-nums" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", color: tier.color || 'var(--brand-600)' }}>
                         {reputation}
                     </span>
                 </div>
             </div>
             {!isMaster && next && (
                 <>
-                    <div className="flex justify-between text-xs mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                    <div className="flex justify-between text-xs mb-1.5 text-fg-secondary">
                         <span>{reputation} / {next.min} to {next.label}</span>
                         <span>{progress}%</span>
                     </div>
-                    <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg-hover)' }}>
+                    <div className="w-full h-2 rounded-full overflow-hidden bg-surface-hover">
                         <motion.div
                             className="h-full rounded-full"
                             style={{ background: tier.color }}
@@ -515,21 +503,18 @@ function ActivityTabs({ activeTab, tabData, onTab, isOwn }) {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.15 }}
-            className="rounded-2xl border mb-6 overflow-hidden"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+            className="rounded-2xl border border-border bg-surface mb-6 overflow-hidden"
         >
             {/* tab bar */}
-            <div className="flex border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+            <div className="flex border-b border-border">
                 {TABS.map(t => (
                     <button
                         key={t.key}
                         onClick={() => onTab(t.key)}
-                        className="flex-1 py-3 text-sm font-semibold transition-colors"
-                        style={{
-                            color: activeTab === t.key ? 'var(--accent-blue)' : 'var(--text-secondary)',
-                            borderBottom: activeTab === t.key ? '2px solid var(--accent-blue)' : '2px solid transparent',
-                            background: 'none',
-                        }}
+                        className={cn(
+                            'flex-1 py-3 text-sm font-semibold transition-colors border-b-2',
+                            activeTab === t.key ? 'text-primary border-primary' : 'text-fg-secondary border-transparent',
+                        )}
                     >
                         {t.label}
                     </button>
@@ -539,24 +524,20 @@ function ActivityTabs({ activeTab, tabData, onTab, isOwn }) {
             {/* content */}
             <div className="p-4">
                 {tabData[activeTab] === null ? (
-                    <div className="py-8 text-center" style={{ color: 'var(--text-muted)' }}>Loading…</div>
+                    <div className="py-8 text-center text-fg-muted">Loading…</div>
                 ) : tabData[activeTab].length === 0 ? (
                     <div className="py-10 text-center">
-                        <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
+                        <p className="text-sm mb-3 text-fg-secondary">
                             {EMPTY_MSGS[activeTab].msg}
                         </p>
                         {isOwn && (
-                            <Link
-                                to={EMPTY_MSGS[activeTab].to}
-                                className="text-sm font-semibold"
-                                style={{ color: 'var(--accent-blue)' }}
-                            >
+                            <Link to={EMPTY_MSGS[activeTab].to} className="text-sm font-semibold text-primary">
                                 {EMPTY_MSGS[activeTab].cta}
                             </Link>
                         )}
                     </div>
                 ) : (
-                    <ul className="divide-y" style={{ '--tw-divide-opacity': 1, borderColor: 'var(--border-subtle)' }}>
+                    <ul className="divide-y divide-border">
                         {tabData[activeTab].map(item => (
                             <TabItem key={item.id} item={item} tab={activeTab} />
                         ))}
@@ -573,15 +554,15 @@ function TabItem({ item, tab }) {
             <li className="py-3">
                 <Link to={`/qa/${item.id}`} className="block group">
                     <div className="flex items-start justify-between gap-3">
-                        <span className="text-sm font-medium group-hover:underline" style={{ color: 'var(--text-primary)' }}>
+                        <span className="text-sm font-medium text-fg group-hover:underline">
                             {item.title}
                         </span>
-                        <span className="text-xs shrink-0" style={{ color: 'var(--text-muted)' }}>
+                        <span className="text-xs shrink-0 text-fg-muted">
                             {item.vote_count ?? 0} votes · {item.answer_count ?? 0} answers
                         </span>
                     </div>
                     {item.subject && (
-                        <span className="text-xs mt-0.5 inline-block" style={{ color: 'var(--text-secondary)' }}>{item.subject}</span>
+                        <span className="text-xs mt-0.5 inline-block text-fg-secondary">{item.subject}</span>
                     )}
                 </Link>
             </li>
@@ -592,15 +573,15 @@ function TabItem({ item, tab }) {
             <li className="py-3">
                 <Link to={`/notes/${item.id}`} className="block group">
                     <div className="flex items-start justify-between gap-3">
-                        <span className="text-sm font-medium group-hover:underline" style={{ color: 'var(--text-primary)' }}>
+                        <span className="text-sm font-medium text-fg group-hover:underline">
                             {item.title}
                         </span>
-                        <span className="text-xs shrink-0 flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
+                        <span className="text-xs shrink-0 flex items-center gap-1 text-fg-muted">
                             <Download size={11} /> {item.downloads ?? 0}
                         </span>
                     </div>
                     {item.subject && (
-                        <span className="text-xs mt-0.5 inline-block" style={{ color: 'var(--text-secondary)' }}>{item.subject}</span>
+                        <span className="text-xs mt-0.5 inline-block text-fg-secondary">{item.subject}</span>
                     )}
                 </Link>
             </li>
@@ -610,15 +591,15 @@ function TabItem({ item, tab }) {
     return (
         <li className="py-3">
             <Link to={`/qa/${item.question_id}`} className="block group">
-                <p className="text-sm line-clamp-2 group-hover:underline" style={{ color: 'var(--text-primary)' }}>
+                <p className="text-sm line-clamp-2 text-fg group-hover:underline">
                     {item.content}
                 </p>
                 <div className="flex items-center gap-2 mt-1">
                     {item.is_accepted && (
-                        <span className="text-xs font-semibold" style={{ color: '#34d399' }}>✓ Accepted</span>
+                        <span className="text-xs font-semibold text-success">✓ Accepted</span>
                     )}
                     {item.questions?.title && (
-                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>on: {item.questions.title}</span>
+                        <span className="text-xs text-fg-muted">on: {item.questions.title}</span>
                     )}
                 </div>
             </Link>
@@ -636,12 +617,11 @@ function LeaderboardWidget({ list, currentUserId, myRank }) {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.2 }}
-            className="rounded-2xl border p-5 mb-6"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+            className="rounded-2xl border border-border bg-surface p-5 mb-6"
         >
             <div className="flex items-center gap-2 mb-4">
-                <Award size={18} color="var(--accent-blue)" />
-                <h2 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Top Contributors</h2>
+                <Award size={18} className="text-primary" />
+                <h2 className="font-bold text-sm text-fg">Top Contributors</h2>
             </div>
             <ul className="space-y-2">
                 {list.map((u, i) => {
@@ -651,10 +631,9 @@ function LeaderboardWidget({ list, currentUserId, myRank }) {
                     return (
                         <li
                             key={u.id}
-                            className="flex items-center gap-3 rounded-xl px-3 py-2"
-                            style={{ background: isMe ? 'rgba(0,102,255,0.08)' : 'transparent', border: isMe ? '1px solid rgba(0,102,255,0.2)' : '1px solid transparent' }}
+                            className={cn('flex items-center gap-3 rounded-xl px-3 py-2 border', isMe ? 'bg-primary-subtle border-primary/20' : 'border-transparent')}
                         >
-                            <span className="text-xs font-bold w-5 text-center tabular-nums" style={{ color: 'var(--text-muted)' }}>
+                            <span className="text-xs font-bold w-5 text-center tabular-nums text-fg-muted">
                                 {i + 1}
                             </span>
                             <div
@@ -665,15 +644,15 @@ function LeaderboardWidget({ list, currentUserId, myRank }) {
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between gap-2">
-                                    <span className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+                                    <span className="text-xs font-semibold truncate text-fg">
                                         {u.first_name} {u.last_name}
                                     </span>
-                                    <span className="text-xs font-bold tabular-nums shrink-0" style={{ color: 'var(--accent-blue)' }}>
+                                    <span className="text-xs font-bold tabular-nums shrink-0 text-primary">
                                         {u.reputation}
                                     </span>
                                 </div>
-                                <div className="w-full h-1 rounded-full mt-1 overflow-hidden" style={{ background: 'var(--bg-hover)' }}>
-                                    <div className="h-full rounded-full" style={{ width: `${barW}%`, background: 'var(--accent-blue)', opacity: 0.6 }} />
+                                <div className="w-full h-1 rounded-full mt-1 overflow-hidden bg-surface-hover">
+                                    <div className="h-full rounded-full bg-primary opacity-60" style={{ width: `${barW}%` }} />
                                 </div>
                             </div>
                         </li>
@@ -681,7 +660,7 @@ function LeaderboardWidget({ list, currentUserId, myRank }) {
                 })}
             </ul>
             {myRank && (
-                <p className="text-xs mt-3 text-center" style={{ color: 'var(--text-muted)' }}>
+                <p className="text-xs mt-3 text-center text-fg-muted">
                     You are ranked #{myRank}
                 </p>
             )}
@@ -702,73 +681,41 @@ function EditForm({ form, onChange, onSave, onCancel, saving }) {
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             className="overflow-hidden"
         >
-            <div
-                className="rounded-2xl border p-6 mb-6"
-                style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
-            >
+            <div className="rounded-2xl border border-border bg-surface p-6 mb-6">
                 <div className="flex items-center justify-between mb-5">
-                    <h2 className="font-bold" style={{ color: 'var(--text-primary)' }}>Edit Profile</h2>
-                    <button onClick={onCancel} style={{ color: 'var(--text-muted)' }}><X size={18} /></button>
+                    <h2 className="font-bold text-fg">Edit Profile</h2>
+                    <button onClick={onCancel} className="text-fg-muted"><X size={18} /></button>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                     {[['firstName','First name'],['lastName','Last name'],['university','University']].map(([k, label]) => (
-                        <div key={k}>
-                            <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-secondary)' }}>{label}</label>
-                            <input
-                                value={form[k] || ''}
-                                onChange={e => set(k, e.target.value)}
-                                className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:border-blue-500"
-                                style={{ background: 'var(--bg-main)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
-                            />
-                        </div>
+                        <Field key={k} label={label} className="mb-0">
+                            <Input value={form[k] || ''} onChange={e => set(k, e.target.value)} />
+                        </Field>
                     ))}
-                    <div>
-                        <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-secondary)' }}>Field of study</label>
-                        <select
-                            value={form.fieldOfStudy || ''}
-                            onChange={e => set('fieldOfStudy', e.target.value)}
-                            className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:border-blue-500"
-                            style={{ background: 'var(--bg-main)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
-                        >
+                    <Field label="Field of study" className="mb-0">
+                        <Select value={form.fieldOfStudy || ''} onChange={e => set('fieldOfStudy', e.target.value)}>
                             <option value="">Select…</option>
                             {FIELDS_OF_STUDY.map(f => <option key={f} value={f}>{f}</option>)}
-                        </select>
-                    </div>
+                        </Select>
+                    </Field>
                 </div>
 
                 <div className="mb-5">
                     <div className="flex justify-between mb-1.5">
-                        <label className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>Bio</label>
-                        <span className="text-xs" style={{ color: bioLen > 280 ? '#ef4444' : 'var(--text-muted)' }}>{bioLen}/300</span>
+                        <label className="text-xs font-semibold text-fg-secondary">Bio</label>
+                        <span className={cn('text-xs', bioLen > 280 ? 'text-danger' : 'text-fg-muted')}>{bioLen}/300</span>
                     </div>
-                    <textarea
-                        value={form.bio || ''}
-                        onChange={e => set('bio', e.target.value.slice(0, 300))}
-                        rows={3}
-                        className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:border-blue-500 resize-none"
-                        style={{ background: 'var(--bg-main)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
-                    />
+                    <Textarea value={form.bio || ''} onChange={e => set('bio', e.target.value.slice(0, 300))} rows={3} />
                 </div>
 
                 <div className="flex gap-3 justify-end">
-                    <button
-                        onClick={onCancel}
-                        className="px-4 py-2 rounded-xl text-sm border"
-                        style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-secondary)', background: 'none' }}
-                    >
+                    <Button onClick={onCancel} variant="ghost" size="sm">
                         Cancel
-                    </button>
-                    <motion.button
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={onSave}
-                        disabled={saving}
-                        className="px-5 py-2 rounded-xl text-sm font-semibold text-white"
-                        style={{ background: 'linear-gradient(135deg,#0052cc,#0066ff)', opacity: saving ? 0.7 : 1 }}
-                    >
+                    </Button>
+                    <Button onClick={onSave} disabled={saving} loading={saving} size="sm">
                         {saving ? 'Saving…' : 'Save changes'}
-                    </motion.button>
+                    </Button>
                 </div>
             </div>
         </motion.div>

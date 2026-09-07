@@ -1,13 +1,19 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { Search, Plus, Download, FileText, Image as ImageIcon, File, Lock, WifiOff, Trash2 } from 'lucide-react';
+import { Search, Plus, Download, FileText, Image as ImageIcon, File, Lock, WifiOff, Trash2, BookX } from 'lucide-react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import Sidebar from '../components/Sidebar';
 import UploadNoteModal from '../components/UploadNoteModal';
+import Button from '../components/ui/Button';
+import Badge from '../components/ui/Badge';
+import Input from '../components/ui/Input';
+import Select from '../components/ui/Select';
+import EmptyState from '../components/ui/EmptyState';
+import Skeleton from '../components/ui/Skeleton';
+import { useInlineConfirm } from '../hooks/useInlineConfirm';
 
 const cardVariant = {
     hidden: { opacity: 0, y: 20 },
@@ -25,13 +31,12 @@ function getFileIcon(fileType) {
 function NoteCard({ note, onDeleted }) {
     const { user } = useAuth();
     const [hovered, setHovered] = useState(false);
-    const [confirmDelete, setConfirmDelete] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const confirm = useInlineConfirm();
     const FileIcon = getFileIcon(note.file_type);
     const canDelete = user && (user.id === note.uploaded_by || user.role === 'admin');
 
-    const handleDelete = async (e) => {
-        e.preventDefault();
+    const handleDelete = async () => {
         setDeleting(true);
         try {
             await api.delete(`/notes/${note.id}`);
@@ -40,7 +45,6 @@ function NoteCard({ note, onDeleted }) {
         } catch (err) {
             toast.error(err.response?.data?.error || 'Failed to delete note');
             setDeleting(false);
-            setConfirmDelete(false);
         }
     };
 
@@ -51,38 +55,32 @@ function NoteCard({ note, onDeleted }) {
             onHoverEnd={() => setHovered(false)}
             animate={{
                 y: hovered ? -5 : 0,
-                boxShadow: hovered ? '0 16px 40px rgba(0,102,255,0.15)' : '0 0 0 0 transparent',
+                boxShadow: hovered ? '0 16px 40px rgba(59,130,246,0.15)' : '0 0 0 0 transparent',
             }}
             transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-            className="rounded-2xl p-5 border flex flex-col"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+            className="rounded-2xl p-5 border border-border bg-surface flex flex-col"
         >
             <div className="flex items-start gap-3 mb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: 'rgba(0,102,255,0.12)' }}>
-                    <FileIcon size={20} style={{ color: 'var(--accent-blue)' }} strokeWidth={1.75} />
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-primary-subtle">
+                    <FileIcon size={20} className="text-primary" strokeWidth={1.75} />
                 </div>
                 <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-sm leading-snug truncate">{note.title}</h3>
-                    <span className="text-xs px-2 py-0.5 rounded-full inline-block mt-1"
-                        style={{ background: 'rgba(0,102,255,0.12)', color: 'var(--accent-blue)' }}>
-                        {note.subject}
-                    </span>
+                    <h3 className="font-semibold text-sm leading-snug truncate text-fg">{note.title}</h3>
+                    <Badge tone="primary" size="sm" className="mt-1">{note.subject}</Badge>
                 </div>
                 {canDelete && (
-                    <button onClick={e => { e.preventDefault(); setConfirmDelete(true); }}
-                        className="shrink-0 p-1.5 rounded-lg transition-colors hover:text-red-500"
-                        style={{ color: 'var(--text-muted)' }}>
+                    <button onClick={confirm.ask}
+                        className="shrink-0 p-1.5 rounded-lg transition-colors text-fg-muted hover:text-danger">
                         <Trash2 size={15} />
                     </button>
                 )}
             </div>
 
-            <p className="text-xs mb-4 flex-1 line-clamp-2" style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>
+            <p className="text-xs mb-4 flex-1 line-clamp-2 text-fg-secondary" style={{ lineHeight: 1.7 }}>
                 {note.description}
             </p>
 
-            <div className="flex justify-between text-xs mb-4" style={{ color: 'var(--text-secondary)' }}>
+            <div className="flex justify-between text-xs mb-4 text-fg-secondary">
                 <span className="flex items-center gap-1">
                     <Download size={12} /> {note.downloads || 0}
                 </span>
@@ -90,33 +88,22 @@ function NoteCard({ note, onDeleted }) {
             </div>
 
             {note.is_premium && (
-                <div className="mb-3 flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-lg"
-                    style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', width: 'fit-content' }}>
-                    <Lock size={12} /> {note.price} XAF
-                </div>
+                <Badge tone="warning" className="mb-3 w-fit" icon={Lock}>{note.price} XAF</Badge>
             )}
 
-            {confirmDelete ? (
+            {confirm.active ? (
                 <div className="flex gap-2">
-                    <button onClick={handleDelete} disabled={deleting}
-                        className="flex-1 text-xs py-2 rounded-lg font-semibold text-white disabled:opacity-60"
-                        style={{ background: 'var(--error)' }}>
-                        {deleting ? 'Deleting...' : 'Yes, delete'}
-                    </button>
-                    <button onClick={() => setConfirmDelete(false)}
-                        className="flex-1 text-xs py-2 rounded-lg font-semibold border"
-                        style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                    <Button onClick={() => confirm.run(handleDelete)} disabled={deleting} loading={deleting} variant="danger" size="sm" fullWidth>
+                        Yes, delete
+                    </Button>
+                    <Button onClick={confirm.cancel} variant="secondary" size="sm" fullWidth>
                         Cancel
-                    </button>
+                    </Button>
                 </div>
             ) : (
-                <Link
-                    to={`/notes/${note.id}`}
-                    className="block text-center text-xs py-2 rounded-lg font-semibold text-white transition-all"
-                    style={{ background: 'linear-gradient(135deg, #0052cc, #0066ff)' }}
-                >
+                <Button to={`/notes/${note.id}`} size="sm" fullWidth>
                     View Details
-                </Link>
+                </Button>
             )}
         </motion.div>
     );
@@ -125,7 +112,6 @@ function NoteCard({ note, onDeleted }) {
 export default function Notes() {
     const { user } = useAuth();
     const canMarkPremium = user?.role === 'admin' || user?.tutor_status === 'approved';
-    const navigate = useNavigate();
     const isOnline = useOnlineStatus();
 
     const [notes, setNotes] = useState([]);
@@ -190,15 +176,13 @@ export default function Notes() {
     const totalDownloads = notes.reduce((sum, n) => sum + (n.downloads || 0), 0);
 
     return (
-        <div className="lg:pl-60" style={{ background: 'var(--bg-main)', minHeight: '100vh', color: 'var(--text-primary)' }}>
+        <div className="lg:pl-60 min-h-screen bg-bg text-fg">
             <Sidebar />
 
             {/* HERO */}
-            <section className="pt-20 px-6 py-12 text-center border-b"
-                style={{ background: 'linear-gradient(135deg,rgba(0,102,255,0.07),rgba(139,92,246,0.07))', borderColor: 'var(--border-subtle)' }}>
-                <h1 className="text-3xl md:text-4xl font-bold mb-2 gradient-text"
-                    style={{ fontFamily: "'Space Grotesk',sans-serif" }}>Study Notes</h1>
-                <p className="max-w-xl mx-auto mb-8 text-sm" style={{ color: 'var(--text-secondary)' }}>
+            <section className="pt-20 px-6 py-12 text-center border-b border-border bg-primary-subtle">
+                <h1 className="text-3xl md:text-4xl font-bold mb-2 gradient-text" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>Study Notes</h1>
+                <p className="max-w-xl mx-auto mb-8 text-sm text-fg-secondary">
                     Access shared notes, upload your own, and help your peers succeed.
                 </p>
                 <div className="flex justify-center gap-12 flex-wrap">
@@ -208,74 +192,53 @@ export default function Notes() {
                         [subjects.length, 'Subjects'],
                     ].map(([n, l]) => (
                         <div key={l} className="text-center">
-                            <div className="text-3xl font-bold tabular-nums"
-                                style={{ fontFamily: "'Space Grotesk',sans-serif", color: 'var(--accent-blue)' }}>{n}</div>
-                            <div className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>{l}</div>
+                            <div className="text-3xl font-bold tabular-nums text-primary" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>{n}</div>
+                            <div className="text-xs mt-0.5 text-fg-secondary">{l}</div>
                         </div>
                     ))}
                 </div>
             </section>
 
             {/* FILTER BAR */}
-            <div className="sticky top-16 z-30 px-4 sm:px-6 py-3 border-b"
-                style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}>
+            <div className="sticky top-16 z-30 px-4 sm:px-6 py-3 border-b border-border bg-surface">
                 <div className="max-w-6xl mx-auto flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
                     <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
-                        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2"
-                            style={{ color: 'var(--text-muted)' }} />
-                        <input
+                        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
+                        <Input
                             type="text"
                             placeholder="Search notes…"
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            className="form-input pl-9 pr-4"
-                            style={{ height: 40 }}
+                            className="pl-9 h-10"
                         />
                     </div>
-                    <select
-                        value={subjectFilter}
-                        onChange={e => setSubjectFilter(e.target.value)}
-                        className="form-input px-3"
-                        style={{ height: 40, minWidth: 120 }}
-                    >
+                    <Select value={subjectFilter} onChange={e => setSubjectFilter(e.target.value)} className="h-10 min-w-[120px]">
                         <option value="">All Subjects</option>
                         {subjects.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                    <select
-                        value={premiumFilter}
-                        onChange={e => setPremiumFilter(e.target.value)}
-                        className="form-input px-3"
-                        style={{ height: 40, minWidth: 100 }}
-                    >
+                    </Select>
+                    <Select value={premiumFilter} onChange={e => setPremiumFilter(e.target.value)} className="h-10 min-w-[100px]">
                         <option value="all">All</option>
                         <option value="free">Free</option>
                         <option value="premium">Premium</option>
-                    </select>
-                    <select
-                        value={sortBy}
-                        onChange={e => setSortBy(e.target.value)}
-                        className="form-input px-3"
-                        style={{ height: 40, minWidth: 120 }}
-                    >
+                    </Select>
+                    <Select value={sortBy} onChange={e => setSortBy(e.target.value)} className="h-10 min-w-[120px]">
                         <option value="newest">Newest</option>
                         <option value="downloads">Most Downloaded</option>
-                    </select>
+                    </Select>
                     {user ? (
-                        <motion.button
-                            whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                        <Button
                             onClick={() => setShowUploadModal(true)}
                             disabled={!isOnline}
-                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
-                            style={{ background: 'linear-gradient(135deg,#0052cc,#0066ff)' }}
+                            icon={!isOnline ? WifiOff : Plus}
+                            className="w-full sm:w-auto"
                             title={!isOnline ? "You're offline" : "Upload a note"}
                         >
-                            {!isOnline ? <WifiOff size={15} /> : <Plus size={15} />} Upload Note
-                        </motion.button>
+                            Upload Note
+                        </Button>
                     ) : (
-                        <Link to="/login" className="px-4 py-2 rounded-lg font-semibold border-2 text-sm"
-                            style={{ borderColor: 'var(--accent-blue)', color: 'var(--text-primary)' }}>
+                        <Button to="/login" variant="outline" className="w-full sm:w-auto">
                             Sign In to Upload
-                        </Link>
+                        </Button>
                     )}
                 </div>
             </div>
@@ -285,30 +248,21 @@ export default function Notes() {
                 {loading ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[...Array(6)].map((_, i) => (
-                            <div key={i} className="rounded-2xl p-6 border"
-                                style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}>
-                                <div className="skeleton-shimmer h-4 rounded w-3/4 mb-3" />
-                                <div className="skeleton-shimmer h-3 rounded w-full mb-2" />
-                                <div className="skeleton-shimmer h-3 rounded w-5/6 mb-4" />
-                                <div className="skeleton-shimmer h-8 rounded" />
+                            <div key={i} className="rounded-2xl p-6 border border-border bg-surface">
+                                <Skeleton className="h-4 w-3/4 mb-3" />
+                                <Skeleton className="h-3 w-full mb-2" />
+                                <Skeleton className="h-3 w-5/6 mb-4" />
+                                <Skeleton className="h-8" />
                             </div>
                         ))}
                     </div>
                 ) : filtered.length === 0 ? (
-                    <div className="text-center py-20">
-                        <p className="text-4xl mb-4">📚</p>
-                        <h3 className="text-xl font-semibold mb-2">No notes found</h3>
-                        <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-                            {search || subjectFilter || premiumFilter !== 'all' ? 'Try different filters.' : 'Be the first to upload a note!'}
-                        </p>
-                        {user && (
-                            <button onClick={() => setShowUploadModal(true)}
-                                className="px-5 py-2.5 rounded-xl font-semibold text-white text-sm"
-                                style={{ background: 'linear-gradient(135deg,#0052cc,#0066ff)' }}>
-                                Upload First Note
-                            </button>
-                        )}
-                    </div>
+                    <EmptyState
+                        icon={BookX}
+                        title="No notes found"
+                        description={search || subjectFilter || premiumFilter !== 'all' ? 'Try different filters.' : 'Be the first to upload a note!'}
+                        action={user && <Button onClick={() => setShowUploadModal(true)}>Upload First Note</Button>}
+                    />
                 ) : (
                     <motion.div
                         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
@@ -321,15 +275,12 @@ export default function Notes() {
                 )}
             </div>
 
-            <AnimatePresence>
-                {showUploadModal && (
-                    <UploadNoteModal
-                        onClose={() => setShowUploadModal(false)}
-                        onUploaded={() => { setShowUploadModal(false); loadNotes(false); toast.success('Note uploaded!'); }}
-                        canMarkPremium={canMarkPremium}
-                    />
-                )}
-            </AnimatePresence>
+            <UploadNoteModal
+                open={showUploadModal}
+                onClose={() => setShowUploadModal(false)}
+                onUploaded={() => { setShowUploadModal(false); loadNotes(false); toast.success('Note uploaded!'); }}
+                canMarkPremium={canMarkPremium}
+            />
         </div>
     );
 }

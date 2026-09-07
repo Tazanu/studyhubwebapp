@@ -1,9 +1,10 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, LogOut } from 'lucide-react';
+import { LayoutDashboard, LogOut, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import NotificationBell from './NotificationBell';
 import StudyHubLogo from './StudyHubLogo';
+import Button from './ui/Button';
 
 const DASHBOARD_ROUTES = ['/dashboard', '/groups', '/notes', '/qa', '/tutors', '/profile', '/settings', '/become-tutor', '/admin', '/premium'];
 
@@ -19,15 +20,12 @@ export default function Navbar() {
 
     return (
         <nav
-            className={`fixed top-0 z-40 border-b py-3 flex items-center justify-between ${isDash ? 'lg:left-60' : ''}`}
+            className={`fixed top-0 z-40 border-b border-border py-3 flex items-center justify-between bg-surface/95 backdrop-blur-md ${isDash ? 'lg:left-60' : ''}`}
             style={{
                 left:           isDash ? undefined : 0,
                 right:          0,
                 paddingLeft:    isDash ? '1rem' : undefined,
                 paddingRight:   '1.5rem',
-                background:     theme === 'dark' ? 'rgba(18,18,18,0.98)' : 'rgba(255,255,255,0.98)',
-                borderColor:    'var(--border-subtle)',
-                backdropFilter: 'blur(12px)',
             }}
         >
             {/* logo — only shown on public pages; dashboard has it in sidebar */}
@@ -42,7 +40,7 @@ export default function Navbar() {
                 <ul className="hidden md:flex gap-8 list-none">
                     {[['Home', '/'], ['About', '/about']].map(([label, path]) => (
                         <li key={path}>
-                            <Link to={path} className="font-medium transition-colors" style={{ color: 'var(--text-secondary)' }}>
+                            <Link to={path} className="font-medium transition-colors text-fg-secondary hover:text-fg">
                                 {label}
                             </Link>
                         </li>
@@ -57,25 +55,20 @@ export default function Navbar() {
                 {user && isDash && <NotificationBell />}
                 <button
                     onClick={toggleTheme}
-                    className="w-11 h-11 rounded-full border-2 flex items-center justify-center text-lg transition-all hover:bg-blue-600 hover:text-white hover:border-blue-600 hover:rotate-180 shrink-0"
-                    style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-primary)', background: 'var(--bg-card)' }}
+                    className="w-11 h-11 rounded-full border-2 border-border bg-surface text-fg flex items-center justify-center transition-all hover:bg-primary-solid hover:text-white hover:border-primary shrink-0"
                     aria-label="Toggle theme"
                 >
-                    {theme === 'light' ? '☀️' : '🌙'}
+                    {theme === 'light' ? <Sun size={18} /> : <Moon size={18} />}
                 </button>
 
                 {user ? (
                     !isDash && (
                         <>
-                            <Link to="/dashboard"
-                                className="flex items-center gap-1.5 px-3 py-2 rounded-lg font-semibold border-2 transition-all hover:bg-blue-600 hover:text-white text-xs sm:text-sm whitespace-nowrap"
-                                style={{ borderColor: 'var(--accent-blue)', color: 'var(--text-primary)' }}>
-                                <LayoutDashboard size={15} />
+                            <Button to="/dashboard" variant="outline" size="sm" icon={LayoutDashboard} className="whitespace-nowrap">
                                 <span className="hidden sm:inline">Dashboard</span>
-                            </Link>
+                            </Button>
                             <button onClick={handleLogout}
-                                className="flex items-center gap-1.5 px-3 py-2 rounded-lg font-semibold border-2 transition-all hover:bg-red-500 hover:text-white hover:border-red-500 text-xs sm:text-sm whitespace-nowrap"
-                                style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}>
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-md font-semibold border-2 border-border text-fg transition-all hover:bg-danger hover:text-white hover:border-danger text-xs sm:text-sm whitespace-nowrap">
                                 <LogOut size={15} />
                                 <span className="hidden sm:inline">Logout</span>
                             </button>
@@ -83,16 +76,12 @@ export default function Navbar() {
                     )
                 ) : (
                     <>
-                        <Link to="/login"
-                            className="px-4 py-2 rounded-lg font-semibold border-2 transition-all hover:bg-blue-600 hover:text-white text-center text-sm"
-                            style={{ borderColor: 'var(--accent-blue)', color: 'var(--text-primary)' }}>
+                        <Button to="/login" variant="outline" size="sm">
                             Log in
-                        </Link>
-                        <Link to="/register"
-                            className="px-4 sm:px-6 py-2 rounded-lg font-semibold text-white transition-all hover:-translate-y-0.5 text-center text-sm"
-                            style={{ background: 'linear-gradient(135deg, #0052cc 0%, #0066ff 100%)' }}>
+                        </Button>
+                        <Button to="/register" size="sm" className="hover:-translate-y-0.5">
                             Sign Up
-                        </Link>
+                        </Button>
                     </>
                 )}
             </div>

@@ -1,14 +1,21 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    DollarSign, Calendar, Clock, Users, Star, CheckCircle,
+    DollarSign, Calendar, Clock, Star, CheckCircle,
     XCircle, TrendingUp, BookOpen, ChevronRight, AlertCircle,
-    Plus, Trash2, Edit3, Save, X,
+    Plus, Trash2, Edit3, Save,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import Button from '../components/ui/Button';
+import Badge from '../components/ui/Badge';
+import Field from '../components/ui/Field';
+import Input from '../components/ui/Input';
+import Textarea from '../components/ui/Textarea';
+import Select from '../components/ui/Select';
+import EmptyState from '../components/ui/EmptyState';
+import { BOOKING_STATUS_TONE, BOOKING_STATUS_LABEL } from '../lib/bookingStatus';
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
@@ -48,14 +55,12 @@ function AvailabilityManager({ tutorId }) {
     const fmtSlotTime = t => new Date(`1970-01-01T${t}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     return (
-        <div className="rounded-2xl border p-6" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}>
+        <div className="rounded-2xl border border-border bg-surface p-6">
             <div className="flex items-center justify-between mb-5">
-                <h2 className="text-lg font-bold" style={{ fontFamily: "'Space Grotesk',sans-serif" }}>Availability</h2>
-                <motion.button whileTap={{ scale: 0.95 }} onClick={() => setShowForm(v => !v)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-white"
-                    style={{ background: 'var(--accent-blue)' }}>
-                    <Plus size={14} /> Add Slot
-                </motion.button>
+                <h2 className="text-lg font-bold" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>Availability</h2>
+                <Button size="sm" icon={Plus} onClick={() => setShowForm(v => !v)}>
+                    Add Slot
+                </Button>
             </div>
 
             <AnimatePresence>
@@ -64,61 +69,45 @@ function AvailabilityManager({ tutorId }) {
                         initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }}
                         className="overflow-hidden mb-5">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-xl border"
-                            style={{ background: 'var(--bg-hover)', borderColor: 'var(--border-subtle)' }}>
-                            <div>
-                                <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>Day</label>
-                                <select value={form.dayOfWeek} onChange={e => setForm(f => ({ ...f, dayOfWeek: e.target.value }))}
-                                    className="w-full px-3 py-2 rounded-lg border text-sm"
-                                    style={{ background: 'var(--bg-main)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-xl border border-border bg-surface-hover">
+                            <Field label="Day" className="mb-0">
+                                <Select value={form.dayOfWeek} onChange={e => setForm(f => ({ ...f, dayOfWeek: e.target.value }))}>
                                     {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>Start Time</label>
-                                <input type="time" value={form.startTime} onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))}
-                                    className="w-full px-3 py-2 rounded-lg border text-sm"
-                                    style={{ background: 'var(--bg-main)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }} />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>End Time</label>
-                                <input type="time" value={form.endTime} onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))}
-                                    className="w-full px-3 py-2 rounded-lg border text-sm"
-                                    style={{ background: 'var(--bg-main)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }} />
-                            </div>
+                                </Select>
+                            </Field>
+                            <Field label="Start Time" className="mb-0">
+                                <Input type="time" value={form.startTime} onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))} />
+                            </Field>
+                            <Field label="End Time" className="mb-0">
+                                <Input type="time" value={form.endTime} onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))} />
+                            </Field>
                         </div>
                         <div className="flex gap-2 mt-2">
-                            <button type="submit" disabled={adding}
-                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-60"
-                                style={{ background: '#34d399' }}>
-                                <Save size={13} /> {adding ? 'Saving…' : 'Save Slot'}
-                            </button>
-                            <button type="button" onClick={() => setShowForm(false)}
-                                className="px-4 py-2 rounded-lg text-sm border"
-                                style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                            <Button type="submit" disabled={adding} loading={adding} size="sm" icon={adding ? undefined : Save} className="!bg-[image:none] bg-success">
+                                {adding ? 'Saving…' : 'Save Slot'}
+                            </Button>
+                            <Button type="button" onClick={() => setShowForm(false)} variant="secondary" size="sm">
                                 Cancel
-                            </button>
+                            </Button>
                         </div>
                     </motion.form>
                 )}
             </AnimatePresence>
 
             {slots.length === 0 ? (
-                <p className="text-sm text-center py-6" style={{ color: 'var(--text-secondary)' }}>No availability set. Add slots so students can book you.</p>
+                <p className="text-sm text-center py-6 text-fg-secondary">No availability set. Add slots so students can book you.</p>
             ) : (
                 <div className="flex flex-col gap-2">
                     {slots.map(slot => (
-                        <div key={slot.id} className="flex items-center justify-between px-4 py-3 rounded-xl border"
-                            style={{ background: 'var(--bg-hover)', borderColor: 'var(--border-subtle)' }}>
+                        <div key={slot.id} className="flex items-center justify-between px-4 py-3 rounded-xl border border-border bg-surface-hover">
                             <div className="flex items-center gap-3">
                                 <span className="text-sm font-semibold w-24">{slot.day_of_week}</span>
-                                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                                <span className="text-sm text-fg-secondary">
                                     {fmtSlotTime(slot.start_time.slice(11,16))} – {fmtSlotTime(slot.end_time.slice(11,16))}
                                 </span>
                             </div>
                             <button onClick={() => deleteSlot(slot.id)}
-                                className="p-1.5 rounded-lg transition-colors hover:bg-red-500 hover:text-white"
-                                style={{ color: 'var(--text-secondary)' }}>
+                                className="p-1.5 rounded-lg transition-colors text-fg-secondary hover:bg-danger hover:text-white">
                                 <Trash2 size={14} />
                             </button>
                         </div>
@@ -156,46 +145,33 @@ function ProfileEditor({ tutor, onSaved }) {
     };
 
     return (
-        <div className="rounded-2xl border p-6" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}>
+        <div className="rounded-2xl border border-border bg-surface p-6">
             <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold" style={{ fontFamily: "'Space Grotesk',sans-serif" }}>Tutor Profile</h2>
-                <button onClick={() => setOpen(v => !v)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold border"
-                    style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}>
-                    <Edit3 size={13} /> {open ? 'Cancel' : 'Edit'}
-                </button>
+                <h2 className="text-lg font-bold" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>Tutor Profile</h2>
+                <Button variant="secondary" size="sm" icon={Edit3} onClick={() => setOpen(v => !v)}>
+                    {open ? 'Cancel' : 'Edit'}
+                </Button>
             </div>
             {!open ? (
-                <div className="space-y-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    <p><span className="font-semibold" style={{ color: 'var(--text-primary)' }}>Rate:</span> {Number(tutor?.hourly_rate).toLocaleString()} FCFA/hr</p>
-                    <p><span className="font-semibold" style={{ color: 'var(--text-primary)' }}>Subjects:</span> {tutor?.subjects?.join(', ')}</p>
-                    <p><span className="font-semibold" style={{ color: 'var(--text-primary)' }}>Bio:</span> {tutor?.bio}</p>
+                <div className="space-y-2 text-sm text-fg-secondary">
+                    <p><span className="font-semibold text-fg">Rate:</span> {Number(tutor?.hourly_rate).toLocaleString()} FCFA/hr</p>
+                    <p><span className="font-semibold text-fg">Subjects:</span> {tutor?.subjects?.join(', ')}</p>
+                    <p><span className="font-semibold text-fg">Bio:</span> {tutor?.bio}</p>
                 </div>
             ) : (
                 <form onSubmit={save} className="space-y-4">
-                    <div>
-                        <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>Hourly Rate (FCFA)</label>
-                        <input type="number" value={form.hourlyRate} onChange={e => setForm(f => ({ ...f, hourlyRate: e.target.value }))}
-                            className="w-full px-3 py-2 rounded-xl border text-sm"
-                            style={{ background: 'var(--bg-main)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }} />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>Subjects (comma-separated)</label>
-                        <input type="text" value={form.subjects} onChange={e => setForm(f => ({ ...f, subjects: e.target.value }))}
-                            className="w-full px-3 py-2 rounded-xl border text-sm"
-                            style={{ background: 'var(--bg-main)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }} />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>Bio</label>
-                        <textarea value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
-                            rows={3} className="w-full px-3 py-2 rounded-xl border text-sm resize-none"
-                            style={{ background: 'var(--bg-main)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }} />
-                    </div>
-                    <button type="submit" disabled={saving}
-                        className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
-                        style={{ background: 'linear-gradient(135deg,#0052cc,#0066ff)' }}>
-                        <Save size={13} /> {saving ? 'Saving…' : 'Save Changes'}
-                    </button>
+                    <Field label="Hourly Rate (FCFA)" className="mb-0">
+                        <Input type="number" value={form.hourlyRate} onChange={e => setForm(f => ({ ...f, hourlyRate: e.target.value }))} />
+                    </Field>
+                    <Field label="Subjects (comma-separated)" className="mb-0">
+                        <Input type="text" value={form.subjects} onChange={e => setForm(f => ({ ...f, subjects: e.target.value }))} />
+                    </Field>
+                    <Field label="Bio" className="mb-0">
+                        <Textarea value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} rows={3} />
+                    </Field>
+                    <Button type="submit" disabled={saving} loading={saving} icon={saving ? undefined : Save} size="sm">
+                        {saving ? 'Saving…' : 'Save Changes'}
+                    </Button>
                 </form>
             )}
         </div>
@@ -209,14 +185,6 @@ const fadeUp = {
 };
 const stagger = (s = 0.08) => ({ hidden: {}, show: { transition: { staggerChildren: s } } });
 
-/* ── helpers ──────────────────────────────────────────────────── */
-const STATUS = {
-    pending:   { bg: 'rgba(251,191,36,0.12)',  color: '#fbbf24', label: 'Pending'   },
-    confirmed: { bg: 'rgba(52,211,153,0.12)',  color: '#34d399', label: 'Confirmed' },
-    completed: { bg: 'rgba(96,165,250,0.12)',  color: '#60a5fa', label: 'Completed' },
-    cancelled: { bg: 'rgba(248,113,113,0.12)', color: '#f87171', label: 'Cancelled' },
-};
-
 function fmt(dateStr) {
     return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
@@ -227,17 +195,16 @@ function StatCard({ icon: Icon, label, value, color, sub }) {
     return (
         <motion.div
             variants={fadeUp}
-            className="rounded-2xl p-6 border flex items-center gap-4"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+            className="rounded-2xl p-6 border border-border bg-surface flex items-center gap-4"
         >
             <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
                 style={{ background: `${color}1a` }}>
                 <Icon size={22} color={color} strokeWidth={1.75} />
             </div>
             <div>
-                <p className="text-xs font-medium mb-0.5" style={{ color: 'var(--text-secondary)' }}>{label}</p>
-                <p className="text-2xl font-bold tabular-nums" style={{ fontFamily: "'Space Grotesk',sans-serif", color }}>{value}</p>
-                {sub && <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{sub}</p>}
+                <p className="text-xs font-medium mb-0.5 text-fg-secondary">{label}</p>
+                <p className="text-2xl font-bold tabular-nums" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", color }}>{value}</p>
+                {sub && <p className="text-xs text-fg-secondary">{sub}</p>}
             </div>
         </motion.div>
     );
@@ -245,7 +212,8 @@ function StatCard({ icon: Icon, label, value, color, sub }) {
 
 /* ── booking row ──────────────────────────────────────────────── */
 function BookingRow({ booking, onAction }) {
-    const s = STATUS[booking.status] ?? STATUS.pending;
+    const tone = BOOKING_STATUS_TONE[booking.status] ?? 'warning';
+    const label = BOOKING_STATUS_LABEL[booking.status] ?? 'Pending';
     const studentName = booking.users
         ? `${booking.users.first_name} ${booking.users.last_name}`
         : 'Student';
@@ -268,14 +236,13 @@ function BookingRow({ booking, onAction }) {
         <motion.div
             variants={fadeUp}
             layout
-            className="rounded-2xl p-5 border flex flex-col sm:flex-row sm:items-center gap-4"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+            className="rounded-2xl p-5 border border-border bg-surface flex flex-col sm:flex-row sm:items-center gap-4"
         >
             {/* student + subject */}
             <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate">{studentName}</p>
-                <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-secondary)' }}>{booking.subject}</p>
-                <div className="flex flex-wrap gap-3 mt-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                <p className="text-xs mt-0.5 truncate text-fg-secondary">{booking.subject}</p>
+                <div className="flex flex-wrap gap-3 mt-2 text-xs text-fg-secondary">
                     <span className="flex items-center gap-1"><Calendar size={12} />{fmt(booking.session_date)}</span>
                     <span className="flex items-center gap-1"><Clock size={12} />{fmtTime(booking.start_time)} – {fmtTime(booking.end_time)}</span>
                 </div>
@@ -283,48 +250,24 @@ function BookingRow({ booking, onAction }) {
 
             {/* amount + status */}
             <div className="flex items-center gap-3 shrink-0">
-                <span className="font-bold text-sm" style={{ color: 'var(--accent-blue)' }}>
+                <span className="font-bold text-sm text-primary">
                     {Number(booking.total_amount).toLocaleString()} FCFA
                 </span>
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
-                    style={{ background: s.bg, color: s.color }}>{s.label}</span>
+                <Badge tone={tone}>{label}</Badge>
             </div>
 
             {/* actions — only for pending */}
             {booking.status === 'pending' && (
                 <div className="flex gap-2 shrink-0">
-                    <motion.button
-                        whileTap={{ scale: 0.95 }}
-                        disabled={acting}
-                        onClick={() => handle('confirmed')}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
-                        style={{ background: '#34d399', opacity: acting ? 0.6 : 1 }}
-                    >
-                        <CheckCircle size={13} /> Confirm
-                    </motion.button>
-                    <motion.button
-                        whileTap={{ scale: 0.95 }}
-                        disabled={acting}
-                        onClick={() => handle('cancelled')}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
-                        style={{ background: 'rgba(248,113,113,0.12)', color: '#f87171', opacity: acting ? 0.6 : 1 }}
-                    >
-                        <XCircle size={13} /> Decline
-                    </motion.button>
+                    <Button size="sm" disabled={acting} onClick={() => handle('confirmed')} icon={CheckCircle} className="!bg-[image:none] bg-success">
+                        Confirm
+                    </Button>
+                    <Button size="sm" disabled={acting} onClick={() => handle('cancelled')} icon={XCircle} variant="danger" className="!bg-danger-bg !text-danger">
+                        Decline
+                    </Button>
                 </div>
             )}
         </motion.div>
-    );
-}
-
-/* ── empty ────────────────────────────────────────────────────── */
-function Empty({ msg }) {
-    return (
-        <div className="text-center py-12 rounded-2xl border"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}>
-            <AlertCircle size={28} className="mx-auto mb-3" style={{ color: 'var(--text-secondary)' }} />
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{msg}</p>
-        </div>
     );
 }
 
@@ -374,30 +317,23 @@ export default function TutorDashboard() {
         .sort((a, b) => new Date(a.session_date) - new Date(b.session_date))[0];
 
     if (loading) return (
-        <div className="lg:pl-60 flex items-center justify-center min-h-screen"
-            style={{ background: 'var(--bg-main)' }}>
-            <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
-                style={{ borderColor: 'var(--accent-blue)', borderTopColor: 'transparent' }} />
+        <div className="lg:pl-60 flex items-center justify-center min-h-screen bg-bg">
+            <div className="w-8 h-8 rounded-full border-2 border-border border-t-primary animate-spin" />
         </div>
     );
 
     if (notTutor) return (
-        <div className="lg:pl-60 flex flex-col items-center justify-center min-h-screen gap-5 px-4"
-            style={{ background: 'var(--bg-main)' }}>
-            <BookOpen size={40} style={{ color: 'var(--text-secondary)' }} />
-            <p className="text-lg font-semibold" style={{ fontFamily: "'Space Grotesk',sans-serif" }}>
+        <div className="lg:pl-60 flex flex-col items-center justify-center min-h-screen gap-5 px-4 bg-bg">
+            <BookOpen size={40} className="text-fg-secondary" />
+            <p className="text-lg font-semibold" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
                 You're not a tutor yet
             </p>
-            <Link to="/become-tutor"
-                className="px-6 py-3 rounded-xl font-semibold text-white text-sm"
-                style={{ background: 'linear-gradient(135deg,#0052cc,#0066ff)' }}>
-                Become a Tutor
-            </Link>
+            <Button to="/become-tutor" size="lg">Become a Tutor</Button>
         </div>
     );
 
     return (
-        <div className="lg:pl-60" style={{ background: 'var(--bg-main)', minHeight: '100vh' }}>
+        <div className="lg:pl-60 min-h-screen bg-bg">
             <main className="pt-20 pb-16 px-4 md:px-8 max-w-6xl mx-auto">
 
                 {/* ── header ── */}
@@ -405,19 +341,16 @@ export default function TutorDashboard() {
                     className="mb-8">
                     <motion.div variants={fadeUp} className="flex items-start justify-between flex-wrap gap-4">
                         <div>
-                            <h1 className="text-2xl md:text-3xl font-bold gradient-text"
-                                style={{ fontFamily: "'Space Grotesk',sans-serif" }}>
+                            <h1 className="text-2xl md:text-3xl font-bold gradient-text" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
                                 Tutor Dashboard
                             </h1>
-                            <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+                            <p className="text-sm mt-1 text-fg-secondary">
                                 {tutor?.subjects?.join(', ') || 'Your subjects'} · {tutor?.hourly_rate} FCFA/hr
                             </p>
                         </div>
-                        <Link to={`/tutor/${tutor?.id}`}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-colors"
-                            style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-primary)', background: 'var(--bg-card)' }}>
-                            View Profile <ChevronRight size={15} />
-                        </Link>
+                        <Button to={`/tutor/${tutor?.id}`} variant="secondary" icon={ChevronRight} iconPosition="right">
+                            View Profile
+                        </Button>
                     </motion.div>
                 </motion.div>
 
@@ -428,22 +361,20 @@ export default function TutorDashboard() {
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0 }}
-                            className="rounded-2xl p-5 border mb-6 flex flex-wrap items-center gap-4"
-                            style={{ background: 'rgba(0,102,255,0.07)', borderColor: 'rgba(0,102,255,0.2)' }}
+                            className="rounded-2xl p-5 border border-primary/20 bg-primary-subtle mb-6 flex flex-wrap items-center gap-4"
                         >
-                            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                                style={{ background: 'rgba(0,102,255,0.15)' }}>
-                                <Calendar size={20} color="var(--accent-blue)" />
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-primary/15">
+                                <Calendar size={20} className="text-primary" />
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm font-semibold">Next session</p>
-                                <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                                <p className="text-xs mt-0.5 text-fg-secondary">
                                     {nextSession.users
                                         ? `${nextSession.users.first_name} ${nextSession.users.last_name}`
                                         : 'Student'} · {nextSession.subject} · {fmt(nextSession.session_date)} at {fmtTime(nextSession.start_time)}
                                 </p>
                             </div>
-                            <span className="text-sm font-bold" style={{ color: 'var(--accent-blue)' }}>
+                            <span className="text-sm font-bold text-primary">
                                 {Number(nextSession.total_amount).toLocaleString()} FCFA
                             </span>
                         </motion.div>
@@ -458,7 +389,7 @@ export default function TutorDashboard() {
                 >
                     <StatCard icon={DollarSign}  label="Total Earned"      value={`${totalEarnings.toLocaleString()} FCFA`} color="#34d399" />
                     <StatCard icon={AlertCircle} label="Pending Requests"  value={pendingCount}   color="#fbbf24" sub="need action" />
-                    <StatCard icon={TrendingUp}  label="Upcoming Sessions" value={confirmedCount} color="var(--accent-blue)" />
+                    <StatCard icon={TrendingUp}  label="Upcoming Sessions" value={confirmedCount} color="var(--brand-600)" />
                     <StatCard icon={Star}        label="Completed"         value={completedCount} color="#8b5cf6" sub="sessions" />
                 </motion.div>
 
@@ -478,12 +409,11 @@ export default function TutorDashboard() {
                 {/* ── bookings ── */}
                 <div>
                     <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
-                        <h2 className="text-lg font-bold" style={{ fontFamily: "'Space Grotesk',sans-serif" }}>
+                        <h2 className="text-lg font-bold" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
                             Bookings
                         </h2>
                         {/* tab pills */}
-                        <div className="flex gap-1 p-1 rounded-xl border overflow-x-auto"
-                            style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-card)' }}>
+                        <div className="flex gap-1 p-1 rounded-xl border border-border bg-surface overflow-x-auto">
                             {TABS.map(t => {
                                 const count = bookings.filter(b => b.status === t).length;
                                 const active = tab === t;
@@ -492,20 +422,19 @@ export default function TutorDashboard() {
                                         key={t}
                                         onClick={() => setTab(t)}
                                         whileTap={{ scale: 0.96 }}
-                                        className="relative px-4 py-1.5 rounded-lg text-sm font-medium capitalize"
-                                        style={{ color: active ? '#fff' : 'var(--text-secondary)', zIndex: 1 }}
+                                        className={`relative px-4 py-1.5 rounded-lg text-sm font-medium capitalize ${active ? 'text-white' : 'text-fg-secondary'}`}
+                                        style={{ zIndex: 1 }}
                                     >
                                         {active && (
                                             <motion.span layoutId="tutor-tab"
-                                                className="absolute inset-0 rounded-lg"
-                                                style={{ background: 'var(--accent-blue)', zIndex: -1 }}
+                                                className="absolute inset-0 rounded-lg bg-primary"
+                                                style={{ zIndex: -1 }}
                                                 transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                                             />
                                         )}
                                         {t}
                                         {count > 0 && (
-                                            <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full"
-                                                style={{ background: active ? 'rgba(255,255,255,0.25)' : 'var(--bg-hover)' }}>
+                                            <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${active ? 'bg-white/25' : 'bg-surface-hover'}`}>
                                                 {count}
                                             </span>
                                         )}
@@ -524,7 +453,7 @@ export default function TutorDashboard() {
                             transition={{ duration: 0.25 }}
                         >
                             {filtered.length === 0
-                                ? <Empty msg={`No ${tab} bookings.`} />
+                                ? <EmptyState icon={AlertCircle} description={`No ${tab} bookings.`} />
                                 : (
                                     <motion.div className="flex flex-col gap-3"
                                         variants={stagger(0.06)} initial="hidden" animate="show">

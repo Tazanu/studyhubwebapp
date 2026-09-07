@@ -1,14 +1,18 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import {
-    ArrowLeft, ThumbsUp, ThumbsDown, Bookmark, Bell, MessageSquare,
-    Check, Mic, MicOff, Image as ImageIcon, X, Volume2, Eye, Loader2
+    ArrowLeft, ThumbsUp, ThumbsDown, Bookmark, Bell, Check, Mic, MicOff,
+    X, Volume2, Eye, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
+import Textarea from '../components/ui/Textarea';
+import Button from '../components/ui/Button';
+import Badge from '../components/ui/Badge';
+import { useAudioRecorder } from '../hooks/useAudioRecorder';
+import { cn } from '../lib/cn';
 
 const API_ORIGIN = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '');
 
@@ -20,12 +24,7 @@ export default function QuestionDetail() {
     const [loading, setLoading] = useState(true);
     const [answerContent, setAnswerContent] = useState('');
     const [submitting, setSubmitting] = useState(false);
-    const [recording, setRecording] = useState(false);
-    const [audioBlob, setAudioBlob] = useState(null);
-    const [audioURL, setAudioURL] = useState('');
-
-    const mediaRecorderRef = useRef(null);
-    const audioChunksRef = useRef([]);
+    const { recording, audioBlob, audioURL, startRecording, stopRecording, resetRecording } = useAudioRecorder();
 
     const fetchQuestion = async () => {
         try {
@@ -74,32 +73,6 @@ export default function QuestionDetail() {
         }
     };
 
-    const startRecording = async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorderRef.current = new MediaRecorder(stream);
-            audioChunksRef.current = [];
-            mediaRecorderRef.current.ondataavailable = (e) => audioChunksRef.current.push(e.data);
-            mediaRecorderRef.current.onstop = () => {
-                const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-                setAudioBlob(blob);
-                setAudioURL(URL.createObjectURL(blob));
-                stream.getTracks().forEach(track => track.stop());
-            };
-            mediaRecorderRef.current.start();
-            setRecording(true);
-        } catch (error) {
-            toast.error('Failed to start recording');
-        }
-    };
-
-    const stopRecording = () => {
-        if (mediaRecorderRef.current && recording) {
-            mediaRecorderRef.current.stop();
-            setRecording(false);
-        }
-    };
-
     const handleSubmitAnswer = async (e) => {
         e.preventDefault();
         if (!answerContent.trim() && !audioBlob) {
@@ -119,8 +92,7 @@ export default function QuestionDetail() {
 
             toast.success('Answer posted!');
             setAnswerContent('');
-            setAudioBlob(null);
-            setAudioURL('');
+            resetRecording();
             fetchQuestion();
         } catch (error) {
             toast.error('Failed to post answer');
@@ -141,10 +113,10 @@ export default function QuestionDetail() {
 
     if (loading) {
         return (
-            <div className="lg:pl-60" style={{ background: 'var(--bg-main)', minHeight: '100vh' }}>
+            <div className="lg:pl-60 min-h-screen bg-bg">
                 <Sidebar />
-                <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-main)', paddingTop: '80px' }}>
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: 'var(--accent-blue)' }} />
+                <div className="min-h-screen flex items-center justify-center" style={{ paddingTop: '80px' }}>
+                    <Loader2 size={40} className="animate-spin text-primary" />
                 </div>
             </div>
         );
@@ -155,16 +127,15 @@ export default function QuestionDetail() {
     const isAuthor = question.author_id === user?.id;
 
     return (
-        <div className="lg:pl-60" style={{ background: 'var(--bg-main)', minHeight: '100vh' }}>
+        <div className="lg:pl-60 min-h-screen bg-bg text-fg">
             <Sidebar />
-            <div className="min-h-screen" style={{ background: 'var(--bg-main)', color: 'var(--text-primary)', paddingTop: '80px' }}>
+            <div className="min-h-screen" style={{ paddingTop: '80px' }}>
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-                
+
                 {/* Header */}
                 <button
                     onClick={() => navigate('/qa')}
-                    className="flex items-center gap-2 mb-6 hover:text-blue-500 transition-colors"
-                    style={{ color: 'var(--text-secondary)' }}
+                    className="flex items-center gap-2 mb-6 text-fg-secondary hover:text-primary transition-colors"
                 >
                     <ArrowLeft size={20} />
                     Back to Questions
@@ -177,25 +148,22 @@ export default function QuestionDetail() {
                         <div className="flex sm:flex-col flex-row items-center gap-2 shrink-0">
                             <button
                                 onClick={() => handleVote(1)}
-                                className={`p-2 rounded-lg transition-all ${question.userVote === 1 ? 'text-green-500' : 'hover:bg-green-500 hover:text-white'}`}
-                                style={{ color: question.userVote === 1 ? '#34d399' : 'var(--text-secondary)' }}
+                                className={cn('p-2 rounded-lg transition-all', question.userVote === 1 ? 'text-success' : 'text-fg-secondary hover:bg-success hover:text-white')}
                             >
                                 <ThumbsUp size={22} />
                             </button>
-                            <span className="text-xl font-bold" style={{ color: question.votes > 0 ? '#34d399' : 'var(--text-primary)' }}>
+                            <span className={cn('text-xl font-bold', question.votes > 0 ? 'text-success' : 'text-fg')}>
                                 {question.votes}
                             </span>
                             <button
                                 onClick={() => handleVote(-1)}
-                                className={`p-2 rounded-lg transition-all ${question.userVote === -1 ? 'text-red-500' : 'hover:bg-red-500 hover:text-white'}`}
-                                style={{ color: question.userVote === -1 ? '#ef4444' : 'var(--text-secondary)' }}
+                                className={cn('p-2 rounded-lg transition-all', question.userVote === -1 ? 'text-danger' : 'text-fg-secondary hover:bg-danger hover:text-white')}
                             >
                                 <ThumbsDown size={22} />
                             </button>
                             <button
                                 onClick={handleBookmark}
-                                className="p-2 rounded-lg transition-all hover:text-blue-500"
-                                style={{ color: question.isBookmarked ? 'var(--accent-blue)' : 'var(--text-secondary)' }}
+                                className={cn('p-2 rounded-lg transition-all hover:text-primary', question.isBookmarked ? 'text-primary' : 'text-fg-secondary')}
                             >
                                 <Bookmark size={18} fill={question.isBookmarked ? 'currentColor' : 'none'} />
                             </button>
@@ -204,31 +172,29 @@ export default function QuestionDetail() {
                         {/* Content */}
                         <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-4 mb-4">
-                                <h1 className="text-xl sm:text-3xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                                <h1 className="text-xl sm:text-3xl font-bold" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                                     {question.title}
                                 </h1>
                                 {question.is_solved && (
-                                    <span className="px-3 py-1 rounded-full text-sm font-semibold bg-green-500 text-white whitespace-nowrap">
-                                        Solved
-                                    </span>
+                                    <Badge tone="success" className="whitespace-nowrap">Solved</Badge>
                                 )}
                             </div>
 
-                            <div className="flex flex-wrap gap-3 mb-4 text-sm" style={{ color: 'var(--text-muted)' }}>
+                            <div className="flex flex-wrap gap-3 mb-4 text-sm text-fg-muted">
                                 <span className="flex items-center gap-1">
                                     <Eye size={16} />
                                     {question.views} views
                                 </span>
-                                <span>Asked by <span className="font-semibold" style={{ color: 'var(--accent-blue)' }}>{question.users.first_name} {question.users.last_name}</span></span>
-                                <span style={{ color: '#fbbf24' }}>Reputation: {question.users.reputation}</span>
+                                <span>Asked by <span className="font-semibold text-primary">{question.users.first_name} {question.users.last_name}</span></span>
+                                <span className="text-warning">Reputation: {question.users.reputation}</span>
                             </div>
 
-                            <div className="p-6 rounded-lg border mb-4" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}>
+                            <div className="p-6 rounded-lg border border-border bg-surface mb-4">
                                 <p className="whitespace-pre-wrap mb-4">{question.content}</p>
 
                                 {question.audio_url && (
-                                    <div className="mb-4 p-3 rounded-lg flex items-center gap-3" style={{ background: 'var(--bg-main)' }}>
-                                        <Volume2 size={20} style={{ color: 'var(--accent-blue)' }} />
+                                    <div className="mb-4 p-3 rounded-lg flex items-center gap-3 bg-bg">
+                                        <Volume2 size={20} className="text-primary" />
                                         <audio src={`${API_ORIGIN}${question.audio_url}`} controls className="flex-1" />
                                     </div>
                                 )}
@@ -243,17 +209,17 @@ export default function QuestionDetail() {
 
                                 <div className="flex flex-wrap gap-2">
                                     {question.tags.map(tag => (
-                                        <span key={tag} className="px-3 py-1 rounded-full text-sm" style={{ background: 'rgba(0, 102, 255, 0.1)', color: 'var(--accent-blue)' }}>
-                                            #{tag}
-                                        </span>
+                                        <Badge key={tag} tone="primary">#{tag}</Badge>
                                     ))}
                                 </div>
                             </div>
 
                             <button
                                 onClick={handleFollow}
-                                className="flex items-center gap-2 px-4 py-2 rounded-lg border transition-all hover:border-blue-500"
-                                style={{ borderColor: question.isFollowing ? 'var(--accent-blue)' : 'var(--border-subtle)', color: question.isFollowing ? 'var(--accent-blue)' : 'var(--text-secondary)' }}
+                                className={cn(
+                                    'flex items-center gap-2 px-4 py-2 rounded-md border-2 transition-all hover:border-primary',
+                                    question.isFollowing ? 'border-primary text-primary' : 'border-border text-fg-secondary',
+                                )}
                             >
                                 <Bell size={18} fill={question.isFollowing ? 'currentColor' : 'none'} />
                                 {question.isFollowing ? 'Following' : 'Follow'}
@@ -264,25 +230,25 @@ export default function QuestionDetail() {
 
                 {/* Answers */}
                 <div className="mb-8">
-                    <h2 className="text-2xl font-bold mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                    <h2 className="text-2xl font-bold mb-4" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                         {question.answers.length} {question.answers.length === 1 ? 'Answer' : 'Answers'}
                     </h2>
 
                     {question.answers.map(answer => (
-                        <div key={answer.id} className="mb-6 p-4 sm:p-6 rounded-lg border" style={{ background: 'var(--bg-card)', borderColor: answer.is_accepted ? '#34d399' : 'var(--border-subtle)' }}>
+                        <div key={answer.id} className={cn('mb-6 p-4 sm:p-6 rounded-lg border bg-surface', answer.is_accepted ? 'border-success' : 'border-border')}>
                             <div className="flex flex-col sm:flex-row gap-4">
                                 <div className="flex sm:flex-col flex-row items-center gap-2 shrink-0">
-                                    <button onClick={() => handleVote(1, true, answer.id)} className="p-2 rounded-lg transition-all hover:bg-green-500 hover:text-white">
+                                    <button onClick={() => handleVote(1, true, answer.id)} className="p-2 rounded-lg transition-all text-fg-secondary hover:bg-success hover:text-white">
                                         <ThumbsUp size={20} />
                                     </button>
                                     <span className="text-xl font-bold">{answer.votes}</span>
-                                    <button onClick={() => handleVote(-1, true, answer.id)} className="p-2 rounded-lg transition-all hover:bg-red-500 hover:text-white">
+                                    <button onClick={() => handleVote(-1, true, answer.id)} className="p-2 rounded-lg transition-all text-fg-secondary hover:bg-danger hover:text-white">
                                         <ThumbsDown size={20} />
                                     </button>
                                     {isAuthor && !question.is_solved && (
                                         <button
                                             onClick={() => handleAcceptAnswer(answer.id)}
-                                            className="p-2 rounded-lg transition-all hover:bg-green-500 hover:text-white mt-2"
+                                            className="p-2 rounded-lg transition-all mt-2 text-fg-secondary hover:bg-success hover:text-white"
                                             title="Accept as best answer"
                                         >
                                             <Check size={20} />
@@ -292,7 +258,7 @@ export default function QuestionDetail() {
 
                                 <div className="flex-1">
                                     {answer.is_accepted && (
-                                        <div className="flex items-center gap-2 mb-3 text-green-500 font-semibold">
+                                        <div className="flex items-center gap-2 mb-3 text-success font-semibold">
                                             <Check size={20} />
                                             Accepted Answer
                                         </div>
@@ -301,15 +267,15 @@ export default function QuestionDetail() {
                                     <p className="whitespace-pre-wrap mb-4">{answer.content}</p>
 
                                     {answer.audio_url && (
-                                        <div className="mb-4 p-3 rounded-lg flex items-center gap-3" style={{ background: 'var(--bg-main)' }}>
-                                            <Volume2 size={18} style={{ color: 'var(--accent-blue)' }} />
+                                        <div className="mb-4 p-3 rounded-lg flex items-center gap-3 bg-bg">
+                                            <Volume2 size={18} className="text-primary" />
                                             <audio src={`${API_ORIGIN}${answer.audio_url}`} controls className="flex-1" />
                                         </div>
                                     )}
 
-                                    <div className="text-sm flex items-center gap-3" style={{ color: 'var(--text-secondary)' }}>
-                                        <span>by <span className="font-semibold" style={{ color: 'var(--accent-blue)' }}>{answer.users.first_name} {answer.users.last_name}</span></span>
-                                        <span style={{ color: '#fbbf24' }}>({answer.users.reputation})</span>
+                                    <div className="text-sm flex items-center gap-3 text-fg-secondary">
+                                        <span>by <span className="font-semibold text-primary">{answer.users.first_name} {answer.users.last_name}</span></span>
+                                        <span className="text-warning">({answer.users.reputation})</span>
                                     </div>
                                 </div>
                             </div>
@@ -318,46 +284,38 @@ export default function QuestionDetail() {
                 </div>
 
                 {/* Answer Form */}
-                <div className="p-6 rounded-lg border" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}>
-                    <h3 className="text-xl font-bold mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Your Answer</h3>
+                <div className="p-6 rounded-lg border border-border bg-surface">
+                    <h3 className="text-xl font-bold mb-4" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Your Answer</h3>
                     <form onSubmit={handleSubmitAnswer} className="space-y-4">
-                        <textarea
+                        <Textarea
                             value={answerContent}
                             onChange={(e) => setAnswerContent(e.target.value)}
                             placeholder="Write your answer..."
                             rows={6}
-                            className="w-full px-4 py-3 rounded-lg border outline-none transition-all resize-none"
-                            style={{ background: 'var(--bg-main)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
                         />
 
                         {!audioURL ? (
-                            <button
+                            <Button
                                 type="button"
                                 onClick={recording ? stopRecording : startRecording}
-                                className={`px-4 py-2 rounded-lg font-semibold text-white flex items-center gap-2 ${recording ? 'animate-pulse' : ''}`}
-                                style={{ background: recording ? '#ef4444' : 'var(--accent-blue)' }}
+                                icon={recording ? MicOff : Mic}
+                                variant={recording ? 'danger' : 'primary'}
+                                className={recording ? 'animate-pulse' : ''}
                             >
-                                {recording ? <MicOff size={18} /> : <Mic size={18} />}
                                 {recording ? 'Stop Recording' : 'Add Voice Answer'}
-                            </button>
+                            </Button>
                         ) : (
                             <div className="flex items-center gap-3">
                                 <audio src={audioURL} controls className="flex-1" />
-                                <button type="button" onClick={() => { setAudioBlob(null); setAudioURL(''); }} className="p-2 rounded-lg hover:bg-red-500 hover:text-white transition-colors">
+                                <button type="button" onClick={resetRecording} className="p-2 rounded-lg text-fg-secondary hover:bg-danger hover:text-white transition-colors">
                                     <X size={18} />
                                 </button>
                             </div>
                         )}
 
-                        <button
-                            type="submit"
-                            disabled={submitting}
-                            className="px-8 py-3 rounded-lg font-semibold text-white transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                            style={{ background: 'linear-gradient(135deg, #0052cc, #0066ff)' }}
-                        >
-                            {submitting && <Loader2 size={18} className="animate-spin" />}
+                        <Button type="submit" disabled={submitting} loading={submitting} size="lg" className="hover:-translate-y-0.5">
                             {submitting ? 'Posting...' : 'Post Answer'}
-                        </button>
+                        </Button>
                     </form>
                 </div>
                 </div>

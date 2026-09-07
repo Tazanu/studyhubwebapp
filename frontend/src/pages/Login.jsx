@@ -1,18 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Loader2, WifiOff } from 'lucide-react';
+import { Eye, EyeOff, WifiOff } from 'lucide-react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
-
-function FieldError({ id, msg }) {
-    if (!msg) return null;
-    return (
-        <p id={id} role="alert" className="text-xs mt-1.5" style={{ color: 'var(--error)' }}>
-            {msg}
-        </p>
-    );
-}
+import Field from '../components/ui/Field';
+import Input from '../components/ui/Input';
+import Button from '../components/ui/Button';
+import Seo from '../components/Seo';
 
 export default function Login() {
     const { login }  = useAuth();
@@ -80,26 +75,20 @@ export default function Login() {
     };
 
     return (
-        <div
-            className="min-h-screen flex items-center justify-center px-4 pt-20"
-            style={{ background: 'var(--bg-main)', color: 'var(--text-primary)' }}
-        >
-            <div
-                className="form-card w-full max-w-md rounded-2xl p-6 sm:p-10 border"
-                style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}
-            >
+        <div className="min-h-screen flex items-center justify-center px-4 pt-20 bg-bg text-fg">
+            <Seo title="Log In" description="Log in to your StudyHub account to reach your study groups, saved notes, Q&amp;A answers and tutor bookings." path="/login" />
+            <div className="form-card w-full max-w-md rounded-2xl p-6 sm:p-10 border border-border bg-surface shadow-lg">
                 {/* header */}
                 <div className="text-center mb-8">
                     <div className="text-2xl font-bold mb-3 logo-gradient">StudyHub</div>
-                    <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--primary)' }}>Welcome Back</h1>
-                    <p style={{ color: 'var(--text-secondary)' }}>Sign in to continue your learning journey</p>
+                    <h1 className="text-2xl font-bold mb-2 text-fg">Welcome Back</h1>
+                    <p className="text-fg-secondary">Sign in to continue your learning journey</p>
                 </div>
 
                 {/* general error — aria-live so screen readers announce it */}
                 <div aria-live="polite" aria-atomic="true">
                     {errors.general && (
-                        <div className="mb-5 px-4 py-3 rounded-lg text-sm text-center"
-                            style={{ color: 'var(--error)', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)' }}>
+                        <div className="mb-5 px-4 py-3 rounded-lg text-sm text-center bg-danger-bg text-danger border border-danger/25">
                             {errors.general}
                         </div>
                     )}
@@ -108,11 +97,8 @@ export default function Login() {
                 <form onSubmit={handleSubmit} noValidate>
 
                     {/* email */}
-                    <div className="mb-5">
-                        <label htmlFor="email" className="block font-semibold text-sm mb-1.5">
-                            Email Address
-                        </label>
-                        <input
+                    <Field label="Email Address" htmlFor="email" error={touched.email ? errors.email : ''}>
+                        <Input
                             id="email"
                             type="email"
                             value={email}
@@ -121,20 +107,14 @@ export default function Login() {
                             placeholder="you@university.cm"
                             autoComplete="email"
                             aria-describedby={errors.email ? 'email-error' : undefined}
-                            aria-invalid={!!errors.email}
-                            className="form-input px-4"
-                            style={errors.email && touched.email ? { borderColor: 'var(--error)' } : {}}
+                            invalid={!!(errors.email && touched.email)}
                         />
-                        <FieldError id="email-error" msg={touched.email ? errors.email : ''} />
-                    </div>
+                    </Field>
 
                     {/* password + toggle */}
-                    <div className="mb-5">
-                        <label htmlFor="password" className="block font-semibold text-sm mb-1.5">
-                            Password
-                        </label>
+                    <Field label="Password" htmlFor="password" error={touched.password ? errors.password : ''}>
                         <div className="relative">
-                            <input
+                            <Input
                                 id="password"
                                 type={showPw ? 'text' : 'password'}
                                 value={password}
@@ -143,64 +123,56 @@ export default function Login() {
                                 placeholder="Enter your password"
                                 autoComplete="current-password"
                                 aria-describedby={errors.password ? 'password-error' : undefined}
-                                aria-invalid={!!errors.password}
-                                className="form-input px-4"
-                                style={{
-                                    paddingRight: '44px',
-                                    ...(errors.password && touched.password ? { borderColor: 'var(--error)' } : {}),
-                                }}
+                                invalid={!!(errors.password && touched.password)}
+                                className="pr-11"
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPw(v => !v)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded transition-colors"
-                                style={{ color: 'var(--text-muted)' }}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded transition-colors text-fg-muted hover:text-fg"
                                 aria-label={showPw ? 'Hide password' : 'Show password'}
                                 tabIndex={0}
                             >
                                 {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
                             </button>
                         </div>
-                        <FieldError id="password-error" msg={touched.password ? errors.password : ''} />
-                    </div>
+                    </Field>
 
-                    {/* remember me */}
-                    <div className="flex items-center gap-2.5 mb-7">
+                    {/* remember me — the box stays 16px visually, but a 24px
+                        padded hit area meets the minimum target size without
+                        making the control look oversized. */}
+                    <div className="flex items-center gap-1.5 mb-7">
                         <input
                             type="checkbox"
                             id="remember"
                             checked={remember}
                             onChange={e => setRemember(e.target.checked)}
-                            className="w-4 h-4 shrink-0"
+                            className="w-4 h-4 shrink-0 m-1 cursor-pointer"
                         />
-                        <label htmlFor="remember" className="text-sm select-none"
-                            style={{ color: 'var(--text-secondary)' }}>
+                        <label htmlFor="remember" className="text-sm select-none cursor-pointer py-1 text-fg-secondary">
                             Remember me
                         </label>
                     </div>
 
                     {/* submit — single focal point */}
-                    <button
+                    <Button
                         type="submit"
-                        disabled={loading || !isOnline}
-                        className="w-full rounded-lg font-bold text-white flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed"
-                        style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))', height: '52px' }}
+                        size="lg"
+                        fullWidth
+                        loading={loading}
+                        disabled={!isOnline}
+                        icon={!isOnline ? WifiOff : undefined}
                         title={!isOnline ? "You're offline — reconnect to sign in" : "Sign in to your account"}
                     >
-                        {!isOnline
-                            ? <><WifiOff size={18} /> You’re Offline</>
-                            : loading
-                            ? <><Loader2 size={18} className="animate-spin" /> Signing in…</>
-                            : 'Sign In →'
-                        }
-                    </button>
+                        {!isOnline ? "You're Offline" : loading ? 'Signing in…' : 'Sign In →'}
+                    </Button>
                 </form>
 
                 {/* secondary action — visually subordinate */}
-                <div className="text-center mt-6 pt-6 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                <div className="text-center mt-6 pt-6 border-t border-border">
+                    <p className="text-sm text-fg-secondary">
                         Don't have an account?{' '}
-                        <Link to="/register" className="font-semibold" style={{ color: 'var(--primary)' }}>
+                        <Link to="/register" className="font-semibold text-primary">
                             Create one free
                         </Link>
                     </p>

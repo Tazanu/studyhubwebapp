@@ -45,7 +45,13 @@ export function AuthProvider({ children }) {
             .finally(() => setAuthReady(true));
     }, []);
 
-    if (!authReady) return null;
+    if (!authReady) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-bg">
+                <div className="w-8 h-8 rounded-full border-2 border-border border-t-primary animate-spin" />
+            </div>
+        );
+    }
 
     return (
         <AuthContext.Provider value={{ user, login, logout, refreshUser, setUser }}>

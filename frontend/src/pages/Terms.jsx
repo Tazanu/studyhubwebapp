@@ -1,11 +1,12 @@
 import HomeFooter from '../components/home/HomeFooter';
+import Seo from '../components/Seo';
 
 const Section = ({ title, children }) => (
     <div className="mb-10">
-        <h2 className="text-lg font-bold mb-3" style={{ color: 'var(--text-primary)', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+        <h2 className="text-lg font-bold mb-3 text-fg" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
             {title}
         </h2>
-        <div className="space-y-3 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+        <div className="space-y-3 text-sm leading-relaxed text-fg-secondary">
             {children}
         </div>
     </div>
@@ -14,13 +15,14 @@ const Section = ({ title, children }) => (
 export default function Terms() {
     return (
         <>
-            <div className="min-h-screen pt-28 pb-20 px-6" style={{ background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
+            <Seo title="Terms of Service" description="The terms governing your use of StudyHub, including account rules, uploaded content, payments and tutor bookings." path="/terms" />
+            <div className="min-h-screen pt-28 pb-20 px-6 bg-bg text-fg">
                 <div className="max-w-2xl mx-auto">
-                    <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--accent-blue)' }}>Legal</p>
+                    <p className="text-sm font-semibold uppercase tracking-widest mb-3 text-primary">Legal</p>
                     <h1 className="font-bold mb-2" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 'clamp(2rem, 5vw, 2.75rem)', letterSpacing: '-0.02em' }}>
                         Terms of Service
                     </h1>
-                    <p className="text-sm mb-12" style={{ color: 'var(--text-muted)' }}>
+                    <p className="text-sm mb-12 text-fg-muted">
                         Last updated: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </p>
 
@@ -132,7 +134,7 @@ export default function Terms() {
                     <Section title="12. Contact">
                         <p>
                             If you have questions about these Terms, please contact us at{' '}
-                            <a href="mailto:support@studyhub.cm" className="hover:underline" style={{ color: 'var(--accent-blue)' }}>
+                            <a href="mailto:support@studyhub.cm" className="hover:underline text-primary">
                                 support@studyhub.cm
                             </a>.
                         </p>

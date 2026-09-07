@@ -148,11 +148,11 @@ export default function SocketTest() {
             padding: '2rem', 
             maxWidth: '800px', 
             margin: '0 auto',
-            background: 'var(--bg-main)',
+            background: 'var(--surface-bg)',
             minHeight: '100vh',
-            color: 'var(--text-primary)'
+            color: 'var(--ink)'
         }}>
-            <h1 style={{ marginBottom: '1rem', fontFamily: "'Space Grotesk', sans-serif" }}>
+            <h1 style={{ marginBottom: '1rem', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                 WebSocket Phase 1 Test
             </h1>
 
@@ -178,8 +178,8 @@ export default function SocketTest() {
             {/* Test Controls */}
             <div style={{
                 padding: '1.5rem',
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-subtle)',
+                background: 'var(--surface-card)',
+                border: '1px solid var(--border-color)',
                 borderRadius: '12px',
                 marginBottom: '1.5rem'
             }}>
@@ -190,7 +190,7 @@ export default function SocketTest() {
                         disabled={!connected}
                         style={{
                             padding: '0.5rem 1rem',
-                            background: 'linear-gradient(135deg,#0052cc,#0066ff)',
+                            background: 'var(--gradient-primary)',
                             color: 'white',
                             border: 'none',
                             borderRadius: '8px',
@@ -254,8 +254,8 @@ export default function SocketTest() {
             {/* Event Log */}
             <div style={{
                 padding: '1.5rem',
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-subtle)',
+                background: 'var(--surface-card)',
+                border: '1px solid var(--border-color)',
                 borderRadius: '12px'
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -265,8 +265,8 @@ export default function SocketTest() {
                         style={{
                             padding: '0.25rem 0.75rem',
                             background: 'transparent',
-                            color: 'var(--text-secondary)',
-                            border: '1px solid var(--border-subtle)',
+                            color: 'var(--ink-secondary)',
+                            border: '1px solid var(--border-color)',
                             borderRadius: '6px',
                             cursor: 'pointer',
                             fontSize: '0.875rem'
@@ -292,9 +292,9 @@ export default function SocketTest() {
                                 style={{
                                     padding: '0.75rem',
                                     marginBottom: '0.5rem',
-                                    background: 'var(--bg-main)',
+                                    background: 'var(--surface-bg)',
                                     borderRadius: '6px',
-                                    border: '1px solid var(--border-subtle)'
+                                    border: '1px solid var(--border-color)'
                                 }}
                             >
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>

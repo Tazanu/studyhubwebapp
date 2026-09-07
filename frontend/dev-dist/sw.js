@@ -81,7 +81,7 @@ define(['./workbox-58553880'], (function (workbox) { 'use strict';
     "revision": "3ca0b8505b4bec776b69afdba2768812"
   }, {
     "url": "index.html",
-    "revision": "0.gpjtc63dnak"
+    "revision": "0.7l887egcr28"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
@@ -94,7 +94,7 @@ define(['./workbox-58553880'], (function (workbox) { 'use strict';
       maxAgeSeconds: 300
     })]
   }), 'GET');
-  workbox.registerRoute(/^http:\/\/localhost:5000\/api\/(groups|notes|tutors|questions)/, new workbox.NetworkFirst({
+  workbox.registerRoute(/^http:\/\/localhost:5000\/api\/(groups|notes|questions)/, new workbox.NetworkFirst({
     "cacheName": "studyhub-content-cache",
     "networkTimeoutSeconds": 5,
     plugins: [new workbox.ExpirationPlugin({
@@ -102,6 +102,7 @@ define(['./workbox-58553880'], (function (workbox) { 'use strict';
       maxAgeSeconds: 86400
     })]
   }), 'GET');
+  workbox.registerRoute(/^http:\/\/localhost:5000\/api\/tutors/, new workbox.NetworkOnly(), 'GET');
   workbox.registerRoute(/^http:\/\/localhost:5000\/api\/(auth|payments|.*\/messages|notes\/.*\/download)/, new workbox.NetworkOnly(), 'GET');
 
 }));

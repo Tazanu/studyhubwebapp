@@ -1,17 +1,28 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { Search, Plus, Users, X, Loader2, UserCheck,
+import { Search, Plus, Users, UserCheck, SearchX,
     Laptop2, Calculator, FlaskConical, Cog, Briefcase,
-    Scale, TrendingUp, Dna, Atom, WifiOff } from 'lucide-react';
+    Scale, TrendingUp, Dna, Atom, WifiOff, Clock } from 'lucide-react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
 import MembersModal from '../components/MembersModal';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import Button from '../components/ui/Button';
+import Badge from '../components/ui/Badge';
+import Modal from '../components/ui/Modal';
+import Field from '../components/ui/Field';
+import Input from '../components/ui/Input';
+import Textarea from '../components/ui/Textarea';
+import Select from '../components/ui/Select';
+import EmptyState from '../components/ui/EmptyState';
+import Skeleton from '../components/ui/Skeleton';
+import InlineConfirm from '../components/ui/InlineConfirm';
+import { useInlineConfirm } from '../hooks/useInlineConfirm';
 
-/* ── banner config ────────────────────────────────────────────── */
+/* ── banner config — deliberate per-subject color coding for scanability across a grid ── */
 const BANNERS = {
     'computer science': { gradient: 'linear-gradient(135deg,#3b82f6,#1d4ed8)',  glow: '#3b82f6', Icon: Laptop2      },
     'mathematics':      { gradient: 'linear-gradient(135deg,#10b981,#047857)',  glow: '#10b981', Icon: Calculator   },
@@ -151,15 +162,13 @@ export default function Groups() {
     const totalMembers = groups.reduce((s, g) => s + (g.current_members || 0), 0);
 
     return (
-        <div className="lg:pl-60" style={{ background: 'var(--bg-main)', minHeight: '100vh', color: 'var(--text-primary)' }}>
+        <div className="lg:pl-60 min-h-screen bg-bg text-fg">
             <Sidebar />
 
             {/* ── HERO ────────────────────────────────────────── */}
-            <section className="pt-20 px-6 py-12 text-center border-b"
-                style={{ background: 'linear-gradient(135deg,rgba(0,102,255,0.07),rgba(139,92,246,0.07))', borderColor: 'var(--border-subtle)' }}>
-                <h1 className="text-3xl md:text-4xl font-bold mb-2 gradient-text"
-                    style={{ fontFamily: "'Space Grotesk',sans-serif" }}>Study Groups</h1>
-                <p className="max-w-xl mx-auto mb-8 text-sm" style={{ color: 'var(--text-secondary)' }}>
+            <section className="pt-20 px-6 py-12 text-center border-b border-border bg-primary-subtle">
+                <h1 className="text-3xl md:text-4xl font-bold mb-2 gradient-text" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>Study Groups</h1>
+                <p className="max-w-xl mx-auto mb-8 text-sm text-fg-secondary">
                     Join collaborative learning communities, share knowledge, and grow with peers.
                 </p>
                 <div className="flex justify-center gap-12 flex-wrap">
@@ -169,55 +178,48 @@ export default function Groups() {
                         [subjects.length,'Subjects'],
                     ].map(([n, l]) => (
                         <div key={l} className="text-center">
-                            <div className="text-3xl font-bold tabular-nums"
-                                style={{ fontFamily: "'Space Grotesk',sans-serif", color: 'var(--accent-blue)' }}>{n}</div>
-                            <div className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>{l}</div>
+                            <div className="text-3xl font-bold tabular-nums text-primary" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>{n}</div>
+                            <div className="text-xs mt-0.5 text-fg-secondary">{l}</div>
                         </div>
                     ))}
                 </div>
             </section>
 
             {/* ── FILTER BAR ──────────────────────────────────── */}
-            <div className="sticky top-16 z-30 px-4 sm:px-6 py-3 border-b"
-                style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}>
+            <div className="sticky top-16 z-30 px-4 sm:px-6 py-3 border-b border-border bg-surface">
                 <div className="max-w-6xl mx-auto flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
                     <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
-                        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2"
-                            style={{ color: 'var(--text-muted)' }} />
-                        <input
+                        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
+                        <Input
                             type="text"
                             placeholder="Search groups…"
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            className="form-input pl-9 pr-4"
-                            style={{ height: 40 }}
+                            className="pl-9 h-10"
                         />
                     </div>
-                    <select
+                    <Select
                         value={subjectFilter}
                         onChange={e => setSubjectFilter(e.target.value)}
-                        className="form-input px-3"
-                        style={{ height: 40, minWidth: 140 }}
+                        className="h-10 min-w-[140px]"
                     >
                         <option value="">All Subjects</option>
                         {subjects.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
+                    </Select>
                     {user ? (
-                        <motion.button
-                            whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                        <Button
                             onClick={() => setShowModal(true)}
                             disabled={!isOnline}
-                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
-                            style={{ background: 'linear-gradient(135deg,#0052cc,#0066ff)' }}
+                            icon={!isOnline ? WifiOff : Plus}
+                            className="w-full sm:w-auto"
                             title={!isOnline ? "You're offline — reconnect to create groups" : "Create a new group"}
                         >
-                            {!isOnline ? <WifiOff size={15} /> : <Plus size={15} />} Create Group
-                        </motion.button>
+                            Create Group
+                        </Button>
                     ) : (
-                        <Link to="/login" className="px-4 py-2 rounded-lg font-semibold border-2 text-sm"
-                            style={{ borderColor: 'var(--accent-blue)', color: 'var(--text-primary)' }}>
+                        <Button to="/login" variant="outline" className="w-full sm:w-auto">
                             Sign In to Create
-                        </Link>
+                        </Button>
                     )}
                 </div>
             </div>
@@ -227,33 +229,24 @@ export default function Groups() {
                 {loading ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[...Array(6)].map((_, i) => (
-                            <div key={i} className="rounded-2xl overflow-hidden border"
-                                style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}>
-                                <div className="h-28 skeleton-shimmer" />
+                            <div key={i} className="rounded-2xl overflow-hidden border border-border bg-surface">
+                                <Skeleton className="h-28 rounded-none" />
                                 <div className="p-6 flex flex-col gap-3">
-                                    <div className="skeleton-shimmer h-4 rounded w-3/4" />
-                                    <div className="skeleton-shimmer h-3 rounded w-full" />
-                                    <div className="skeleton-shimmer h-3 rounded w-5/6" />
-                                    <div className="skeleton-shimmer h-8 rounded mt-2" />
+                                    <Skeleton className="h-4 w-3/4" />
+                                    <Skeleton className="h-3 w-full" />
+                                    <Skeleton className="h-3 w-5/6" />
+                                    <Skeleton className="h-8 mt-2" />
                                 </div>
                             </div>
                         ))}
                     </div>
                 ) : filtered.length === 0 ? (
-                    <div className="text-center py-20">
-                        <p className="text-4xl mb-4">🔍</p>
-                        <h3 className="text-xl font-semibold mb-2">No groups found</h3>
-                        <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
-                            {search || subjectFilter ? 'Try a different search or filter.' : 'Be the first to create a study group!'}
-                        </p>
-                        {user && (
-                            <button onClick={() => setShowModal(true)}
-                                className="px-5 py-2.5 rounded-xl font-semibold text-white text-sm"
-                                style={{ background: 'linear-gradient(135deg,#0052cc,#0066ff)' }}>
-                                Create First Group
-                            </button>
-                        )}
-                    </div>
+                    <EmptyState
+                        icon={SearchX}
+                        title="No groups found"
+                        description={search || subjectFilter ? 'Try a different search or filter.' : 'Be the first to create a study group!'}
+                        action={user && <Button onClick={() => setShowModal(true)}>Create First Group</Button>}
+                    />
                 ) : (
                     <motion.div
                         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
@@ -268,7 +261,6 @@ export default function Groups() {
                                 onJoin={() => handleJoin(group.id)}
                                 onLeave={() => handleLeave(group.id)}
                                 onViewMembers={() => setShowMembersFor(group.id)}
-                                navigate={navigate}
                                 isOnline={isOnline}
                             />
                         ))}
@@ -277,60 +269,49 @@ export default function Groups() {
             </div>
 
             {/* ── CREATE MODAL ────────────────────────────────── */}
-            <AnimatePresence>
-                {showModal && (
-                    <CreateGroupModal
-                        onClose={() => setShowModal(false)}
-                        onCreated={() => { setShowModal(false); loadGroups(false); toast.success('Group created!'); }}
-                    />
-                )}
-            </AnimatePresence>
+            <CreateGroupModal
+                open={showModal}
+                onClose={() => setShowModal(false)}
+                onCreated={() => { setShowModal(false); loadGroups(false); toast.success('Group created!'); }}
+            />
 
             {/* ── MEMBERS MODAL ───────────────────────────────── */}
-            <AnimatePresence>
-                {showMembersFor && (
-                    <MembersModal
-                        groupId={showMembersFor}
-                        onClose={() => setShowMembersFor(null)}
-                    />
-                )}
-            </AnimatePresence>
+            <MembersModal
+                open={!!showMembersFor}
+                groupId={showMembersFor}
+                onClose={() => setShowMembersFor(null)}
+            />
         </div>
     );
 }
 
 /* ── group card ───────────────────────────────────────────────── */
-function GroupCard({ group, user, joining, onJoin, onLeave, onViewMembers, navigate, isOnline }) {
+function GroupCard({ group, user, joining, onJoin, onLeave, onViewMembers, isOnline }) {
     const banner   = getBanner(group.subject);
     const isFull   = group.current_members >= group.max_members;
     const isMember = group.isMember;
     const isOwner  = group.memberRole === 'owner';
-    const [confirmLeave, setConfirmLeave] = useState(false);
+    const confirm  = useInlineConfirm();
 
     return (
         <motion.div
             variants={cardVariant}
-            whileHover={{ y: -4, boxShadow: '0 12px 32px rgba(0,102,255,0.12)' }}
+            whileHover={{ y: -4, boxShadow: '0 12px 32px rgba(59,130,246,0.12)' }}
             transition={{ type: 'spring', stiffness: 280, damping: 22 }}
-            className="rounded-2xl overflow-hidden border flex flex-col relative"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+            className="rounded-2xl overflow-hidden border border-border bg-surface flex flex-col relative"
         >
             {/* Unread badge */}
             {group.unreadCount > 0 && (
                 <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="absolute top-3 right-3 z-10 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                    style={{ background: '#ef4444', boxShadow: '0 2px 8px rgba(239,68,68,0.4)' }}
+                    className="absolute top-3 right-3 z-10 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white bg-danger shadow-md"
                 >
                     {group.unreadCount > 9 ? '9+' : group.unreadCount}
                 </motion.div>
             )}
             {/* banner — Lucide icon + glow + texture */}
-            <div
-                className="relative h-28 flex items-center justify-center select-none overflow-hidden"
-                style={{ background: banner.gradient }}
-            >
+            <div className="relative h-28 flex items-center justify-center select-none overflow-hidden" style={{ background: banner.gradient }}>
                 {/* diagonal stripe texture at low opacity */}
                 <div aria-hidden style={{
                     position: 'absolute', inset: 0,
@@ -353,20 +334,16 @@ function GroupCard({ group, user, joining, onJoin, onLeave, onViewMembers, navig
 
             <div className="p-5 flex flex-col flex-1">
                 <div className="flex justify-between items-start gap-2 mb-2">
-                    <h3 className="font-semibold text-sm leading-snug">{group.name}</h3>
-                    <span className="text-xs px-2 py-0.5 rounded-full shrink-0"
-                        style={{ background: 'rgba(0,102,255,0.12)', color: 'var(--accent-blue)' }}>
-                        {group.subject}
-                    </span>
+                    <h3 className="font-semibold text-sm leading-snug text-fg">{group.name}</h3>
+                    <Badge tone="primary" size="sm" className="shrink-0">{group.subject}</Badge>
                 </div>
-                <p className="text-xs mb-3 flex-1 line-clamp-2" style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>
+                <p className="text-xs mb-3 flex-1 line-clamp-2 text-fg-secondary" style={{ lineHeight: 1.7 }}>
                     {group.description}
                 </p>
-                <div className="flex justify-between text-xs mb-4" style={{ color: 'var(--text-secondary)' }}>
+                <div className="flex justify-between text-xs mb-4 text-fg-secondary">
                     <button
                         onClick={onViewMembers}
-                        className="inline-flex items-center gap-1 transition-colors hover:text-blue-400"
-                        style={{ color: isFull ? 'var(--error)' : '#34d399', fontWeight: 600 }}
+                        className={`inline-flex items-center gap-1 font-semibold transition-colors hover:text-primary ${isFull ? 'text-danger' : 'text-success'}`}
                     >
                         <Users size={12} />
                         {group.current_members}/{group.max_members}
@@ -377,89 +354,52 @@ function GroupCard({ group, user, joining, onJoin, onLeave, onViewMembers, navig
 
                 {/* action buttons */}
                 {!user ? (
-                    <Link to="/login"
-                        className="block text-center text-xs py-2 rounded-lg border font-semibold"
-                        style={{ borderColor: 'var(--accent-blue)', color: 'var(--accent-blue)' }}>
+                    <Button to="/login" variant="outline" size="sm" fullWidth>
                         Sign In to Join
-                    </Link>
+                    </Button>
                 ) : isMember ? (
                     <div className="flex gap-2">
-                        <Link to={`/groups/${group.id}/chat`}
-                            className="flex-1 text-center text-xs py-2 rounded-lg font-semibold text-white"
-                            style={{ background: 'linear-gradient(135deg,#0052cc,#0066ff)' }}>
+                        <Button to={`/groups/${group.id}/chat`} size="sm" fullWidth>
                             Open Chat
-                        </Link>
+                        </Button>
                         {!isOwner && (
-                            <AnimatePresence mode="wait" initial={false}>
-                                {confirmLeave ? (
-                                    <motion.div
-                                        key="confirm"
-                                        initial={{ opacity: 0, scale: 0.92 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.92 }}
-                                        transition={{ duration: 0.15 }}
-                                        className="flex gap-1"
-                                    >
-                                        <button
-                                            onClick={() => { setConfirmLeave(false); onLeave(); }}
-                                            className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white"
-                                            style={{ background: 'var(--error)' }}
-                                        >
-                                            Yes, leave
-                                        </button>
-                                        <button
-                                            onClick={() => setConfirmLeave(false)}
-                                            className="px-2.5 py-1.5 rounded-lg text-xs border"
-                                            style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-secondary)' }}
-                                        >
-                                            Cancel
-                                        </button>
-                                    </motion.div>
-                                ) : (
-                                    <motion.button
-                                        key="leave"
-                                        initial={{ opacity: 0, scale: 0.92 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.92 }}
-                                        transition={{ duration: 0.15 }}
-                                        onClick={() => setConfirmLeave(true)}
-                                        className="px-3 py-2 rounded-lg text-xs border transition-colors hover:border-red-500 hover:text-red-500"
-                                        style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-secondary)' }}
+                            <InlineConfirm
+                                active={confirm.active}
+                                onCancel={confirm.cancel}
+                                onConfirm={() => confirm.run(onLeave)}
+                                confirmLabel="Yes, leave"
+                                trigger={
+                                    <button
+                                        onClick={confirm.ask}
+                                        className="px-3 py-2 rounded-md text-xs border border-border text-fg-secondary transition-colors hover:border-danger hover:text-danger"
                                     >
                                         Leave
-                                    </motion.button>
-                                )}
-                            </AnimatePresence>
+                                    </button>
+                                }
+                            />
                         )}
                     </div>
                 ) : isFull ? (
-                    <button disabled
-                        className="w-full text-xs py-2 rounded-lg opacity-50 cursor-not-allowed border"
-                        style={{ borderColor: 'var(--border-subtle)' }}>
+                    <button disabled className="w-full text-xs py-2 rounded-md opacity-50 cursor-not-allowed border border-border">
                         Group Full
                     </button>
                 ) : group.pendingRequest ? (
-                    <button disabled
-                        className="w-full text-xs py-2 rounded-lg font-semibold cursor-not-allowed"
-                        style={{ background: 'rgba(251,191,36,0.12)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>
-                        ⏳ Request Pending
-                    </button>
+                    <div className="w-full flex items-center justify-center gap-1.5 text-xs py-2 rounded-md font-semibold cursor-not-allowed bg-warning-bg text-warning border border-warning/30">
+                        <Clock size={12} /> Request Pending
+                    </div>
                 ) : (
-                    <motion.button
-                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                    <Button
                         onClick={onJoin}
                         disabled={joining || !isOnline}
-                        className="w-full flex items-center justify-center gap-2 text-xs py-2 rounded-lg font-semibold text-white disabled:opacity-60 disabled:cursor-not-allowed"
-                        style={{ background: 'linear-gradient(135deg,#10b981,#34d399)' }}
+                        loading={joining}
+                        icon={!isOnline ? WifiOff : undefined}
+                        size="sm"
+                        fullWidth
+                        className="!bg-[image:linear-gradient(135deg,#10b981,#34d399)]"
                         title={!isOnline ? "You're offline — reconnect to join" : "Join this group"}
                     >
-                        {!isOnline
-                            ? <><WifiOff size={13} /> Offline</>
-                            : joining
-                            ? <><Loader2 size={13} className="animate-spin" /> Joining…</>
-                            : 'Join Group'
-                        }
-                    </motion.button>
+                        {!isOnline ? 'Offline' : joining ? 'Joining…' : 'Join Group'}
+                    </Button>
                 )}
             </div>
         </motion.div>
@@ -467,33 +407,10 @@ function GroupCard({ group, user, joining, onJoin, onLeave, onViewMembers, navig
 }
 
 /* ── create group modal ───────────────────────────────────────── */
-function CreateGroupModal({ onClose, onCreated }) {
+function CreateGroupModal({ open, onClose, onCreated }) {
     const [form,       setForm]       = useState({ name: '', subject: '', maxMembers: 20, description: '' });
     const [submitting, setSubmitting] = useState(false);
     const firstRef = useRef(null);
-
-    // Focus first input on mount
-    useEffect(() => { firstRef.current?.focus(); }, []);
-
-    // Escape key closes modal
-    useEffect(() => {
-        const handler = e => { if (e.key === 'Escape') onClose(); };
-        window.addEventListener('keydown', handler);
-        return () => window.removeEventListener('keydown', handler);
-    }, [onClose]);
-
-    // Focus trap — keep Tab inside modal
-    const trapRef = useRef(null);
-    const handleKeyDown = e => {
-        if (e.key !== 'Tab') return;
-        const focusable = trapRef.current?.querySelectorAll(
-            'input,textarea,select,button,[tabindex]:not([tabindex="-1"])'
-        );
-        if (!focusable?.length) return;
-        const first = focusable[0], last = focusable[focusable.length - 1];
-        if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
-        else            { if (document.activeElement === last)  { e.preventDefault(); first.focus(); } }
-    };
 
     const handleSubmit = async e => {
         e.preventDefault();
@@ -513,86 +430,35 @@ function CreateGroupModal({ onClose, onCreated }) {
     };
 
     return (
-        <>
-            <motion.div
-                className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                onClick={onClose}
-            />
-            <motion.div
-                ref={trapRef}
-                role="dialog" aria-modal="true" aria-labelledby="modal-title"
-                onKeyDown={handleKeyDown}
-                className="fixed inset-0 z-50 flex items-center justify-center p-6 pointer-events-none"
-                initial={{ opacity: 0, scale: 0.95, y: 16 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 16 }}
-                transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-            >
-                <div className="w-full max-w-md rounded-2xl border p-5 sm:p-8 pointer-events-auto max-h-[90vh] overflow-y-auto"
-                    style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 id="modal-title" className="text-xl font-bold"
-                            style={{ fontFamily: "'Space Grotesk',sans-serif", color: 'var(--accent-blue)' }}>
-                            Create Study Group
-                        </h2>
-                        <button onClick={onClose} className="p-1.5 rounded-lg transition-colors hover:bg-red-500 hover:text-white"
-                            style={{ color: 'var(--text-secondary)' }} aria-label="Close modal">
-                            <X size={18} />
-                        </button>
-                    </div>
-                    <form onSubmit={handleSubmit}>
-                        {[
-                            { label: 'Group Name', field: 'name', type: 'text', ph: 'e.g. Advanced Python Study Circle', ref: firstRef },
-                            { label: 'Subject',    field: 'subject', type: 'text', ph: 'e.g. Computer Science' },
-                        ].map(({ label, field, type, ph, ref }) => (
-                            <div key={field} className="mb-4">
-                                <label className="block text-sm font-semibold mb-1.5">{label} *</label>
-                                <input
-                                    ref={ref}
-                                    type={type}
-                                    value={form[field]}
-                                    onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
-                                    placeholder={ph}
-                                    className="form-input px-4"
-                                />
-                            </div>
-                        ))}
-                        <div className="mb-4">
-                            <label className="block text-sm font-semibold mb-1.5">Max Members</label>
-                            <input
-                                type="number" min={2} max={100}
-                                value={form.maxMembers}
-                                onChange={e => setForm(f => ({ ...f, maxMembers: parseInt(e.target.value) || 20 }))}
-                                className="form-input px-4"
-                            />
-                        </div>
-                        <div className="mb-6">
-                            <label className="block text-sm font-semibold mb-1.5">Description *</label>
-                            <textarea
-                                value={form.description}
-                                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                                placeholder="What will your group study? What's the focus?"
-                                rows={3}
-                                className="form-input px-4 py-3"
-                                style={{ height: 'auto', resize: 'vertical' }}
-                            />
-                        </div>
-                        <div className="flex gap-3 justify-end">
-                            <button type="button" onClick={onClose}
-                                className="px-5 py-2.5 rounded-lg border text-sm font-medium"
-                                style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-secondary)' }}>
-                                Cancel
-                            </button>
-                            <button type="submit" disabled={submitting}
-                                className="px-5 py-2.5 rounded-lg font-semibold text-white text-sm inline-flex items-center gap-2 disabled:opacity-60"
-                                style={{ background: 'linear-gradient(135deg,#0052cc,#0066ff)' }}>
-                                {submitting ? <><Loader2 size={14} className="animate-spin" />Creating…</> : 'Create Group'}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </motion.div>
-        </>
+        <Modal
+            open={open}
+            onClose={onClose}
+            title="Create Study Group"
+            size="md"
+            initialFocusRef={firstRef}
+            footer={
+                <>
+                    <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
+                    <Button type="submit" form="create-group-form" size="sm" loading={submitting}>
+                        Create Group
+                    </Button>
+                </>
+            }
+        >
+            <form onSubmit={handleSubmit} id="create-group-form">
+                <Field label="Group Name" required>
+                    <Input ref={firstRef} type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Advanced Python Study Circle" />
+                </Field>
+                <Field label="Subject" required>
+                    <Input type="text" value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} placeholder="e.g. Computer Science" />
+                </Field>
+                <Field label="Max Members">
+                    <Input type="number" min={2} max={100} value={form.maxMembers} onChange={e => setForm(f => ({ ...f, maxMembers: parseInt(e.target.value) || 20 }))} />
+                </Field>
+                <Field label="Description" required className="mb-0">
+                    <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="What will your group study? What's the focus?" rows={3} />
+                </Field>
+            </form>
+        </Modal>
     );
 }

@@ -1,10 +1,15 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { GraduationCap, BookOpen, DollarSign, Plus, X, Check, ChevronRight, ChevronLeft, Loader } from 'lucide-react';
+import { GraduationCap, DollarSign, Plus, X, Check, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/client';
+import Field from '../components/ui/Field';
+import Input from '../components/ui/Input';
+import Textarea from '../components/ui/Textarea';
+import Button from '../components/ui/Button';
+import Badge from '../components/ui/Badge';
+import Stepper from '../components/ui/Stepper';
 
 const STEPS = ['About You', 'Subjects & Rate', 'Review & Submit'];
 
@@ -22,7 +27,6 @@ const slideVariants = {
 
 export default function BecomeTutor() {
     const { user } = useAuth();
-    const navigate = useNavigate();
 
     const [step, setStep] = useState(0);
     const [dir, setDir] = useState(1);
@@ -95,87 +99,52 @@ export default function BecomeTutor() {
 
     if (submitted) {
         return (
-            <div className="min-h-screen flex items-center justify-center px-6"
-                style={{ background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
+            <div className="min-h-screen flex items-center justify-center px-6 bg-bg text-fg">
                 <motion.div
                     initial={{ scale: 0.85, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     className="text-center max-w-md"
                 >
-                    <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
-                        style={{ background: 'rgba(52,211,153,0.15)' }}>
-                        <Check className="w-10 h-10" style={{ color: '#34d399' }} />
+                    <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 bg-success-bg">
+                        <Check className="w-10 h-10 text-success" />
                     </div>
-                    <h1 className="text-3xl font-bold mb-3" style={{ fontFamily: "'Space Grotesk',sans-serif" }}>
+                    <h1 className="text-3xl font-bold mb-3" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
                         Application Submitted!
                     </h1>
-                    <p className="mb-2" style={{ color: 'var(--text-secondary)' }}>
+                    <p className="mb-2 text-fg-secondary">
                         Thanks, <strong>{user?.first_name}</strong>! Your tutor profile is pending review.
                     </p>
-                    <p className="text-sm mb-8" style={{ color: 'var(--text-secondary)' }}>
+                    <p className="text-sm mb-8 text-fg-secondary">
                         We'll notify you within 24 to 48 hours once approved.
                     </p>
-                    <button
-                        onClick={() => navigate('/tutor-dashboard')}
-                        className="px-8 py-3 rounded-xl font-semibold text-white"
-                        style={{ background: 'linear-gradient(135deg,#0052cc,#0066ff)' }}
-                    >
-                        Back to Dashboard
-                    </button>
+                    <Button to="/tutor-dashboard" size="lg">Back to Dashboard</Button>
                 </motion.div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen pt-24 pb-20 px-6"
-            style={{ background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
+        <div className="min-h-screen pt-24 pb-20 px-6 bg-bg text-fg">
             <div className="max-w-2xl mx-auto">
 
                 {/* Header */}
                 <div className="text-center mb-10">
-                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-4"
-                        style={{ background: 'rgba(0,102,255,0.1)' }}>
-                        <GraduationCap className="w-7 h-7" style={{ color: 'var(--accent-blue)' }} />
+                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-4 bg-primary-subtle">
+                        <GraduationCap className="w-7 h-7 text-primary" />
                     </div>
-                    <h1 className="text-3xl font-bold mb-2" style={{ fontFamily: "'Space Grotesk',sans-serif" }}>
+                    <h1 className="text-3xl font-bold mb-2" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
                         Become a Tutor
                     </h1>
-                    <p style={{ color: 'var(--text-secondary)' }}>
+                    <p className="text-fg-secondary">
                         Share your knowledge and earn by helping fellow students.
                     </p>
                 </div>
 
                 {/* Step indicators */}
-                <div className="flex items-center justify-center gap-2 mb-10">
-                    {STEPS.map((label, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                            <div className="flex items-center gap-2">
-                                <div
-                                    className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all"
-                                    style={{
-                                        background: i <= step ? 'var(--accent-blue)' : 'var(--bg-card)',
-                                        color: i <= step ? 'white' : 'var(--text-secondary)',
-                                        border: `2px solid ${i <= step ? 'var(--accent-blue)' : 'var(--border-subtle)'}`,
-                                    }}
-                                >
-                                    {i < step ? <Check className="w-4 h-4" /> : i + 1}
-                                </div>
-                                <span className="text-sm font-medium hidden sm:block"
-                                    style={{ color: i === step ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
-                                    {label}
-                                </span>
-                            </div>
-                            {i < STEPS.length - 1 && (
-                                <div className="w-8 h-px mx-1" style={{ background: 'var(--border-subtle)' }} />
-                            )}
-                        </div>
-                    ))}
-                </div>
+                <Stepper steps={STEPS} current={step + 1} className="mb-10 max-w-lg mx-auto" />
 
                 {/* Step card */}
-                <div className="rounded-2xl border p-8 overflow-hidden relative"
-                    style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}>
+                <div className="rounded-2xl border border-border bg-surface p-8 overflow-hidden relative">
                     <AnimatePresence mode="wait" custom={dir}>
                         <motion.div
                             key={step}
@@ -194,33 +163,18 @@ export default function BecomeTutor() {
 
                 {/* Navigation */}
                 <div className="flex justify-between mt-6">
-                    <button
-                        onClick={goBack}
-                        disabled={step === 0}
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold border transition-all disabled:opacity-30"
-                        style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
-                    >
-                        <ChevronLeft className="w-4 h-4" /> Back
-                    </button>
+                    <Button onClick={goBack} disabled={step === 0} variant="secondary" icon={ChevronLeft}>
+                        Back
+                    </Button>
 
                     {step < STEPS.length - 1 ? (
-                        <button
-                            onClick={goNext}
-                            className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-white transition-all hover:scale-[1.02]"
-                            style={{ background: 'linear-gradient(135deg,#0052cc,#0066ff)' }}
-                        >
-                            Next <ChevronRight className="w-4 h-4" />
-                        </button>
+                        <Button onClick={goNext} icon={ChevronRight} iconPosition="right" className="hover:scale-[1.02]">
+                            Next
+                        </Button>
                     ) : (
-                        <button
-                            onClick={handleSubmit}
-                            disabled={loading}
-                            className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-white transition-all hover:scale-[1.02] disabled:opacity-60"
-                            style={{ background: 'linear-gradient(135deg,#0052cc,#0066ff)' }}
-                        >
-                            {loading ? <Loader className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                        <Button onClick={handleSubmit} disabled={loading} loading={loading} icon={loading ? undefined : Check} className="hover:scale-[1.02]">
                             {loading ? 'Submitting…' : 'Submit Application'}
-                        </button>
+                        </Button>
                     )}
                 </div>
             </div>
@@ -233,50 +187,42 @@ function StepAbout({ form, set }) {
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-xl font-bold mb-1" style={{ fontFamily: "'Space Grotesk',sans-serif" }}>About You</h2>
-                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Tell students who you are and why you're a great tutor.</p>
+                <h2 className="text-xl font-bold mb-1" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>About You</h2>
+                <p className="text-sm text-fg-secondary">Tell students who you are and why you're a great tutor.</p>
             </div>
 
-            <div>
-                <label className="block text-sm font-medium mb-2">Bio <span style={{ color: 'var(--text-secondary)' }}>(min. 30 chars)</span></label>
-                <textarea
+            <Field label="Bio" hint="min. 30 chars">
+                <Textarea
                     value={form.bio}
                     onChange={e => set('bio', e.target.value)}
                     rows={4}
                     placeholder="e.g. I'm a 3rd-year Mathematics student at University of Yaoundé with a passion for making complex topics simple..."
-                    className="w-full p-4 rounded-xl border resize-none text-sm"
-                    style={{ background: 'var(--bg-main)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
                 />
-                <p className="text-xs mt-1 text-right" style={{ color: form.bio.length < 30 ? '#f87171' : '#34d399' }}>
+                <p className={`text-xs mt-1 text-right ${form.bio.length < 30 ? 'text-danger' : 'text-success'}`}>
                     {form.bio.length} / 30 min
                 </p>
-            </div>
+            </Field>
 
-            <div>
-                <label className="block text-sm font-medium mb-2">Teaching Philosophy <span style={{ color: 'var(--text-secondary)' }}>(optional)</span></label>
-                <textarea
+            <Field label="Teaching Philosophy" hint="optional">
+                <Textarea
                     value={form.teachingPhilosophy}
                     onChange={e => set('teachingPhilosophy', e.target.value)}
                     rows={3}
                     placeholder="e.g. I focus on building intuition before formulas..."
-                    className="w-full p-4 rounded-xl border resize-none text-sm"
-                    style={{ background: 'var(--bg-main)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
                 />
-            </div>
+            </Field>
 
-            <div>
-                <label className="block text-sm font-medium mb-2">Years of Experience</label>
-                <input
+            <Field label="Years of Experience" className="mb-0">
+                <Input
                     type="number"
                     min="0"
                     max="50"
                     value={form.experienceYears}
                     onChange={e => set('experienceYears', e.target.value)}
                     placeholder="0"
-                    className="w-32 p-3 rounded-xl border text-sm"
-                    style={{ background: 'var(--bg-main)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
+                    className="w-32"
                 />
-            </div>
+            </Field>
         </div>
     );
 }
@@ -286,57 +232,48 @@ function StepSubjects({ form, set, addSubject, removeSubject }) {
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-xl font-bold mb-1" style={{ fontFamily: "'Space Grotesk',sans-serif" }}>Subjects & Rate</h2>
-                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>What do you teach, and how much do you charge per hour?</p>
+                <h2 className="text-xl font-bold mb-1" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>Subjects & Rate</h2>
+                <p className="text-sm text-fg-secondary">What do you teach, and how much do you charge per hour?</p>
             </div>
 
             {/* Subject input */}
             <div>
                 <label className="block text-sm font-medium mb-2">Subjects</label>
                 <div className="flex gap-2 mb-3">
-                    <input
+                    <Input
                         type="text"
                         value={form.subjectInput}
                         onChange={e => set('subjectInput', e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSubject(form.subjectInput); } }}
                         placeholder="Type a subject and press Enter"
-                        className="flex-1 p-3 rounded-xl border text-sm"
-                        style={{ background: 'var(--bg-main)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
+                        className="flex-1"
                     />
-                    <button
-                        onClick={() => addSubject(form.subjectInput)}
-                        className="px-4 py-2 rounded-xl font-semibold text-white"
-                        style={{ background: 'var(--accent-blue)' }}
-                    >
-                        <Plus className="w-4 h-4" />
-                    </button>
+                    <Button onClick={() => addSubject(form.subjectInput)} icon={Plus} />
                 </div>
 
                 {/* Added subjects */}
                 {form.subjects.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-4">
                         {form.subjects.map(s => (
-                            <span key={s} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium"
-                                style={{ background: 'rgba(0,102,255,0.1)', color: 'var(--accent-blue)', border: '1px solid rgba(0,102,255,0.2)' }}>
+                            <Badge key={s} tone="primary" size="md" className="gap-1.5">
                                 {s}
                                 <button onClick={() => removeSubject(s)} className="hover:opacity-70">
                                     <X className="w-3 h-3" />
                                 </button>
-                            </span>
+                            </Badge>
                         ))}
                     </div>
                 )}
 
                 {/* Suggestions */}
                 <div>
-                    <p className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>Quick add:</p>
+                    <p className="text-xs mb-2 text-fg-secondary">Quick add:</p>
                     <div className="flex flex-wrap gap-2">
                         {SUGGESTED_SUBJECTS.filter(s => !form.subjects.includes(s)).slice(0, 8).map(s => (
                             <button
                                 key={s}
                                 onClick={() => addSubject(s)}
-                                className="px-3 py-1 rounded-lg text-xs border transition-all hover:border-blue-500"
-                                style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-secondary)' }}
+                                className="px-3 py-1 rounded-lg text-xs border border-border text-fg-secondary transition-all hover:border-primary"
                             >
                                 + {s}
                             </button>
@@ -346,24 +283,19 @@ function StepSubjects({ form, set, addSubject, removeSubject }) {
             </div>
 
             {/* Hourly rate */}
-            <div>
-                <label className="block text-sm font-medium mb-2">Hourly Rate (FCFA)</label>
+            <Field label="Hourly Rate (FCFA)" hint="Typical range: 5,000 to 30,000 FCFA/hr" className="mb-0">
                 <div className="relative w-48">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-                    <input
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-secondary" />
+                    <Input
                         type="number"
                         min="0"
                         value={form.hourlyRate}
                         onChange={e => set('hourlyRate', e.target.value)}
                         placeholder="e.g. 15000"
-                        className="w-full pl-9 pr-4 py-3 rounded-xl border text-sm"
-                        style={{ background: 'var(--bg-main)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}
+                        className="pl-9"
                     />
                 </div>
-                <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-                    Typical range: 5,000 to 30,000 FCFA/hr
-                </p>
-            </div>
+            </Field>
         </div>
     );
 }
@@ -382,23 +314,22 @@ function StepReview({ form, user }) {
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-xl font-bold mb-1" style={{ fontFamily: "'Space Grotesk',sans-serif" }}>Review & Submit</h2>
-                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Double-check your details before submitting for approval.</p>
+                <h2 className="text-xl font-bold mb-1" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>Review & Submit</h2>
+                <p className="text-sm text-fg-secondary">Double-check your details before submitting for approval.</p>
             </div>
 
-            <div className="rounded-xl border divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
+            <div className="rounded-xl border border-border divide-y divide-border">
                 {rows.map(({ label, value }) => (
                     <div key={label} className="flex gap-4 px-5 py-3">
-                        <span className="text-sm font-medium w-40 shrink-0" style={{ color: 'var(--text-secondary)' }}>{label}</span>
-                        <span className="text-sm break-words" style={{ color: 'var(--text-primary)' }}>{value}</span>
+                        <span className="text-sm font-medium w-40 shrink-0 text-fg-secondary">{label}</span>
+                        <span className="text-sm break-words text-fg">{value}</span>
                     </div>
                 ))}
             </div>
 
-            <div className="flex items-start gap-3 p-4 rounded-xl"
-                style={{ background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.2)' }}>
-                <Check className="w-5 h-5 mt-0.5 shrink-0" style={{ color: '#34d399' }} />
-                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            <div className="flex items-start gap-3 p-4 rounded-xl border border-success/20 bg-success-bg">
+                <Check className="w-5 h-5 mt-0.5 shrink-0 text-success" />
+                <p className="text-sm text-fg-secondary">
                     Your profile will be reviewed by our team within <strong>24 to 48 hours</strong>. You'll receive a notification once approved.
                 </p>
             </div>

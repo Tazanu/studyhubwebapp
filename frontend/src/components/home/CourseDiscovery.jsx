@@ -4,25 +4,17 @@ import { Code2, FlaskConical, Calculator, BookOpen, Globe, Landmark, Cpu, Trendi
 import api from '../../api/client';
 import { normalizeTutorList } from '../../data/normalizeTutor';
 import useInView from '../../hooks/useInView';
+import Button from '../ui/Button';
 
 const SUBJECTS = [
-    { Icon: Code2,        label: 'Computer Science', color: '#60a5fa', bg: 'rgba(96,165,250,0.1)'   },
-    { Icon: Calculator,   label: 'Mathematics',      color: '#34d399', bg: 'rgba(52,211,153,0.1)'   },
-    { Icon: FlaskConical, label: 'Chemistry',         color: '#f472b6', bg: 'rgba(244,114,182,0.1)' },
-    { Icon: BookOpen,     label: 'Literature',        color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)'  },
-    { Icon: Globe,        label: 'French / English',  color: '#38bdf8', bg: 'rgba(56,189,248,0.1)'  },
-    { Icon: TrendingUp,   label: 'Economics',         color: '#fb923c', bg: 'rgba(251,146,60,0.1)'  },
-    { Icon: Landmark,     label: 'Law',               color: '#facc15', bg: 'rgba(250,204,21,0.1)'  },
-    { Icon: Cpu,          label: 'Engineering',       color: '#a78bfa', bg: 'rgba(167,139,250,0.1)' },
-];
-
-const GRADIENTS = [
-    'linear-gradient(135deg,#0052cc,#7c3aed)',
-    'linear-gradient(135deg,#7c3aed,#db2777)',
-    'linear-gradient(135deg,#059669,#0284c7)',
-    'linear-gradient(135deg,#f97316,#eab308)',
-    'linear-gradient(135deg,#dc2626,#7c3aed)',
-    'linear-gradient(135deg,#0284c7,#34d399)',
+    { Icon: Code2,        label: 'Computer Science' },
+    { Icon: Calculator,   label: 'Mathematics'      },
+    { Icon: FlaskConical, label: 'Chemistry'        },
+    { Icon: BookOpen,     label: 'Literature'       },
+    { Icon: Globe,        label: 'French / English' },
+    { Icon: TrendingUp,   label: 'Economics'        },
+    { Icon: Landmark,     label: 'Law'              },
+    { Icon: Cpu,          label: 'Engineering'      },
 ];
 
 export default function CourseDiscovery() {
@@ -43,20 +35,16 @@ export default function CourseDiscovery() {
     }, []);
 
     return (
-        <section
-            aria-labelledby="discover-heading"
-            className="py-20 sm:py-28 px-4 sm:px-6 border-t"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
-        >
+        <section aria-labelledby="discover-heading" className="py-20 sm:py-28 px-4 sm:px-6 border-t border-border bg-surface">
             <div className="max-w-6xl mx-auto">
                 <header className={`text-center mb-12 fade-up ${inView ? 'in-view' : ''}`} ref={ref}>
-                    <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--accent-blue)' }}>
+                    <p className="text-xs font-semibold uppercase tracking-widest mb-3 text-primary">
                         Browse by subject
                     </p>
                     <h2
                         id="discover-heading"
-                        className="font-bold"
-                        style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}
+                        className="font-bold text-fg"
+                        style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)', letterSpacing: '-0.02em' }}
                     >
                         Find groups, notes & tutors by subject
                     </h2>
@@ -64,18 +52,17 @@ export default function CourseDiscovery() {
 
                 {/* subject grid */}
                 <ul className="grid grid-cols-2 xs:grid-cols-4 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-14 list-none p-0 m-0">
-                    {SUBJECTS.map(({ Icon, label, color, bg }, i) => (
+                    {SUBJECTS.map(({ Icon, label }, i) => (
                         <li key={label} className={`fade-up delay-${Math.min(i + 1, 6)} ${inView ? 'in-view' : ''}`}>
                             <Link
                                 to="/register"
-                                className="flex flex-col items-center gap-2 p-3 rounded-xl border text-center transition-all hover:-translate-y-0.5 hover:border-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-                                style={{ background: 'var(--bg-main)', borderColor: 'var(--border-subtle)', outlineColor: '#0066ff' }}
+                                className="flex flex-col items-center gap-2 p-3 rounded-xl border border-border bg-bg text-center transition-all hover:-translate-y-0.5 hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                                 aria-label={`Browse ${label} tutors and notes`}
                             >
-                                <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: bg }}>
-                                    <Icon size={18} color={color} aria-hidden="true" />
+                                <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-primary-subtle">
+                                    <Icon size={18} className="text-primary" aria-hidden="true" />
                                 </div>
-                                <span className="text-xs font-medium leading-tight" style={{ color: 'var(--text-secondary)' }}>{label}</span>
+                                <span className="text-xs font-medium leading-tight text-fg-secondary">{label}</span>
                             </Link>
                         </li>
                     ))}
@@ -84,33 +71,23 @@ export default function CourseDiscovery() {
                 {/* tutors row */}
                 <div className={`fade-up delay-2 ${inView ? 'in-view' : ''}`}>
                     <div className="flex items-center justify-between mb-5">
-                        <h3 className="font-semibold text-lg" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: 'var(--text-primary)' }}>
+                        <h3 className="font-semibold text-lg text-fg" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                             Top-rated peer tutors
                         </h3>
                         <Link
                             to="/register"
-                            className="text-sm font-semibold transition-colors hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 rounded"
-                            style={{ color: 'var(--accent-blue)', outlineColor: '#0066ff' }}
+                            className="text-sm font-semibold text-primary transition-colors hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary rounded"
                         >
                             View all tutors →
                         </Link>
                     </div>
 
                     {tutors.length === 0 ? (
-                        <div
-                            className="rounded-2xl border p-10 text-center"
-                            style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-main)' }}
-                        >
-                            <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
+                        <div className="rounded-2xl border border-border bg-bg p-10 text-center">
+                            <p className="text-sm mb-3 text-fg-secondary">
                                 No approved tutors yet. Be the first to apply.
                             </p>
-                            <Link
-                                to="/register"
-                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white"
-                                style={{ background: 'var(--accent-blue)' }}
-                            >
-                                Become a tutor
-                            </Link>
+                            <Button to="/register" size="md">Become a tutor</Button>
                         </div>
                     ) : (
                         <div
@@ -119,17 +96,17 @@ export default function CourseDiscovery() {
                             role="list"
                             aria-label="Top-rated tutors"
                         >
-                            {tutors.map((tutor, i) => {
+                            {tutors.map((tutor) => {
                                 const subjects = tutor.subjects.slice(0, 2).map(s => s.name || s);
                                 const rate = tutor.pricing?.single?.price;
                                 return (
                                     <article
                                         key={tutor.id}
                                         role="listitem"
-                                        className="rounded-2xl border overflow-hidden transition-transform hover:-translate-y-1 hover:shadow-lg sm:flex-shrink-0"
-                                        style={{ background: 'var(--bg-main)', borderColor: 'var(--border-subtle)', scrollSnapAlign: 'start', minWidth: '200px' }}
+                                        className="rounded-2xl border border-border bg-bg overflow-hidden transition-transform hover:-translate-y-1 hover:shadow-lg sm:flex-shrink-0"
+                                        style={{ scrollSnapAlign: 'start', minWidth: '200px' }}
                                     >
-                                        <div className="h-24 w-full flex items-center justify-center relative" style={{ background: GRADIENTS[i % GRADIENTS.length] }} aria-hidden="true">
+                                        <div className="h-24 w-full flex items-center justify-center relative" style={{ background: 'var(--gradient-primary)' }} aria-hidden="true">
                                             {tutor.avatar
                                                 ? <img src={tutor.avatar} alt="" className="w-14 h-14 rounded-full object-cover border-2 border-white/20" />
                                                 : <span className="text-white text-3xl font-bold opacity-20" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{tutor.name.charAt(0)}</span>
@@ -137,31 +114,26 @@ export default function CourseDiscovery() {
                                         </div>
                                         <div className="p-4">
                                             {subjects[0] && (
-                                                <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: 'rgba(0,102,255,0.1)', color: 'var(--accent-blue)' }}>
+                                                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-primary-subtle text-primary">
                                                     {subjects[0]}
                                                 </span>
                                             )}
-                                            <h4 className="font-semibold mt-2 mb-0.5 text-sm" style={{ color: 'var(--text-primary)', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                                            <h4 className="font-semibold mt-2 mb-0.5 text-sm text-fg" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                                                 {tutor.name}
                                             </h4>
-                                            <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>{tutor.title}</p>
+                                            <p className="text-xs mb-2 text-fg-muted">{tutor.title}</p>
                                             <div className="flex items-center justify-between mb-3">
-                                                <span className="text-xs font-semibold" style={{ color: '#facc15' }} aria-label={`Rated ${tutor.rating} out of 5`}>
+                                                <span className="text-xs font-semibold text-warning" aria-label={`Rated ${tutor.rating} out of 5`}>
                                                     ★ {tutor.rating || 'New'} · {tutor.totalReviews} sessions
                                                 </span>
                                             </div>
                                             <div className="flex items-center justify-between">
-                                                <span className="text-sm font-bold" style={{ color: '#34d399' }}>
+                                                <span className="text-sm font-bold text-success">
                                                     {rate ? `${rate.toLocaleString()} FCFA/hr` : '500 FCFA/hr'}
                                                 </span>
-                                                <Link
-                                                    to="/register"
-                                                    className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-                                                    style={{ background: 'var(--accent-blue)', outlineColor: '#0066ff' }}
-                                                    aria-label={`Book a session with ${tutor.name}`}
-                                                >
+                                                <Button to="/register" size="sm" aria-label={`Book a session with ${tutor.name}`}>
                                                     Book
-                                                </Link>
+                                                </Button>
                                             </div>
                                         </div>
                                     </article>

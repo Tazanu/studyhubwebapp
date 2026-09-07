@@ -1,6 +1,12 @@
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { ArrowRight } from 'lucide-react';
 import useInView from '../../hooks/useInView';
+import Button from '../ui/Button';
+
+// Every entry must resolve to a real destination. The previous version pointed
+// nine of these at /register as a placeholder, so "Cookie Policy" and "Careers"
+// both landed on the signup form — worse than not listing them at all.
+const CONTACT_EMAIL = 'support@studyhub.example';
 
 const LINKS = {
     Platform: [
@@ -11,24 +17,20 @@ const LINKS = {
         { label: 'Become a Tutor', to: '/become-tutor' },
     ],
     Company: [
-        { label: 'About Us',   to: '/about'    },
-        { label: 'Blog',       to: '/register' },
-        { label: 'Careers',    to: '/register' },
-        { label: 'Contact Us', to: '/register' },
-    ],
-    Support: [
-        { label: 'Help Centre',            to: '/register' },
-        { label: 'Community Guidelines',   to: '/register' },
-        { label: 'Report an Issue',        to: '/register' },
-        { label: 'Status',                 to: '/register' },
+        { label: 'About Us',    to: '/about'    },
+        { label: 'Sign Up',     to: '/register' },
+        { label: 'Log In',      to: '/login'    },
+        { label: 'Contact Us',  href: `mailto:${CONTACT_EMAIL}` },
     ],
     Legal: [
-        { label: 'Privacy Policy',   to: '/privacy'  },
-        { label: 'Terms of Service', to: '/terms'    },
-        { label: 'Cookie Policy',    to: '/register' },
-        { label: 'Accessibility',    to: '/register' },
+        { label: 'Privacy Policy',   to: '/privacy' },
+        { label: 'Terms of Service', to: '/terms'   },
+        { label: 'Cookie Policy',    to: '/cookies' },
     ],
 };
+
+const linkClass =
+    'text-sm text-fg-secondary transition-colors hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary rounded';
 
 /* SVG social icons — lucide doesn't ship branded icons */
 const XIcon = () => (
@@ -55,34 +57,24 @@ const YouTubeIcon = () => (
     </svg>
 );
 
+// Fill in a profile URL to make an icon appear. They previously pointed at
+// twitter.com / github.com etc. — the platforms' own homepages, not StudyHub
+// accounts — which is a dead end for anyone who clicks. Entries without a URL
+// are filtered out below rather than shipped as decoration.
 const SOCIALS = [
-    { Icon: XIcon,        label: 'X (Twitter)', href: 'https://twitter.com'  },
-    { Icon: LinkedInIcon, label: 'LinkedIn',     href: 'https://linkedin.com' },
-    { Icon: GitHubIcon,   label: 'GitHub',       href: 'https://github.com'  },
-    { Icon: YouTubeIcon,  label: 'YouTube',      href: 'https://youtube.com' },
-];
+    { Icon: XIcon,        label: 'X (Twitter)', href: null },
+    { Icon: LinkedInIcon, label: 'LinkedIn',    href: null },
+    { Icon: GitHubIcon,   label: 'GitHub',      href: null },
+    { Icon: YouTubeIcon,  label: 'YouTube',     href: null },
+].filter(s => s.href);
 
 export default function HomeFooter() {
-    const [email, setEmail] = useState('');
-    const [submitted, setSubmitted] = useState(false);
     const [ref, inView] = useInView({ threshold: 0.05 });
 
-    const handleSubscribe = e => {
-        e.preventDefault();
-        setSubmitted(true);
-        setEmail('');
-        setTimeout(() => setSubmitted(false), 3000);
-    };
-
     return (
-        <footer
-            ref={ref}
-            role="contentinfo"
-            className="border-t px-4 sm:px-6 pt-14 pb-8"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
-        >
+        <footer ref={ref} role="contentinfo" className="border-t border-border bg-surface px-4 sm:px-6 pt-14 pb-8">
             <div className={`max-w-6xl mx-auto fade-up ${inView ? 'in-view' : ''}`}>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-10 mb-12">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-10 mb-12">
 
                     {/* brand + newsletter — spans 2 cols on lg */}
                     <div className="col-span-2 sm:col-span-3 lg:col-span-2">
@@ -90,58 +82,36 @@ export default function HomeFooter() {
                             style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                             StudyHub
                         </Link>
-                        <p className="text-sm mb-2 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                        <p className="text-sm mb-2 leading-relaxed text-fg-secondary">
                             Peer-to-peer learning for students. Study groups, notes, Q&A and tutors in one place.
                         </p>
-                        <p className="text-xs mb-5" style={{ color: 'var(--text-muted)' }}>
+                        <p className="text-xs mb-5 text-fg-muted">
                             Free to join. No credit card required.
                         </p>
 
-                        <form onSubmit={handleSubscribe} aria-label="Email newsletter signup">
-                            <label htmlFor="footer-email" className="block text-xs font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>
-                                Get platform updates
-                            </label>
-                            <div className="flex gap-2">
-                                <input
-                                    id="footer-email"
-                                    type="email"
-                                    value={email}
-                                    onChange={e => setEmail(e.target.value)}
-                                    placeholder="your@email.com"
-                                    required
-                                    className="flex-1 px-3 py-2 rounded-lg border text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1"
-                                    style={{ background: 'var(--bg-input)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)', outlineColor: '#0066ff' }}
-                                />
-                                <button
-                                    type="submit"
-                                    className="px-4 py-2 rounded-lg text-sm font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 transition-opacity hover:opacity-90"
-                                    style={{ background: 'var(--accent-blue)', outlineColor: '#60a5fa' }}
-                                >
-                                    {submitted ? '✓' : 'Subscribe'}
-                                </button>
-                            </div>
-                            {submitted && (
-                                <p className="text-xs mt-2" style={{ color: '#34d399' }}>You're subscribed!</p>
-                            )}
-                        </form>
+                        {/* Replaces a newsletter form that reported "Subscribed"
+                            without sending the address anywhere — there is no
+                            mailing-list backend. This points at the same signup
+                            the rest of the site drives towards. */}
+                        <Button to="/register" size="sm" icon={ArrowRight} iconPosition="right">
+                            Get started free
+                        </Button>
                     </div>
 
                     {/* link columns */}
                     {Object.entries(LINKS).map(([heading, items]) => (
                         <nav key={heading} aria-label={`${heading} links`}>
-                            <h3 className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: 'var(--text-primary)' }}>
+                            <h3 className="text-xs font-bold uppercase tracking-widest mb-4 text-fg">
                                 {heading}
                             </h3>
                             <ul className="space-y-2.5 list-none p-0 m-0">
-                                {items.map(({ label, to }) => (
+                                {items.map(({ label, to, href }) => (
                                     <li key={label}>
-                                        <Link
-                                            to={to}
-                                            className="text-sm transition-colors hover:text-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 rounded"
-                                            style={{ color: 'var(--text-secondary)', outlineColor: '#0066ff' }}
-                                        >
-                                            {label}
-                                        </Link>
+                                        {href ? (
+                                            <a href={href} className={linkClass}>{label}</a>
+                                        ) : (
+                                            <Link to={to} className={linkClass}>{label}</Link>
+                                        )}
                                     </li>
                                 ))}
                             </ul>
@@ -150,8 +120,8 @@ export default function HomeFooter() {
                 </div>
 
                 {/* bottom bar */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-border">
+                    <p className="text-xs text-fg-muted">
                         © {new Date().getFullYear()} StudyHub · All rights reserved
                     </p>
 
@@ -163,8 +133,7 @@ export default function HomeFooter() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 aria-label={label}
-                                className="w-9 h-9 rounded-lg flex items-center justify-center transition-all hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 rounded"
-                                style={{ color: 'var(--text-muted)', outlineColor: '#0066ff' }}
+                                className="w-9 h-9 rounded-lg flex items-center justify-center text-fg-muted transition-all hover:bg-surface-hover hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                             >
                                 <Icon />
                             </a>

@@ -5,13 +5,14 @@ import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
-import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import UpdateNotification from './components/UpdateNotification';
 import OfflineBanner from './components/OfflineBanner';
 import InstallPrompt from './components/InstallPrompt';
+import CookieNotice from './components/CookieNotice';
+import usePageTracking from './hooks/usePageTracking';
 
 // Eagerly loaded — always needed on first paint
 import Home     from './pages/Home';
@@ -39,6 +40,8 @@ const TutorProfilePage = lazy(() => import('./pages/TutorProfilePage'));
 const Tutors         = lazy(() => import('./pages/Tutors'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const PremiumPage    = lazy(() => import('./pages/PremiumPage'));
+const Cookies        = lazy(() => import('./pages/Cookies'));
+const NotFound       = lazy(() => import('./pages/NotFound'));
 
 const DASH_ROUTES = ['/dashboard', '/groups', '/notes', '/qa', '/tutors', '/profile', '/settings', '/become-tutor', '/socket-test', '/admin', '/premium', '/tutor-dashboard'];
 
@@ -53,6 +56,7 @@ function AdminRoute({ children }) {
 
 function Layout() {
     const { pathname } = useLocation();
+    usePageTracking();
     const isDash = DASH_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'));
 
     return (
@@ -68,6 +72,7 @@ function Layout() {
                     <Route path="/register" element={<Register />} />
                     <Route path="/terms"    element={<Terms />} />
                     <Route path="/privacy"  element={<Privacy />} />
+                    <Route path="/cookies"  element={<Cookies />} />
 
                     {/* protected */}
                     <Route path="/dashboard"           element={<Protected><Dashboard /></Protected>} />
@@ -88,9 +93,11 @@ function Layout() {
                     <Route path="/admin"               element={<AdminRoute><AdminDashboard /></AdminRoute>} />
                     <Route path="/premium"             element={<Protected><PremiumPage /></Protected>} />
                     <Route path="/tutor-dashboard"     element={<Protected><TutorDashboard /></Protected>} />
+
+                    {/* Catch-all — must stay last. */}
+                    <Route path="*" element={<NotFound />} />
                 </Routes>
             </Suspense>
-            {!isDash && pathname !== '/' && pathname !== '/about' && pathname !== '/login' && pathname !== '/register' && pathname !== '/terms' && pathname !== '/privacy' && <Footer />}
         </>
     );
 }
@@ -133,6 +140,7 @@ function App() {
                     )}
                     <OfflineBanner />
                     <InstallPrompt />
+                    <CookieNotice />
                 </BrowserRouter>
             </AuthProvider>
         </ThemeProvider>

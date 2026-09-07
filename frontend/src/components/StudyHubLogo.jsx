@@ -20,36 +20,24 @@ export default function StudyHubLogo({ size = 'md', showText = true, className =
             >
                 <defs>
                     <linearGradient id="sh-grad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-                        <stop offset="0%" stopColor="#0052cc" />
-                        <stop offset="100%" stopColor="#0066ff" />
+                        <stop offset="0%" stopColor="#1d4ed8" />
+                        <stop offset="100%" stopColor="#3b82f6" />
                     </linearGradient>
                 </defs>
 
                 {/* Rounded square background */}
                 <rect width="40" height="40" rx="10" fill="url(#sh-grad)" />
 
-                {/* Open book — left page */}
-                <path
-                    d="M20 27 C20 27 13 24.5 10 25.5 L10 14 C13 13 20 15.5 20 15.5"
-                    stroke="white"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    fill="none"
-                    opacity="0.95"
-                />
-                {/* Open book — right page */}
-                <path
-                    d="M20 27 C20 27 27 24.5 30 25.5 L30 14 C27 13 20 15.5 20 15.5"
-                    stroke="white"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    fill="none"
-                    opacity="0.95"
-                />
-                {/* Spine */}
-                <line x1="20" y1="15.5" x2="20" y2="27" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.95" />
+                {/* Hub-and-node mark — center node connected to three satellites */}
+                <g stroke="white" strokeWidth="1.4" strokeLinecap="round">
+                    <line x1="20" y1="20" x2="20" y2="9.8" />
+                    <line x1="20" y1="20" x2="11.2" y2="25.1" />
+                    <line x1="20" y1="20" x2="28.8" y2="25.1" />
+                </g>
+                <circle cx="20" cy="9.8" r="2.6" fill="white" />
+                <circle cx="11.2" cy="25.1" r="2.6" fill="white" />
+                <circle cx="28.8" cy="25.1" r="2.6" fill="white" />
+                <circle cx="20" cy="20" r="3.6" fill="white" />
             </svg>
 
             {showText && (
@@ -57,7 +45,7 @@ export default function StudyHubLogo({ size = 'md', showText = true, className =
                     className={`font-bold ${text} leading-none`}
                     style={{
                         fontFamily: "'Plus Jakarta Sans', sans-serif",
-                        background: 'linear-gradient(135deg, #0052cc 0%, #0066ff 100%)',
+                        background: 'var(--gradient-primary)',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
                         backgroundClip: 'text',

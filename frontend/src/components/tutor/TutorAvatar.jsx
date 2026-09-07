@@ -67,8 +67,7 @@ export default function TutorAvatar({ src, name, tutorId, size = 64, rounded = '
 
             {isOwn && hovered && (
                 <div
-                    className={`absolute inset-0 flex flex-col items-center justify-center gap-1 ${rounded}`}
-                    style={{ background: 'rgba(0,0,0,0.55)' }}
+                    className={`absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/55 ${rounded}`}
                 >
                     <Camera size={size * 0.28} color="white" />
                     <span className="text-white font-semibold" style={{ fontSize: Math.max(size * 0.13, 10) }}>Change</span>

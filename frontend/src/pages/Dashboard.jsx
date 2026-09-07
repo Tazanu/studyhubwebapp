@@ -6,6 +6,11 @@ import { Users, FileText, Star, MessageSquare, GraduationCap, ArrowRight, Calend
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
+import Button from '../components/ui/Button';
+import Badge from '../components/ui/Badge';
+import Skeleton from '../components/ui/Skeleton';
+import { TIERS, getRepInfo } from '../lib/tiers';
+import { BOOKING_STATUS_TONE, BOOKING_STATUS_LABEL } from '../lib/bookingStatus';
 
 /* ── animation variants ───────────────────────────────────────── */
 const stagger = (s = 0.08, d = 0) => ({
@@ -22,27 +27,17 @@ const tabVariants = {
     exit:  dir => ({ opacity: 0, x: dir > 0 ? -24 : 24, transition: { duration: 0.2 } }),
 };
 
-/* ── skeleton shimmer ─────────────────────────────────────────── */
-function Skeleton({ w = '100%', h = 20, r = 8, className = '' }) {
-    return (
-        <div
-            className={`skeleton-shimmer ${className}`}
-            style={{ width: w, height: h, borderRadius: r, background: 'var(--bg-hover)' }}
-        />
-    );
-}
-
 function SkeletonCard() {
     return (
-        <div className="rounded-2xl p-6 border" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}>
+        <div className="rounded-2xl p-6 border border-border bg-surface">
             <div className="flex items-center gap-4 mb-4">
-                <Skeleton w={44} h={44} r={12} />
+                <Skeleton className="w-11 h-11 rounded-xl shrink-0" />
                 <div className="flex-1 flex flex-col gap-2">
-                    <Skeleton w="60%" h={12} />
-                    <Skeleton w="40%" h={18} />
+                    <Skeleton className="w-3/5 h-3" />
+                    <Skeleton className="w-2/5 h-[18px]" />
                 </div>
             </div>
-            <Skeleton w="80%" h={10} />
+            <Skeleton className="w-4/5 h-2.5" />
         </div>
     );
 }
@@ -64,24 +59,6 @@ function useCountUp(target, duration = 900) {
     return val;
 }
 
-/* ── reputation helpers ───────────────────────────────────────── */
-const MILESTONES = [100, 250, 500, 1000, 2500];
-const TIERS = [
-    { label: 'Newcomer', color: '#888',    min: 0    },
-    { label: 'Bronze',   color: '#cd7f32', min: 100  },
-    { label: 'Silver',   color: '#94a3b8', min: 250  },
-    { label: 'Gold',     color: '#fbbf24', min: 500  },
-    { label: 'Platinum', color: '#60a5fa', min: 1000 },
-    { label: 'Elite',    color: '#8b5cf6', min: 2500 },
-];
-function getRepInfo(rep) {
-    const tier = [...TIERS].reverse().find(t => rep >= t.min) || TIERS[0];
-    const next = MILESTONES.find(m => m > rep);
-    const prev = MILESTONES.filter(m => m <= rep).at(-1) ?? 0;
-    const pct  = next ? Math.round(((rep - prev) / (next - prev)) * 100) : 100;
-    return { tier, next, pct };
-}
-
 /* ── activity builder ─────────────────────────────────────────── */
 function buildActivity(groups, notes) {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -97,8 +74,7 @@ function buildActivity(groups, notes) {
 function ChartTooltip({ active, payload, label }) {
     if (!active || !payload?.length) return null;
     return (
-        <div className="rounded-xl px-3 py-2 text-xs border shadow-xl"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)', color: 'var(--text-primary)' }}>
+        <div className="rounded-xl px-3 py-2 text-xs border border-border bg-surface-raised shadow-lg text-fg">
             <p className="font-semibold mb-1">{label}</p>
             {payload.map(p => <p key={p.name} style={{ color: p.fill }}>{p.name}: {p.value}</p>)}
         </div>
@@ -117,8 +93,7 @@ function StatCard({ icon: Icon, label, value, color, sub, reduced }) {
             onHoverEnd={() => setHovered(false)}
             animate={{ y: hovered ? -4 : 0, boxShadow: hovered ? `0 12px 32px ${color}28` : '0 0 0 0 transparent' }}
             transition={{ type: 'spring', stiffness: 320, damping: 24 }}
-            className="rounded-2xl p-6 border flex items-center gap-4 cursor-default"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+            className="rounded-2xl p-6 border border-border bg-surface flex items-center gap-4 cursor-default"
         >
             <motion.div
                 animate={{ scale: hovered ? 1.12 : 1, rotate: hovered ? 6 : 0 }}
@@ -129,10 +104,9 @@ function StatCard({ icon: Icon, label, value, color, sub, reduced }) {
                 <Icon size={22} color={color} strokeWidth={1.75} />
             </motion.div>
             <div>
-                <p className="text-xs font-medium mb-0.5" style={{ color: 'var(--text-secondary)' }}>{label}</p>
-                <p className="text-2xl font-bold tabular-nums"
-                    style={{ fontFamily: "'Space Grotesk', sans-serif", color }}>{count}</p>
-                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{sub}</p>
+                <p className="text-xs font-medium mb-0.5 text-fg-secondary">{label}</p>
+                <p className="text-2xl font-bold tabular-nums" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color }}>{count}</p>
+                <p className="text-xs text-fg-secondary">{sub}</p>
             </div>
         </motion.div>
     );
@@ -148,76 +122,57 @@ function ContentCard({ item, type }) {
             onHoverEnd={() => setHovered(false)}
             animate={{
                 y: hovered ? -5 : 0,
-                boxShadow: hovered ? '0 16px 40px rgba(0,102,255,0.15)' : '0 0 0 0 transparent',
+                boxShadow: hovered ? '0 16px 40px rgba(59,130,246,0.15)' : '0 0 0 0 transparent',
             }}
             transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-            className="rounded-2xl p-5 border flex flex-col relative"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+            className="rounded-2xl p-5 border border-border bg-surface flex flex-col relative"
         >
             {type === 'groups' && item.unreadCount > 0 && (
                 <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="absolute top-3 right-3 z-10 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                    style={{ background: '#ef4444', boxShadow: '0 2px 8px rgba(239,68,68,0.4)' }}
+                    className="absolute top-3 right-3 z-10 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white bg-danger shadow-md"
                 >
                     {item.unreadCount > 9 ? '9+' : item.unreadCount}
                 </motion.div>
             )}
-            <h3 className="font-semibold mb-1.5 text-sm">{item.name || item.title}</h3>
-            <p className="text-xs mb-4 flex-1 line-clamp-2" style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>
+            <h3 className="font-semibold mb-1.5 text-sm text-fg">{item.name || item.title}</h3>
+            <p className="text-xs mb-4 flex-1 line-clamp-2 text-fg-secondary" style={{ lineHeight: 1.7 }}>
                 {item.description}
             </p>
-            <div className="flex justify-between text-xs mb-4" style={{ color: 'var(--text-secondary)' }}>
+            <div className="flex justify-between text-xs mb-4 text-fg-secondary">
                 {type === 'groups' && <><span>{item.current_members} members</span><span>{item.subject}</span></>}
                 {type === 'notes'  && <><span>{item.downloads} downloads</span><span>{item.subject}</span></>}
             </div>
-            <Link
-                to={type === 'groups' ? `/groups/${item.id}/chat` : `/notes/${item.id}`}
-                className="block text-center text-xs py-2 rounded-lg font-semibold text-white transition-all"
-                style={{ background: 'linear-gradient(135deg, #0052cc, #0066ff)' }}
-            >
+            <Button to={type === 'groups' ? `/groups/${item.id}/chat` : `/notes/${item.id}`} size="sm" fullWidth>
                 {type === 'groups' ? 'Go to Group' : 'View Note'}
-            </Link>
+            </Button>
         </motion.div>
     );
 }
 
 /* ── booking card ─────────────────────────────────────────────── */
-const STATUS_STYLES = {
-    pending:   { bg: 'rgba(251,191,36,0.12)',  color: '#fbbf24', label: 'Pending'   },
-    confirmed: { bg: 'rgba(52,211,153,0.12)',  color: '#34d399', label: 'Confirmed' },
-    completed: { bg: 'rgba(96,165,250,0.12)',  color: '#60a5fa', label: 'Completed' },
-    cancelled: { bg: 'rgba(248,113,113,0.12)', color: '#f87171', label: 'Cancelled' },
-};
-
 function BookingCard({ booking }) {
     const tutor = booking.tutors;
     const tutorName = tutor?.users
         ? `${tutor.users.first_name} ${tutor.users.last_name}`
         : 'Tutor';
-    const status = STATUS_STYLES[booking.status] ?? STATUS_STYLES.pending;
+    const tone  = BOOKING_STATUS_TONE[booking.status] ?? 'warning';
+    const label = BOOKING_STATUS_LABEL[booking.status] ?? 'Pending';
     const date = new Date(booking.session_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
     const startTime = new Date(booking.start_time).toTimeString().slice(0, 5);
     const endTime   = new Date(booking.end_time).toTimeString().slice(0, 5);
 
     return (
-        <motion.div
-            variants={cardVariant}
-            className="rounded-2xl p-5 border flex flex-col gap-3"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
-        >
+        <motion.div variants={cardVariant} className="rounded-2xl p-5 border border-border bg-surface flex flex-col gap-3">
             <div className="flex items-start justify-between gap-2">
                 <div>
-                    <p className="font-semibold text-sm">{tutorName}</p>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>{booking.subject}</p>
+                    <p className="font-semibold text-sm text-fg">{tutorName}</p>
+                    <p className="text-xs mt-0.5 text-fg-secondary">{booking.subject}</p>
                 </div>
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full shrink-0"
-                    style={{ background: status.bg, color: status.color }}>
-                    {status.label}
-                </span>
+                <Badge tone={tone} className="shrink-0">{label}</Badge>
             </div>
-            <div className="flex flex-col gap-1.5 text-xs" style={{ color: 'var(--text-secondary)' }}>
+            <div className="flex flex-col gap-1.5 text-xs text-fg-secondary">
                 <span className="flex items-center gap-1.5">
                     <Calendar className="w-3.5 h-3.5" /> {date}
                 </span>
@@ -225,15 +180,11 @@ function BookingCard({ booking }) {
                     <Clock className="w-3.5 h-3.5" /> {startTime} – {endTime}
                 </span>
             </div>
-            <div className="flex items-center justify-between pt-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-                <span className="font-bold text-sm" style={{ color: 'var(--accent-blue)' }}>
+            <div className="flex items-center justify-between pt-2 border-t border-border">
+                <span className="font-bold text-sm text-primary">
                     {Number(booking.total_amount).toLocaleString()} FCFA
                 </span>
-                <Link to={`/tutor/${tutor?.id}`}
-                    className="text-xs px-3 py-1.5 rounded-lg font-semibold text-white"
-                    style={{ background: 'linear-gradient(135deg,#0052cc,#0066ff)' }}>
-                    View Tutor
-                </Link>
+                <Button to={`/tutor/${tutor?.id}`} size="sm">View Tutor</Button>
             </div>
         </motion.div>
     );
@@ -252,17 +203,12 @@ function EmptyState({ type }) {
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}
-            className="text-center py-16 rounded-2xl border"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+            className="text-center py-16 rounded-2xl border border-border bg-surface"
         >
-            <p className="text-sm mb-5" style={{ color: 'var(--text-secondary)' }}>{msg}</p>
-            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-                <Link to={to}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white text-sm"
-                    style={{ background: 'linear-gradient(135deg, #0052cc, #0066ff)' }}>
-                    {cta} <ArrowRight size={15} />
-                </Link>
-            </motion.div>
+            <p className="text-sm mb-5 text-fg-secondary">{msg}</p>
+            <Button to={to} icon={ArrowRight} iconPosition="right" className="hover:-translate-y-0.5">
+                {cta}
+            </Button>
         </motion.div>
     );
 }
@@ -279,7 +225,6 @@ export default function Dashboard() {
     const { user }  = useAuth();
     const reduced   = useReducedMotion();
     const { tier, next, pct } = getRepInfo(user?.reputation ?? 0);
-    const totalDownloads = 0; // computed after load
 
     const [myGroups,   setMyGroups]   = useState([]);
     const [myNotes,    setMyNotes]    = useState([]);
@@ -324,14 +269,13 @@ export default function Dashboard() {
     /* ── skeleton state ─────────────────────────────────────── */
     if (loading) {
         return (
-            <div className="lg:pl-60" style={{ background: 'var(--bg-main)', minHeight: '100vh' }}>
-                <style>{`.skeleton-shimmer{background:linear-gradient(90deg,var(--bg-hover) 25%,var(--bg-card) 50%,var(--bg-hover) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite}.@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}`}</style>
+            <div className="lg:pl-60 min-h-screen bg-bg">
                 <Sidebar />
                 <main className="pt-20 pb-16 px-4 md:px-8 max-w-6xl mx-auto">
-                    <div className="rounded-2xl p-7 border mb-6" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}>
-                        <Skeleton w="45%" h={28} r={8} className="mb-3" />
-                        <Skeleton w="30%" h={14} r={6} className="mb-6" />
-                        <div className="flex gap-3"><Skeleton w={100} h={34} r={10} /><Skeleton w={80} h={34} r={10} /><Skeleton w={90} h={34} r={10} /></div>
+                    <div className="rounded-2xl p-7 border border-border bg-surface mb-6">
+                        <Skeleton className="w-[45%] h-7 mb-3" />
+                        <Skeleton className="w-[30%] h-3.5 mb-6" />
+                        <div className="flex gap-3"><Skeleton className="w-[100px] h-[34px] rounded-xl" /><Skeleton className="w-20 h-[34px] rounded-xl" /><Skeleton className="w-[90px] h-[34px] rounded-xl" /></div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
                         {[0,1,2].map(i => <SkeletonCard key={i} />)}
@@ -345,10 +289,7 @@ export default function Dashboard() {
     }
 
     return (
-        <div className="lg:pl-60" style={{ background: 'var(--bg-main)', minHeight: '100vh' }}>
-            {/* shimmer keyframe */}
-            <style>{`@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}.skeleton-shimmer{background:linear-gradient(90deg,var(--bg-hover) 25%,var(--bg-card) 50%,var(--bg-hover) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite}`}</style>
-
+        <div className="lg:pl-60 min-h-screen bg-bg">
             <Sidebar />
 
             <main className="pt-20 pb-16 px-4 md:px-8 max-w-6xl mx-auto">
@@ -362,17 +303,12 @@ export default function Dashboard() {
                     {/* welcome */}
                     <motion.div
                         variants={reduced ? {} : cardVariant}
-                        className="md:col-span-2 rounded-2xl p-7 border"
-                        style={{
-                            background: 'linear-gradient(135deg, rgba(0,102,255,0.07) 0%, rgba(139,92,246,0.07) 100%)',
-                            borderColor: 'var(--border-subtle)',
-                        }}
+                        className="md:col-span-2 rounded-2xl p-7 border border-border bg-primary-subtle"
                     >
-                        <h1 className="text-2xl md:text-3xl font-bold mb-1 gradient-text"
-                            style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                        <h1 className="text-2xl md:text-3xl font-bold mb-1 gradient-text" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                             Good to see you, {user?.first_name}
                         </h1>
-                        <p className="text-sm mb-5" style={{ color: 'var(--text-secondary)' }}>
+                        <p className="text-sm mb-5 text-fg-secondary">
                             {user?.university} · {user?.field_of_study}
                         </p>
                         <motion.div
@@ -394,8 +330,7 @@ export default function Dashboard() {
                                     transition={{ type: 'spring', stiffness: 380, damping: 22 }}
                                 >
                                     <Link to={to}
-                                        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold border transition-colors focus-visible:outline focus-visible:outline-2"
-                                        style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-primary)', background: 'var(--bg-card)', outlineColor: 'var(--accent-blue)' }}>
+                                        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold border border-border text-fg bg-surface transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
                                         <Icon size={14} strokeWidth={2} />{label}
                                     </Link>
                                 </motion.div>
@@ -406,11 +341,10 @@ export default function Dashboard() {
                     {/* reputation */}
                     <motion.div
                         variants={reduced ? {} : cardVariant}
-                        className="rounded-2xl p-6 border flex flex-col justify-between"
-                        style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+                        className="rounded-2xl p-6 border border-border bg-surface flex flex-col justify-between"
                     >
                         <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Reputation</span>
+                            <span className="text-sm font-medium text-fg-secondary">Reputation</span>
                             <motion.span
                                 className="text-xs font-bold px-2 py-0.5 rounded-full"
                                 style={{ background: `${tier.color}22`, color: tier.color }}
@@ -423,21 +357,21 @@ export default function Dashboard() {
                         </div>
                         <motion.div
                             className="text-4xl font-bold mb-1 tabular-nums"
-                            style={{ fontFamily: "'Space Grotesk', sans-serif", color: tier.color }}
+                            style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: tier.color }}
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.25 }}
                         >
                             {user?.reputation ?? 0}
                         </motion.div>
-                        <p className="text-xs mb-3" style={{ color: 'var(--text-secondary)' }}>
+                        <p className="text-xs mb-3 text-fg-secondary">
                             {next
                                 ? `${next - (user?.reputation ?? 0)} pts to ${TIERS.find(t => t.min === next)?.label}`
                                 : 'Max tier reached'}
                         </p>
                         {next && (
                             <div>
-                                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border-subtle)' }}>
+                                <div className="h-1.5 rounded-full overflow-hidden bg-border">
                                     <motion.div
                                         className="h-full rounded-full"
                                         style={{ background: tier.color }}
@@ -446,7 +380,7 @@ export default function Dashboard() {
                                         transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: 0.5 }}
                                     />
                                 </div>
-                                <p className="text-xs mt-1 text-right" style={{ color: 'var(--text-secondary)' }}>{pct}%</p>
+                                <p className="text-xs mt-1 text-right text-fg-secondary">{pct}%</p>
                             </div>
                         )}
                     </motion.div>
@@ -458,32 +392,31 @@ export default function Dashboard() {
                     variants={reduced ? {} : stagger(0.09, 0.15)}
                     initial="hidden" animate="show"
                 >
-                    <StatCard icon={Users}    label="My Groups"     value={myGroups.length} color="var(--accent-blue)" sub="groups created"      reduced={reduced} />
-                    <StatCard icon={FileText} label="Notes Uploaded" value={myNotes.length}  color="#34d399"           sub="shared with peers"   reduced={reduced} />
-                    <StatCard icon={Star}     label="Downloads"      value={downloads}       color="#fbbf24"           sub="total note downloads" reduced={reduced} />
+                    <StatCard icon={Users}    label="My Groups"      value={myGroups.length} color="var(--brand-600)"    sub="groups created"       reduced={reduced} />
+                    <StatCard icon={FileText} label="Notes Uploaded" value={myNotes.length}  color="var(--status-success)" sub="shared with peers"    reduced={reduced} />
+                    <StatCard icon={Star}     label="Downloads"      value={downloads}       color="var(--status-warning)" sub="total note downloads" reduced={reduced} />
                 </motion.div>
 
                 {/* ── ACTIVITY CHART ────────────────────────────── */}
                 {hasActivity && (
                     <motion.div
-                        className="rounded-2xl p-6 border mb-8"
-                        style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+                        className="rounded-2xl p-6 border border-border bg-surface mb-8"
                         initial={{ opacity: 0, y: 18 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.35 }}
                     >
-                        <p className="text-sm font-semibold mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                        <p className="text-sm font-semibold mb-1 text-fg" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                             Activity this week
                         </p>
-                        <p className="text-xs mb-5" style={{ color: 'var(--text-secondary)' }}>
+                        <p className="text-xs mb-5 text-fg-secondary">
                             Groups created &amp; notes uploaded
                         </p>
                         <ResponsiveContainer width="100%" height={120}>
                             <BarChart data={activity} barGap={4} barSize={10}>
-                                <XAxis dataKey="day" tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} axisLine={false} tickLine={false} />
+                                <XAxis dataKey="day" tick={{ fontSize: 11, fill: 'var(--ink-secondary)' }} axisLine={false} tickLine={false} />
                                 <YAxis hide />
                                 <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(128,128,128,0.06)' }} />
-                                <Bar dataKey="groups" name="Groups" radius={[4,4,0,0]} fill="#0066ff" isAnimationActive animationBegin={300} animationDuration={900} />
+                                <Bar dataKey="groups" name="Groups" radius={[4,4,0,0]} fill="#3b82f6" isAnimationActive animationBegin={300} animationDuration={900} />
                                 <Bar dataKey="notes"  name="Notes"  radius={[4,4,0,0]} fill="#34d399" isAnimationActive animationBegin={450} animationDuration={900} />
                             </BarChart>
                         </ResponsiveContainer>
@@ -493,10 +426,10 @@ export default function Dashboard() {
                 {/* ── MY CONTENT — TABBED ───────────────────────── */}
                 <div>
                     <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
-                        <h2 className="text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                        <h2 className="text-lg font-bold text-fg" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                             My Content
                         </h2>
-                        <div className="flex gap-1 p-1 rounded-xl border overflow-x-auto max-w-full" style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-card)' }}>
+                        <div className="flex gap-1 p-1 rounded-xl border border-border bg-surface overflow-x-auto max-w-full">
                             {TABS.map(({ key, label }) => {
                                 const count = key === 'groups' ? myGroups.length : key === 'notes' ? myNotes.length : myBookings.length;
                                 const active = tab === key;
@@ -504,22 +437,21 @@ export default function Dashboard() {
                                     <motion.button
                                         key={key}
                                         onClick={() => switchTab(key)}
-                                        className="relative px-4 py-1.5 rounded-lg text-sm font-medium focus-visible:outline focus-visible:outline-2"
-                                        style={{ color: active ? '#fff' : 'var(--text-secondary)', outlineColor: 'var(--accent-blue)', zIndex: 1 }}
+                                        className={`relative px-4 py-1.5 rounded-lg text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${active ? 'text-white' : 'text-fg-secondary'}`}
+                                        style={{ zIndex: 1 }}
                                         whileTap={{ scale: 0.96 }}
                                     >
                                         {active && (
                                             <motion.span
                                                 layoutId="tab-pill"
-                                                className="absolute inset-0 rounded-lg"
-                                                style={{ background: 'var(--accent-blue)', zIndex: -1 }}
+                                                className="absolute inset-0 rounded-lg bg-primary"
+                                                style={{ zIndex: -1 }}
                                                 transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                                             />
                                         )}
                                         {label}
                                         {count > 0 && (
-                                            <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full"
-                                                style={{ background: active ? 'rgba(255,255,255,0.25)' : 'var(--bg-hover)' }}>
+                                            <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${active ? 'bg-white/25' : 'bg-surface-hover'}`}>
                                                 {count}
                                             </span>
                                         )}

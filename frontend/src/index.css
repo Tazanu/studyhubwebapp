@@ -2,38 +2,151 @@
 @import "tailwindcss";
 @import "./styles/tutorProfile.css";
 
+/* ── Design tokens ───────────────────────────────────────────────
+   Runtime-switchable values live as plain custom properties here
+   (so the [data-theme] attribute flip works with zero rebuild).
+   They're exposed to Tailwind via `@theme inline` below so utility
+   classes like `bg-surface` / `text-fg` / `bg-primary` are available
+   everywhere, without needing inline `style={{}}` objects. ── */
 :root {
-    --bg-main: #0a0a0a;
-    --bg-card: #141414;
-    --bg-hover: #1e1e1e;
-    --accent-blue: #0066ff;
-    --accent-green: #34d399;
-    --accent-purple: #8b5cf6;
-    --accent-pink: #f472b6;
-    --text-primary: #f0f0f0;
-    --text-secondary: #888;
-    --border-subtle: #232323;
-    --primary: #3b82f6;
-    --primary-dark: #1d4ed8;
-    --error: #ef4444;
-    --bg-input: #1e1e1e;
-    --text-muted: #737373;
+    /* brand — single source of truth (replaces --accent-blue / --primary / --primary-dark)
+       `--brand-600` and `--brand-solid` are deliberately different in dark mode
+       and cannot be merged: no single blue clears 4.5:1 both as text on a dark
+       card AND behind white text (the best compromise, #3576e0, scores 4.04 and
+       4.36 — failing both). So `--brand-600` is the accent/link colour and
+       `--brand-solid` is the fill used under white text. */
+    /* A translucent tint, NOT the #eef4ff of the light theme: that value is
+       near-white, so every `bg-primary-subtle` chip and icon well rendered as a
+       glaring white block on the dark UI. */
+    --brand-50:  rgba(59,130,246,0.14);
+    --brand-600: #60a5fa;   /* accent + link text — 6.93:1 on card, 5.84:1 on the tint above */
+    --brand-solid: #2563eb; /* fill behind white text — white scores 5.17:1 */
+    --brand-700: #1d4ed8;
+    --brand-contrast: #ffffff;
+
+    /* neutral surfaces — refined slate, not near-black */
+    --surface-bg:          #0b0d10;
+    --surface-bg-subtle:   #111418;
+    --surface-card:        #16191e;
+    --surface-card-hover:  #1c2027;
+    --surface-raised:      #1a1e24;
+    --border-color:        #262b33;   /* decorative dividers — exempt from 1.4.11 */
+    --border-color-strong: #5f6878;   /* control boundaries — 3.14:1 on card */
+    --ink:            #f1f3f5;
+    --ink-secondary:  #9aa3af;
+    --ink-muted:      #8b95a3;        /* was #6b7380 — only 3.68:1 on card */
+    --input-bg:       #1c2027;
+
+    /* semantic status — solid + tint-background pair per meaning */
+    --status-success:     #34d399; --status-success-bg: rgba(52,211,153,0.14);
+    --status-warning:     #fbbf24; --status-warning-bg: rgba(251,191,36,0.14);
+    --status-danger:      #f87171; --status-danger-bg:  rgba(248,113,113,0.14);
+    --status-info:        #60a5fa; --status-info-bg:    rgba(96,165,250,0.14);
+    --status-premium:     #eab308; --status-premium-bg: rgba(234,179,8,0.14);
+
+    /* Two gradients, because a fill and a text treatment want opposite things.
+       --gradient-primary sits UNDER white text, so both ends must be dark
+       enough (ending on --brand-solid, not --brand-600, which would drop the
+       button label to 3.68:1). --gradient-text IS the text, on a dark ground,
+       so both ends must be light enough — the button gradient used as text
+       scores 2.90:1, failing even the 3:1 large-text threshold. */
+    --gradient-primary: linear-gradient(135deg, var(--brand-700), var(--brand-solid));
+    --gradient-text:    linear-gradient(135deg, #60a5fa, #93c5fd);
+
+    /* elevation — replaces ad hoc rgba(0,0,0,0.4) shadow values per component */
+    --elevation-sm:    0 1px 2px rgba(0,0,0,0.24);
+    --elevation-md:    0 8px 24px rgba(0,0,0,0.32);
+    --elevation-lg:    0 24px 64px rgba(0,0,0,0.48);
+    --elevation-focus: 0 0 0 3px rgba(59,130,246,0.35);
 }
 
 [data-theme="light"] {
-    --bg-main: #f8fafc;
-    --bg-card: #ffffff;
-    --bg-hover: #e2e8f0;
-    --text-primary: #0f172a;
-    --text-secondary: #64748b;
-    --border-subtle: #e2e8f0;
-    --bg-input: #f0f0f0;
-    --text-muted: #999999;
+    --brand-50:  #eef4ff;
+    --brand-600: #2563eb;
+    --brand-solid: #2563eb;  /* on white, one blue serves both roles */
+    --brand-700: #1d4ed8;
+
+    --surface-bg:          #f8fafc;
+    --surface-bg-subtle:   #f1f5f9;
+    --surface-card:        #ffffff;
+    --surface-card-hover:  #eef2f6;
+    --surface-raised:      #ffffff;
+    --border-color:        #e2e8f0;   /* decorative dividers — exempt from 1.4.11 */
+    --border-color-strong: #7d8da3;   /* control boundaries — 3.38:1 on white */
+    --ink:           #0f172a;
+    --ink-secondary: #475569;
+    --ink-muted:     #64748b;         /* was #94a3b8 — only 2.56:1 on white */
+    --input-bg:      #f8fafc;
+
+    /* Substantially darker than the dark-mode tones. The mid-weight versions of
+       these (#059669, #d97706, #ca8a04) look right on white but measure 3.77,
+       3.19 and 2.94 against it — all below 4.5 — and worse again as badge text
+       on their own tint. Each value below clears 4.5:1 on white AND on its tint. */
+    --status-success:     #047857; --status-success-bg: rgba(4,120,87,0.10);
+    --status-warning:     #a04a08; --status-warning-bg: rgba(160,74,8,0.10);
+    --status-danger:      #c81e1e; --status-danger-bg:  rgba(200,30,30,0.10);
+    --status-info:        #1d4ed8; --status-info-bg:    rgba(29,78,216,0.10);
+    --status-premium:     #8a5a06; --status-premium-bg: rgba(138,90,6,0.10);
+
+    /* On white, the text gradient wants the dark end of the scale instead. */
+    --gradient-text: linear-gradient(135deg, var(--brand-700), var(--brand-solid));
+
+    --elevation-sm:    0 1px 2px rgba(15,23,42,0.06);
+    --elevation-md:    0 8px 24px rgba(15,23,42,0.08);
+    --elevation-lg:    0 24px 64px rgba(15,23,42,0.12);
+    --elevation-focus: 0 0 0 3px rgba(37,99,235,0.25);
+}
+
+/* ── Tailwind-facing color tokens — MUST be `inline` since they
+   reference vars defined outside this block (see note above) ── */
+@theme inline {
+    --color-bg:             var(--surface-bg);
+    --color-bg-subtle:      var(--surface-bg-subtle);
+    --color-surface:        var(--surface-card);
+    --color-surface-hover:  var(--surface-card-hover);
+    --color-surface-raised: var(--surface-raised);
+    --color-border:         var(--border-color);
+    --color-border-strong:  var(--border-color-strong);
+    --color-fg:             var(--ink);
+    --color-fg-secondary:   var(--ink-secondary);
+    --color-fg-muted:       var(--ink-muted);
+    --color-input:          var(--input-bg);
+
+    --color-primary:          var(--brand-600);
+    --color-primary-solid:    var(--brand-solid);
+    --color-primary-hover:    var(--brand-700);
+    --color-primary-subtle:   var(--brand-50);
+    --color-primary-contrast: var(--brand-contrast);
+
+    --color-success:     var(--status-success);
+    --color-success-bg:  var(--status-success-bg);
+    --color-warning:     var(--status-warning);
+    --color-warning-bg:  var(--status-warning-bg);
+    --color-danger:      var(--status-danger);
+    --color-danger-bg:   var(--status-danger-bg);
+    --color-info:        var(--status-info);
+    --color-info-bg:     var(--status-info-bg);
+    --color-premium:     var(--status-premium);
+    --color-premium-bg:  var(--status-premium-bg);
+
+    --shadow-sm: var(--elevation-sm);
+    --shadow-md: var(--elevation-md);
+    --shadow-lg: var(--elevation-lg);
+}
+
+/* ── Non-themeable scale — identical in both themes, safe to bake at build time ── */
+@theme {
+    --font-sans:    'DM Sans', system-ui, sans-serif;
+    --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
 }
 
 body {
-    background: var(--bg-main);
-    color: var(--text-primary);
+    background: var(--surface-bg);
+    color: var(--ink);
     font-family: 'DM Sans', sans-serif;
     transition: background 0.3s, color 0.3s;
     overflow-x: hidden;
@@ -53,56 +166,24 @@ h1, h2, h3, h4 {
     font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
+/* restrained single-hue treatment — no animation, no rainbow */
 .gradient-text {
-    background: linear-gradient(270deg, #60a5fa, #34d399, #8b5cf6, #60a5fa);
-    background-size: 300% 300%;
+    background: var(--gradient-text);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    animation: gradientFlow 7s ease infinite;
-}
-
-@keyframes gradientFlow {
-    0%   { background-position: 0%   50%; }
-    50%  { background-position: 100% 50%; }
-    100% { background-position: 0%   50%; }
-}
-
-@keyframes badgePulse {
-    0%, 100% { opacity: 1;    box-shadow: 0 0 0   0px rgba(0,102,255,0.0); }
-    50%      { opacity: 0.85; box-shadow: 0 0 14px 4px rgba(0,102,255,0.2); }
 }
 
 .hero-badge {
-    animation: badgePulse 3.5s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .gradient-text {
-        background: linear-gradient(135deg, #60a5fa 0%, #34d399 50%, #8b5cf6 100%);
-        background-size: 100% 100%;
-        animation: none;
-    }
-    .hero-badge { animation: none; }
+    background: var(--brand-50);
+    color: var(--brand-600);
 }
 
 .logo-gradient {
-    background: linear-gradient(135deg, #0052cc 0%, #0066ff 100%);
+    background: var(--gradient-text);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-}
-
-:root {
-    --primary: #3b82f6;
-    --primary-dark: #1d4ed8;
-    --error: #ef4444;
-    --bg-input: #242424;
-    --text-muted: #737373;
-}
-
-[data-theme="light"] {
-    --bg-input: #f0f0f0;
-    --text-muted: #999999;
+    background-clip: text;
 }
 
 /* ── Scroll-reveal animations ── */
@@ -161,11 +242,6 @@ h1, h2, h3, h4 {
     to   { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes fadeUp {
-    from { opacity: 0; transform: translateY(28px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-
 .form-card {
     animation: slideUp 0.5s ease-out;
 }
@@ -174,10 +250,10 @@ h1, h2, h3, h4 {
     width: 100%;
     height: 48px;
     padding: 0 44px;
-    background: var(--bg-input);
-    border: 2px solid var(--border-subtle);
+    background: var(--input-bg);
+    border: 2px solid var(--border-color);
     border-radius: 8px;
-    color: var(--text-primary);
+    color: var(--ink);
     font-size: 15px;
     font-family: 'DM Sans', sans-serif;
     transition: all 0.2s;
@@ -185,13 +261,13 @@ h1, h2, h3, h4 {
 
 .form-input:focus {
     outline: none;
-    border-color: var(--primary);
+    border-color: var(--brand-600);
 }
 
 /* Message bubble highlight animation */
 @keyframes highlight-flash {
     0% { background: transparent; }
-    50% { background: rgba(0, 102, 255, 0.15); }
+    50% { background: rgba(59,130,246,0.15); }
     100% { background: transparent; }
 }
 

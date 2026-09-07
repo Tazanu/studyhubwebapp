@@ -1,9 +1,18 @@
 import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Loader2, WifiOff, BookOpen, GraduationCap, Plus, X, CheckCircle2 } from 'lucide-react';
+import { Eye, EyeOff, WifiOff, BookOpen, GraduationCap, Plus, X, CheckCircle2 } from 'lucide-react';
 import api from '../api/client';
+import HoneypotField, { HONEYPOT_FIELD } from '../components/ui/HoneypotField';
 import { useAuth } from '../context/AuthContext';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import Field from '../components/ui/Field';
+import Input from '../components/ui/Input';
+import Textarea from '../components/ui/Textarea';
+import Select from '../components/ui/Select';
+import Button from '../components/ui/Button';
+import { cn } from '../lib/cn';
+import Seo from '../components/Seo';
+import { trackEvent } from '../lib/analytics';
 
 // Backend confirmed: university and fieldOfStudy are optional server-side.
 // Only email, password, firstName, lastName are required by POST /api/auth/register.
@@ -39,19 +48,16 @@ function RoleCard({ icon: Icon, title, desc, selected, onClick }) {
         <button
             type="button"
             onClick={onClick}
-            className="flex-1 flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-center transition-all"
-            style={{
-                borderColor: selected ? 'var(--primary)' : 'var(--border-subtle)',
-                background:  selected ? 'rgba(var(--primary-rgb, 0,82,204), 0.08)' : 'var(--bg-main)',
-                cursor: 'pointer',
-            }}
+            className={cn(
+                'flex-1 flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-center transition-all cursor-pointer',
+                selected ? 'border-primary bg-primary-subtle' : 'border-border bg-bg',
+            )}
         >
-            <div className="w-10 h-10 rounded-full flex items-center justify-center"
-                style={{ background: selected ? 'var(--primary)' : 'var(--border-subtle)' }}>
-                <Icon size={20} color={selected ? '#fff' : 'var(--text-secondary)'} />
+            <div className={cn('w-10 h-10 rounded-full flex items-center justify-center', selected ? 'bg-primary' : 'bg-surface-hover')}>
+                <Icon size={20} className={selected ? 'text-white' : 'text-fg-secondary'} />
             </div>
-            <span className="font-semibold text-sm" style={{ color: selected ? 'var(--primary)' : 'var(--text-primary)' }}>{title}</span>
-            <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>{desc}</span>
+            <span className={cn('font-semibold text-sm', selected ? 'text-primary' : 'text-fg')}>{title}</span>
+            <span className="text-xs text-fg-secondary">{desc}</span>
         </button>
     );
 }
@@ -82,47 +88,39 @@ function TutorFields({ tutor, setTutor, errors, touched, setTouched, setErrors }
     const bioError     = touched.tutorBio && errors.tutorBio;
 
     return (
-        <div
-            className="mt-2 mb-6 rounded-xl border overflow-hidden"
-            style={{ borderColor: 'var(--primary)', background: 'rgba(var(--primary-rgb,0,82,204),0.04)' }}
-        >
-            <div className="px-5 py-3 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-                <p className="text-sm font-semibold" style={{ color: 'var(--primary)' }}>Tutor Application Details</p>
-                <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>Reviewed by our team before you appear in search</p>
+        <div className="mt-2 mb-6 rounded-xl border border-primary bg-primary-subtle overflow-hidden">
+            <div className="px-5 py-3 border-b border-border">
+                <p className="text-sm font-semibold text-primary">Tutor Application Details</p>
+                <p className="text-xs mt-0.5 text-fg-secondary">Reviewed by our team before you appear in search</p>
             </div>
 
             <div className="p-5 space-y-5">
 
                 {/* subjects */}
-                <div>
-                    <label className="block font-semibold text-sm mb-1.5">
-                        Subjects You Teach
-                        <span className="ml-1 font-normal text-xs" style={{ color: 'var(--error)' }}>*</span>
-                    </label>
+                <Field label="Subjects You Teach" required error={subjectError ? errors.subjects : ''}>
                     <div className="flex gap-2 mb-2">
-                        <input
+                        <Input
                             ref={subjectInputRef}
                             type="text"
                             value={tutor.subjectInput}
                             onChange={e => setTutor(t => ({ ...t, subjectInput: e.target.value }))}
                             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSubject(tutor.subjectInput); } }}
                             placeholder="Type a subject and press Enter"
-                            className="form-input px-4 flex-1"
-                            style={subjectError ? { borderColor: 'var(--error)' } : {}}
+                            invalid={!!subjectError}
+                            className="flex-1"
                         />
                         <button
                             type="button"
                             onClick={() => addSubject(tutor.subjectInput)}
-                            className="px-3 rounded-lg flex items-center justify-center"
-                            style={{ background: 'var(--primary)', color: '#fff', minWidth: '44px', minHeight: '44px' }}
+                            className="px-3 rounded-sm flex items-center justify-center bg-primary-solid text-white shrink-0"
+                            style={{ minWidth: '44px', minHeight: '44px' }}
                         ><Plus size={16} /></button>
                     </div>
 
                     {tutor.subjects.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-2">
                             {tutor.subjects.map(s => (
-                                <span key={s} className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium"
-                                    style={{ background: 'rgba(var(--primary-rgb,0,82,204),0.12)', color: 'var(--primary)', border: '1px solid rgba(var(--primary-rgb,0,82,204),0.25)' }}>
+                                <span key={s} className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-surface text-primary border border-primary/25">
                                     {s}
                                     <button type="button" onClick={() => removeSubject(s)} className="ml-0.5 hover:opacity-70"><X size={11} /></button>
                                 </span>
@@ -133,40 +131,37 @@ function TutorFields({ tutor, setTutor, errors, touched, setTouched, setErrors }
                     <div className="flex flex-wrap gap-1.5">
                         {SUGGESTED_SUBJECTS.filter(s => !tutor.subjects.includes(s)).slice(0, 8).map(s => (
                             <button key={s} type="button" onClick={() => addSubject(s)}
-                                className="px-2.5 py-1 rounded-full text-xs border transition-colors hover:border-blue-500"
-                                style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                                className="px-2.5 py-1 rounded-full text-xs border border-border text-fg-secondary transition-colors hover:border-primary">
                                 + {s}
                             </button>
                         ))}
                     </div>
-                    {subjectError && <p role="alert" className="text-xs mt-1.5" style={{ color: 'var(--error)' }}>{errors.subjects}</p>}
-                </div>
+                </Field>
 
                 {/* experience */}
-                <div>
-                    <label htmlFor="yearsExp" className="block font-semibold text-sm mb-1.5">Years of Experience</label>
-                    <select
+                <Field label="Years of Experience" htmlFor="yearsExp" className="mb-0">
+                    <Select
                         id="yearsExp"
                         value={tutor.yearsExperience}
                         onChange={e => setTutor(t => ({ ...t, yearsExperience: e.target.value }))}
-                        className="form-input px-4"
-                        style={{ background: 'var(--bg-input)', color: 'var(--text-primary)', width: '180px' }}
+                        className="w-[180px]"
                     >
                         <option value="<1">&lt;1 year</option>
                         <option value="1-2">1–2 years</option>
                         <option value="3-5">3–5 years</option>
                         <option value="5+">5+ years</option>
-                    </select>
-                </div>
+                    </Select>
+                </Field>
 
                 {/* bio */}
-                <div>
-                    <label htmlFor="tutorBio" className="block font-semibold text-sm mb-1.5">
-                        Teaching Bio / Approach
-                        <span className="ml-1 font-normal text-xs" style={{ color: 'var(--error)' }}>*</span>
-                        <span className="ml-2 font-normal text-xs" style={{ color: 'var(--text-muted)' }}>max 300 chars</span>
-                    </label>
-                    <textarea
+                <Field
+                    label="Teaching Bio / Approach"
+                    htmlFor="tutorBio"
+                    required
+                    error={bioError ? errors.tutorBio : ''}
+                    className="mb-0"
+                >
+                    <Textarea
                         id="tutorBio"
                         value={tutor.bio}
                         onChange={e => {
@@ -179,57 +174,48 @@ function TutorFields({ tutor, setTutor, errors, touched, setTouched, setErrors }
                         }}
                         rows={3}
                         placeholder="e.g. I make complex topics simple by building intuition first..."
-                        className="form-input px-4 resize-none"
-                        style={{ ...(bioError ? { borderColor: 'var(--error)' } : {}), paddingTop: '10px', paddingBottom: '10px' }}
+                        invalid={!!bioError}
                         aria-invalid={!!bioError}
                     />
-                    <div className="flex justify-between mt-1">
-                        {bioError
-                            ? <p role="alert" className="text-xs" style={{ color: 'var(--error)' }}>{errors.tutorBio}</p>
-                            : <span />}
-                        <p className="text-xs ml-auto" style={{ color: tutor.bio.length >= 280 ? 'var(--error)' : 'var(--text-muted)' }}>
+                    <div className="flex justify-end mt-1">
+                        <p className={cn('text-xs', tutor.bio.length >= 280 ? 'text-danger' : 'text-fg-muted')}>
                             {tutor.bio.length}/300
                         </p>
                     </div>
-                </div>
+                </Field>
 
                 {/* hourly rate */}
-                <div>
-                    <label htmlFor="hourlyRate" className="block font-semibold text-sm mb-1.5">
-                        Hourly Rate (FCFA)
-                        <span className="ml-1.5 font-normal text-xs" style={{ color: 'var(--text-muted)' }}>300–2000</span>
-                    </label>
-                    <input
+                <Field label="Hourly Rate (FCFA)" htmlFor="hourlyRate" hint="300–2000" className="mb-0">
+                    <Input
                         id="hourlyRate"
                         type="number"
                         min={300}
                         max={2000}
                         value={tutor.hourlyRate}
                         onChange={e => setTutor(t => ({ ...t, hourlyRate: e.target.value }))}
-                        className="form-input px-4"
-                        style={{ width: '160px' }}
+                        className="w-[160px]"
                     />
-                </div>
+                </Field>
 
                 {/* availability */}
                 <div>
-                    <label className="block font-semibold text-sm mb-2">Availability
-                        <span className="ml-1.5 font-normal text-xs" style={{ color: 'var(--text-muted)' }}>optional</span>
+                    <label className="block font-semibold text-sm mb-2 text-fg">Availability
+                        <span className="ml-1.5 font-normal text-xs text-fg-muted">optional</span>
                     </label>
                     <div className="overflow-x-auto">
                         <table className="text-xs w-full" style={{ borderCollapse: 'separate', borderSpacing: '4px' }}>
                             <thead>
                                 <tr>
-                                    <th className="text-left pb-1" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}></th>
+                                    <th className="text-left pb-1 font-medium text-fg-secondary"></th>
                                     {TIMES.map(t => (
-                                        <th key={t} className="pb-1 text-center" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{t}</th>
+                                        <th key={t} className="pb-1 text-center font-medium text-fg-secondary">{t}</th>
                                     ))}
                                 </tr>
                             </thead>
                             <tbody>
                                 {DAYS.map(day => (
                                     <tr key={day}>
-                                        <td className="pr-2 font-medium" style={{ color: 'var(--text-primary)' }}>{day}</td>
+                                        <td className="pr-2 font-medium text-fg">{day}</td>
                                         {TIMES.map(time => {
                                             const key = `${day}_${time}`;
                                             const on  = !!tutor.availability[key];
@@ -238,13 +224,11 @@ function TutorFields({ tutor, setTutor, errors, touched, setTouched, setErrors }
                                                     <button
                                                         type="button"
                                                         onClick={() => toggleAvail(day, time)}
-                                                        className="w-full rounded transition-colors"
-                                                        style={{
-                                                            minHeight: '32px', minWidth: '72px',
-                                                            background: on ? 'var(--primary)' : 'var(--bg-main)',
-                                                            border: `1px solid ${on ? 'var(--primary)' : 'var(--border-subtle)'}`,
-                                                            color: on ? '#fff' : 'var(--text-muted)',
-                                                        }}
+                                                        className={cn(
+                                                            'w-full rounded transition-colors border',
+                                                            on ? 'bg-primary-solid border-primary text-white' : 'bg-bg border-border text-fg-muted',
+                                                        )}
+                                                        style={{ minHeight: '32px', minWidth: '72px' }}
                                                     >{on ? '✓' : '—'}</button>
                                                 </td>
                                             );
@@ -257,11 +241,7 @@ function TutorFields({ tutor, setTutor, errors, touched, setTouched, setErrors }
                 </div>
 
                 {/* proof document */}
-                <div>
-                    <label htmlFor="proofDoc" className="block font-semibold text-sm mb-1.5">
-                        Proof of Expertise
-                        <span className="ml-1.5 font-normal text-xs" style={{ color: 'var(--text-muted)' }}>optional — PDF or image, max 20MB</span>
-                    </label>
+                <Field label="Proof of Expertise" htmlFor="proofDoc" hint="optional — PDF or image, max 20MB" className="mb-0">
                     <input
                         id="proofDoc"
                         type="file"
@@ -270,19 +250,10 @@ function TutorFields({ tutor, setTutor, errors, touched, setTouched, setErrors }
                         className="form-input px-4"
                         style={{ paddingTop: '8px', paddingBottom: '8px' }}
                     />
-                </div>
+                </Field>
 
             </div>
         </div>
-    );
-}
-
-function FieldError({ id, msg }) {
-    if (!msg) return null;
-    return (
-        <p id={id} role="alert" className="text-xs mt-1.5" style={{ color: 'var(--error)' }}>
-            {msg}
-        </p>
     );
 }
 
@@ -349,6 +320,7 @@ export default function Register() {
     };
 
     const [confirmed, setConfirmed] = useState(false);
+    const [honeypot, setHoneypot] = useState('');
 
     const handleSubmit = async e => {
         e.preventDefault();
@@ -377,6 +349,7 @@ export default function Register() {
                     availability:    tutor.availability,
                 }));
                 if (tutor.proofFile) fd.append('proofDocument', tutor.proofFile);
+                fd.append(HONEYPOT_FIELD, honeypot);
                 ({ data } = await api.post('/auth/register', fd, {
                     headers: { 'Content-Type': 'multipart/form-data' },
                 }));
@@ -388,10 +361,15 @@ export default function Register() {
                     lastName:     form.lastName,
                     university:   form.university   || undefined,
                     fieldOfStudy: form.fieldOfStudy || undefined,
+                    [HONEYPOT_FIELD]: honeypot,
                 }));
             }
 
             login(data.user, data.token);
+
+            // The one conversion that matters on this page. No-ops when
+            // analytics is unconfigured, so no guard is needed here.
+            trackEvent('Signup', { role });
 
             if (role === 'tutor') {
                 setConfirmed(true);
@@ -408,78 +386,60 @@ export default function Register() {
     /* ── password strength display ──────────────────────────── */
     const pw  = form.password;
     const sc  = pwStrength(pw);
-    const barColor = !pw ? 'var(--border-subtle)' : sc < 2 ? 'var(--error)' : sc < 4 ? '#f59e0b' : '#10b981';
+    const barColorClass = !pw ? 'bg-border' : sc < 2 ? 'bg-danger' : sc < 4 ? 'bg-warning' : 'bg-success';
+    const barTextClass  = !pw ? 'text-fg-muted' : sc < 2 ? 'text-danger' : sc < 4 ? 'text-warning' : 'text-success';
     const barWidth = !pw ? '0%' : sc < 2 ? '33%' : sc < 4 ? '66%' : '100%';
     const barLabel = !pw ? 'Use at least 8 characters'
         : sc < 2 ? 'Weak — add more characters'
         : sc < 4 ? 'Medium — add uppercase, numbers or symbols'
         : 'Strong password';
 
-    const fieldBorder = name =>
-        errors[name] && touched[name] ? { borderColor: 'var(--error)' } : {};
-
     if (confirmed) {
         return (
-            <div
-                className="min-h-screen flex items-center justify-center px-4 pt-20 pb-12"
-                style={{ background: 'var(--bg-main)', color: 'var(--text-primary)' }}
-            >
-                <div
-                    className="w-full max-w-lg rounded-2xl p-8 sm:p-12 border text-center"
-                    style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}
-                >
-                    <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
-                        style={{ background: 'rgba(16,185,129,0.12)' }}>
-                        <CheckCircle2 size={36} style={{ color: '#10b981' }} />
+            <div className="min-h-screen flex items-center justify-center px-4 pt-20 pb-12 bg-bg text-fg">
+                <div className="w-full max-w-lg rounded-2xl p-8 sm:p-12 border border-border bg-surface shadow-lg text-center">
+                    <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5 bg-success-bg">
+                        <CheckCircle2 size={36} className="text-success" />
                     </div>
-                    <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Application Submitted!</h1>
-                    <p className="mb-1" style={{ color: 'var(--text-secondary)' }}>
+                    <h1 className="text-2xl font-bold mb-2 text-fg">Application Submitted!</h1>
+                    <p className="mb-1 text-fg-secondary">
                         Thanks for applying to teach on StudyHub!
                     </p>
-                    <p className="text-sm mb-8" style={{ color: 'var(--text-secondary)' }}>
+                    <p className="text-sm mb-8 text-fg-secondary">
                         We'll review your application and notify you within{' '}
-                        <strong style={{ color: 'var(--text-primary)' }}>24–48 hours</strong>.
+                        <strong className="text-fg">24–48 hours</strong>.
                         In the meantime, explore StudyHub as a student.
                     </p>
-                    <button
-                        onClick={() => navigate('/dashboard')}
-                        className="w-full rounded-lg font-bold text-white flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5"
-                        style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))', height: '52px' }}
-                    >
+                    <Button onClick={() => navigate('/dashboard')} size="lg" fullWidth>
                         Continue to Dashboard →
-                    </button>
+                    </Button>
                 </div>
             </div>
         );
     }
 
     return (
-        <div
-            className="min-h-screen flex items-center justify-center px-4 pt-20 pb-12"
-            style={{ background: 'var(--bg-main)', color: 'var(--text-primary)' }}
-        >
-            <div
-                className="form-card w-full max-w-lg rounded-2xl p-6 sm:p-10 border"
-                style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}
-            >
+        <div className="min-h-screen flex items-center justify-center px-4 pt-20 pb-12 bg-bg text-fg">
+            <Seo title="Create Your Free Account" description="Create a free StudyHub account to join study groups, share and download course notes, ask questions and book verified tutors. No card required." path="/register" />
+            <div className="form-card w-full max-w-lg rounded-2xl p-6 sm:p-10 border border-border bg-surface shadow-lg">
                 {/* header */}
                 <div className="text-center mb-8">
                     <div className="text-2xl font-bold mb-3 logo-gradient">StudyHub</div>
-                    <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--primary)' }}>Create Account</h1>
-                    <p style={{ color: 'var(--text-secondary)' }}>Join StudyHub and start your learning journey</p>
+                    <h1 className="text-2xl font-bold mb-2 text-fg">Create Account</h1>
+                    <p className="text-fg-secondary">Join StudyHub and start your learning journey</p>
                 </div>
 
                 {/* general server error */}
                 <div aria-live="polite" aria-atomic="true">
                     {errors.general && (
-                        <div className="mb-5 px-4 py-3 rounded-lg text-sm text-center"
-                            style={{ color: 'var(--error)', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)' }}>
+                        <div className="mb-5 px-4 py-3 rounded-lg text-sm text-center bg-danger-bg text-danger border border-danger/25">
                             {errors.general}
                         </div>
                     )}
                 </div>
 
                 <form onSubmit={handleSubmit} noValidate>
+                    <HoneypotField value={honeypot} onChange={e => setHoneypot(e.target.value)} />
 
                     {/* role selection */}
                     <div className="flex flex-col sm:flex-row gap-3 mb-7">
@@ -505,11 +465,8 @@ export default function Register() {
                             ['firstName', 'First Name', 'First name'],
                             ['lastName',  'Last Name',  'Last name' ],
                         ].map(([field, label, ph]) => (
-                            <div key={field} className="flex-1">
-                                <label htmlFor={field} className="block font-semibold text-sm mb-1.5">
-                                    {label}
-                                </label>
-                                <input
+                            <Field key={field} label={label} htmlFor={field} error={touched[field] ? errors[field] : ''} className="flex-1 mb-0">
+                                <Input
                                     id={field}
                                     type="text"
                                     value={form[field]}
@@ -518,21 +475,15 @@ export default function Register() {
                                     placeholder={ph}
                                     autoComplete={field === 'firstName' ? 'given-name' : 'family-name'}
                                     aria-describedby={errors[field] ? `${field}-error` : undefined}
-                                    aria-invalid={!!(errors[field] && touched[field])}
-                                    className="form-input px-4"
-                                    style={fieldBorder(field)}
+                                    invalid={!!(errors[field] && touched[field])}
                                 />
-                                <FieldError id={`${field}-error`} msg={touched[field] ? errors[field] : ''} />
-                            </div>
+                            </Field>
                         ))}
                     </div>
 
                     {/* email */}
-                    <div className="mb-5">
-                        <label htmlFor="email" className="block font-semibold text-sm mb-1.5">
-                            Email Address
-                        </label>
-                        <input
+                    <Field label="Email Address" htmlFor="email" error={touched.email ? errors.email : ''}>
+                        <Input
                             id="email"
                             type="email"
                             value={form.email}
@@ -541,20 +492,14 @@ export default function Register() {
                             placeholder="you@university.cm"
                             autoComplete="email"
                             aria-describedby={errors.email ? 'email-error' : undefined}
-                            aria-invalid={!!(errors.email && touched.email)}
-                            className="form-input px-4"
-                            style={fieldBorder('email')}
+                            invalid={!!(errors.email && touched.email)}
                         />
-                        <FieldError id="email-error" msg={touched.email ? errors.email : ''} />
-                    </div>
+                    </Field>
 
                     {/* password + strength meter + eye toggle */}
-                    <div className="mb-5">
-                        <label htmlFor="password" className="block font-semibold text-sm mb-1.5">
-                            Password
-                        </label>
+                    <Field label="Password" htmlFor="password" className="mb-5">
                         <div className="relative">
-                            <input
+                            <Input
                                 id="password"
                                 type={showPw ? 'text' : 'password'}
                                 value={form.password}
@@ -563,15 +508,13 @@ export default function Register() {
                                 placeholder="Create a password"
                                 autoComplete="new-password"
                                 aria-describedby="pw-strength password-error"
-                                aria-invalid={!!(errors.password && touched.password)}
-                                className="form-input px-4"
-                                style={{ paddingRight: '44px', ...fieldBorder('password') }}
+                                invalid={!!(errors.password && touched.password)}
+                                className="pr-11"
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPw(v => !v)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded transition-colors"
-                                style={{ color: 'var(--text-muted)' }}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded transition-colors text-fg-muted hover:text-fg"
                                 aria-label={showPw ? 'Hide password' : 'Show password'}
                                 tabIndex={0}
                             >
@@ -579,47 +522,37 @@ export default function Register() {
                             </button>
                         </div>
                         {/* strength bar */}
-                        <div className="h-1 rounded mt-2 overflow-hidden" style={{ background: 'var(--border-subtle)' }}>
-                            <div className="h-full rounded transition-all duration-300"
-                                style={{ width: barWidth, background: barColor }} />
+                        <div className="h-1 rounded mt-2 overflow-hidden bg-border">
+                            <div className={cn('h-full rounded transition-all duration-300', barColorClass)} style={{ width: barWidth }} />
                         </div>
-                        <p id="pw-strength" className="text-xs mt-1" style={{ color: barColor }}>{barLabel}</p>
-                        <FieldError id="password-error" msg={touched.password ? errors.password : ''} />
-                    </div>
+                        <p id="pw-strength" className={cn('text-xs mt-1', barTextClass)}>{barLabel}</p>
+                        {touched.password && errors.password && (
+                            <p id="password-error" role="alert" className="text-xs mt-1.5 text-danger">{errors.password}</p>
+                        )}
+                    </Field>
 
                     {/* optional fields — clearly labelled as optional */}
-                    <div className="mb-5">
-                        <label htmlFor="university" className="block font-semibold text-sm mb-1.5">
-                            University / Institution
-                            <span className="ml-1.5 font-normal text-xs" style={{ color: 'var(--text-muted)' }}>optional</span>
-                        </label>
-                        <input
+                    <Field label="University / Institution" htmlFor="university" hint="optional">
+                        <Input
                             id="university"
                             type="text"
                             value={form.university}
                             onChange={set('university')}
                             placeholder="Your university or institution"
                             autoComplete="organization"
-                            className="form-input px-4"
                         />
-                    </div>
+                    </Field>
 
-                    <div className="mb-6">
-                        <label htmlFor="fieldOfStudy" className="block font-semibold text-sm mb-1.5">
-                            Field of Study
-                            <span className="ml-1.5 font-normal text-xs" style={{ color: 'var(--text-muted)' }}>optional</span>
-                        </label>
-                        <select
+                    <Field label="Field of Study" htmlFor="fieldOfStudy" hint="optional" className="mb-6">
+                        <Select
                             id="fieldOfStudy"
                             value={form.fieldOfStudy}
                             onChange={set('fieldOfStudy')}
-                            className="form-input px-4"
-                            style={{ background: 'var(--bg-input)', color: form.fieldOfStudy ? 'var(--text-primary)' : 'var(--text-muted)' }}
                         >
                             <option value="">Select your field (optional)</option>
                             {FIELDS_OF_STUDY.map(f => <option key={f} value={f}>{f}</option>)}
-                        </select>
-                    </div>
+                        </Select>
+                    </Field>
 
                     {/* tutor fields — expand when role === 'tutor' */}
                     <div
@@ -649,39 +582,37 @@ export default function Register() {
                             className="mt-0.5 w-4 h-4 shrink-0"
                             aria-describedby={errors.terms ? 'terms-error' : undefined}
                         />
-                        <label htmlFor="terms" className="text-sm select-none" style={{ color: 'var(--text-secondary)' }}>
+                        <label htmlFor="terms" className="text-sm select-none text-fg-secondary">
                             I agree to the{' '}
-                            <Link to="/terms"   className="font-semibold" style={{ color: 'var(--primary)' }}>Terms of Service</Link>
+                            <Link to="/terms"   className="font-semibold text-primary">Terms of Service</Link>
                             {' '}and{' '}
-                            <Link to="/privacy" className="font-semibold" style={{ color: 'var(--primary)' }}>Privacy Policy</Link>
+                            <Link to="/privacy" className="font-semibold text-primary">Privacy Policy</Link>
                         </label>
                     </div>
                     <div aria-live="polite">
-                        <FieldError id="terms-error" msg={errors.terms} />
+                        {errors.terms && <p id="terms-error" role="alert" className="text-xs mt-1.5 text-danger">{errors.terms}</p>}
                     </div>
 
                     {/* submit */}
-                    <button
+                    <Button
                         type="submit"
-                        disabled={loading || !isOnline}
-                        className="w-full mt-5 rounded-lg font-bold text-white flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed"
-                        style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))', height: '52px' }}
+                        size="lg"
+                        fullWidth
+                        loading={loading}
+                        disabled={!isOnline}
+                        icon={!isOnline ? WifiOff : undefined}
+                        className="mt-5"
                         title={!isOnline ? "You're offline — reconnect to create account" : "Create your account"}
                     >
-                        {!isOnline
-                            ? <><WifiOff size={18} /> You're Offline</>
-                            : loading
-                            ? <><Loader2 size={18} className="animate-spin" /> Creating Account…</>
-                            : 'Create Account →'
-                        }
-                    </button>
+                        {!isOnline ? "You're Offline" : loading ? 'Creating Account…' : 'Create Account →'}
+                    </Button>
                 </form>
 
                 {/* secondary action */}
-                <div className="text-center mt-6 pt-6 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                <div className="text-center mt-6 pt-6 border-t border-border">
+                    <p className="text-sm text-fg-secondary">
                         Already have an account?{' '}
-                        <Link to="/login" className="font-semibold" style={{ color: 'var(--primary)' }}>Sign in instead</Link>
+                        <Link to="/login" className="font-semibold text-primary">Sign in instead</Link>
                     </p>
                 </div>
             </div>

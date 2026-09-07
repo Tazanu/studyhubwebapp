@@ -1,7 +1,15 @@
 import { useState, useEffect } from 'react';
-import api from '../api/client';
 import { useNavigate } from 'react-router-dom';
+import { Bell, UserPlus, CheckCircle2, XCircle } from 'lucide-react';
+import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { cn } from '../lib/cn';
+
+const TYPE_ICON = {
+    join_request:      UserPlus,
+    request_approved:  CheckCircle2,
+    request_denied:    XCircle,
+};
 
 export default function NotificationBell() {
     const [notifications, setNotifications] = useState([]);
@@ -57,23 +65,16 @@ export default function NotificationBell() {
         } catch {}
     };
 
-    const typeIcon = (type) => {
-        if (type === 'join_request')     return '👋';
-        if (type === 'request_approved') return '✅';
-        if (type === 'request_denied')   return '❌';
-        return '🔔';
-    };
-
     return (
         <div className="relative">
             <button
                 onClick={() => setShowPanel(!showPanel)}
-                className="w-10 h-10 rounded-full border-2 flex items-center justify-center text-lg transition-all hover:bg-blue-600 hover:text-white hover:border-blue-600 relative"
-                style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-primary)', background: 'var(--bg-card)' }}
+                className="w-10 h-10 rounded-full border-2 border-border bg-surface text-fg flex items-center justify-center transition-all hover:bg-primary-solid hover:text-white hover:border-primary relative"
+                aria-label="Notifications"
             >
-                🔔
+                <Bell size={18} />
                 {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                    <span className="absolute -top-1 -right-1 bg-danger text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
                         {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                 )}
@@ -82,59 +83,60 @@ export default function NotificationBell() {
             {showPanel && (
                 <>
                     <div className="fixed inset-0 z-40" onClick={() => setShowPanel(false)} />
-                    <div
-                        className="absolute right-0 mt-2 w-screen max-w-sm rounded-xl border shadow-xl z-50 max-h-[28rem] overflow-y-auto"
-                        style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)', minWidth: '280px' }}
-                    >
+                    <div className="absolute right-0 mt-2 w-screen max-w-sm rounded-xl border border-border bg-surface-raised shadow-xl z-50 max-h-[28rem] overflow-y-auto" style={{ minWidth: '280px' }}>
                         {/* header */}
-                        <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-                            <h3 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Notifications</h3>
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                            <h3 className="font-bold text-sm text-fg">Notifications</h3>
                             {notifications.length > 0 && (
-                                <button onClick={handleMarkAllRead} className="text-xs font-medium" style={{ color: 'var(--accent-blue)' }}>
+                                <button onClick={handleMarkAllRead} className="text-xs font-medium text-primary">
                                     Mark all read
                                 </button>
                             )}
                         </div>
 
                         {notifications.length === 0 ? (
-                            <div className="p-8 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
+                            <div className="p-8 text-center text-sm text-fg-secondary">
                                 No notifications
                             </div>
                         ) : (
-                            notifications.map((notif) => (
-                                <div
-                                    key={notif.id}
-                                    onClick={() => handleNotificationClick(notif)}
-                                    className="flex items-start gap-3 px-4 py-3 border-b cursor-pointer transition-colors hover:bg-blue-500/5"
-                                    style={{
-                                        borderColor: 'var(--border-subtle)',
-                                        background: notif.is_read ? 'transparent' : 'rgba(0,82,204,0.07)',
-                                    }}
-                                >
-                                    {/* type icon */}
-                                    <span className="text-base shrink-0 mt-0.5">{typeIcon(notif.type)}</span>
+                            notifications.map((notif) => {
+                                const Icon = TYPE_ICON[notif.type] ?? Bell;
+                                return (
+                                    <div
+                                        key={notif.id}
+                                        onClick={() => handleNotificationClick(notif)}
+                                        className={cn(
+                                            'flex items-start gap-3 px-4 py-3 border-b border-border cursor-pointer transition-colors hover:bg-primary-subtle',
+                                            !notif.is_read && 'bg-primary-subtle/60',
+                                        )}
+                                    >
+                                        {/* type icon */}
+                                        <span className="shrink-0 mt-0.5 text-primary">
+                                            <Icon size={16} />
+                                        </span>
 
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm leading-snug" style={{ color: 'var(--text-primary)' }}>
-                                            {notif.message}
-                                        </p>
-                                        <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-                                            {new Date(notif.created_at).toLocaleString()}
-                                        </p>
-                                        {/* actionable hint — only on unread join requests */}
-                                        {notif.type === 'join_request' && !notif.is_read && (
-                                            <p className="text-xs mt-1 font-semibold" style={{ color: 'var(--accent-blue)' }}>
-                                                Tap to approve or deny →
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm leading-snug text-fg">
+                                                {notif.message}
                                             </p>
+                                            <p className="text-xs mt-1 text-fg-secondary">
+                                                {new Date(notif.created_at).toLocaleString()}
+                                            </p>
+                                            {/* actionable hint — only on unread join requests */}
+                                            {notif.type === 'join_request' && !notif.is_read && (
+                                                <p className="text-xs mt-1 font-semibold text-primary">
+                                                    Tap to approve or deny →
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        {/* unread dot */}
+                                        {!notif.is_read && (
+                                            <span className="w-2 h-2 rounded-full shrink-0 mt-1.5 bg-primary" />
                                         )}
                                     </div>
-
-                                    {/* unread dot */}
-                                    {!notif.is_read && (
-                                        <span className="w-2 h-2 rounded-full shrink-0 mt-1.5" style={{ background: 'var(--accent-blue)' }} />
-                                    )}
-                                </div>
-                            ))
+                                );
+                            })
                         )}
                     </div>
                 </>

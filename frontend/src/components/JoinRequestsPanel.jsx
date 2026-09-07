@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Check, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../api/client';
+import Button from './ui/Button';
 
 const API_ORIGIN = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '');
 
@@ -12,14 +13,9 @@ export default function JoinRequestsPanel({ groupId, isAdmin }) {
     const [processing, setProcessing] = useState(null);
 
     const fetchRequests = async () => {
-        if (!isAdmin) {
-            console.log('Not admin, skipping fetch');
-            return;
-        }
-        console.log('Fetching join requests for group', groupId);
+        if (!isAdmin) return;
         try {
             const { data } = await api.get(`/groups/${groupId}/requests`);
-            console.log('Join requests fetched:', data);
             setRequests(data);
         } catch (err) {
             console.error('Failed to fetch join requests:', err);
@@ -65,7 +61,7 @@ export default function JoinRequestsPanel({ groupId, isAdmin }) {
     if (loading) {
         return (
             <div className="flex justify-center py-8">
-                <Loader2 size={24} className="animate-spin" style={{ color: 'var(--accent-blue)' }} />
+                <Loader2 size={24} className="animate-spin text-primary" />
             </div>
         );
     }
@@ -73,8 +69,8 @@ export default function JoinRequestsPanel({ groupId, isAdmin }) {
     if (requests.length === 0) return null;
 
     return (
-        <div className="px-5 py-4 border-b" style={{ background: 'rgba(0, 82, 204, 0.05)', borderColor: 'var(--border-subtle)' }}>
-            <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
+        <div className="px-5 py-4 border-b border-border bg-primary-subtle/60">
+            <h3 className="text-sm font-semibold mb-3 text-fg">
                 Pending Join Requests ({requests.length})
             </h3>
             <div className="space-y-2">
@@ -83,8 +79,7 @@ export default function JoinRequestsPanel({ groupId, isAdmin }) {
                         key={req.id}
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="flex items-center justify-between p-3 rounded-lg border"
-                        style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+                        className="flex items-center justify-between p-3 rounded-lg border border-border bg-surface"
                     >
                         <div className="flex items-center gap-3">
                             {req.users.profile_picture ? (
@@ -96,39 +91,41 @@ export default function JoinRequestsPanel({ groupId, isAdmin }) {
                             ) : (
                                 <div
                                     className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                                    style={{ background: 'linear-gradient(135deg, #0052cc, #0066ff)' }}
+                                    style={{ background: 'var(--gradient-primary)' }}
                                 >
                                     {req.users.first_name[0]}{req.users.last_name[0]}
                                 </div>
                             )}
                             <div>
-                                <div className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                                <div className="font-semibold text-sm text-fg">
                                     {req.users.first_name} {req.users.last_name}
                                 </div>
-                                <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                                <div className="text-xs text-fg-secondary">
                                     {req.users.university} · {req.users.field_of_study}
                                 </div>
                             </div>
                         </div>
                         <div className="flex gap-2">
-                            <button
+                            <Button
                                 onClick={() => handleApprove(req.id)}
                                 disabled={processing === req.id}
-                                className="px-3 py-1.5 rounded-lg flex items-center gap-1 text-xs font-semibold text-white transition-all hover:scale-105 disabled:opacity-50"
-                                style={{ background: 'linear-gradient(135deg, #00aa00, #00cc00)' }}
+                                loading={processing === req.id}
+                                icon={processing === req.id ? undefined : Check}
+                                size="sm"
+                                className="!bg-[image:none] bg-success hover:brightness-110"
                             >
-                                {processing === req.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                                 Approve
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                                 onClick={() => handleDeny(req.id)}
                                 disabled={processing === req.id}
-                                className="px-3 py-1.5 rounded-lg flex items-center gap-1 text-xs font-semibold text-white transition-all hover:scale-105 disabled:opacity-50"
-                                style={{ background: 'linear-gradient(135deg, #cc0000, #ff0000)' }}
+                                loading={processing === req.id}
+                                icon={processing === req.id ? undefined : X}
+                                size="sm"
+                                variant="danger"
                             >
-                                {processing === req.id ? <Loader2 size={14} className="animate-spin" /> : <X size={14} />}
                                 Deny
-                            </button>
+                            </Button>
                         </div>
                     </motion.div>
                 ))}

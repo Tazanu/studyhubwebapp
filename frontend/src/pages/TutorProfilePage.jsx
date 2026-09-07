@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Send, X } from 'lucide-react';
+import { Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import TutorHero from '../components/tutor/TutorHero';
@@ -13,9 +13,14 @@ import SessionTools from '../components/tutor/SessionTools';
 import ReviewSection from '../components/tutor/ReviewSection';
 import SessionResources from '../components/tutor/SessionResources';
 import SimilarTutorsCarousel from '../components/tutor/SimilarTutorsCarousel';
+import HomeFooter from '../components/home/HomeFooter';
 import { mockTutor } from '../data/mockTutor';
 import { normalizeTutor } from '../data/normalizeTutor';
 import api from '../api/client';
+import Modal from '../components/ui/Modal';
+import Textarea from '../components/ui/Textarea';
+import Button from '../components/ui/Button';
+import Skeleton from '../components/ui/Skeleton';
 
 export default function TutorProfilePage() {
   const { id } = useParams();
@@ -56,23 +61,23 @@ export default function TutorProfilePage() {
   const scrollToBooking = () => {
     bookingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
-  
+
   const openMessageModal = () => {
     if (!user) { toast.error('Please log in to message a tutor'); navigate('/login'); return; }
     setShowMessageModal(true);
   };
-  
+
   const closeMessageModal = () => {
     setShowMessageModal(false);
     setMessage('');
   };
-  
+
   const handleSendMessage = () => {
     if (!message.trim()) {
       toast.error('Please enter a message');
       return;
     }
-    
+
     const messages = JSON.parse(localStorage.getItem('tutorMessages') || '[]');
     messages.push({
       tutorId: tutor.id,
@@ -82,7 +87,7 @@ export default function TutorProfilePage() {
       status: 'sent'
     });
     localStorage.setItem('tutorMessages', JSON.stringify(messages));
-    
+
     toast.success('Message sent! The tutor will respond within 24 hours.');
     closeMessageModal();
   };
@@ -129,7 +134,7 @@ export default function TutorProfilePage() {
         <script type="application/ld+json">{JSON.stringify(breadcrumbData)}</script>
       </Helmet>
 
-      <div style={{ background: 'var(--bg-main)', minHeight: '100vh' }} className="tutor-page-wrapper">
+      <div className="bg-bg min-h-screen tutor-page-wrapper">
         <TutorHero
           tutor={{
             ...tutor,
@@ -144,7 +149,7 @@ export default function TutorProfilePage() {
         <div ref={bookingRef}>
           <BookingWidget tutor={tutor} />
         </div>
-        <PricingCards pricing={tutor.pricing} scrollToBooking={scrollToBooking} />
+        <PricingCards pricing={tutor.pricing} tutorId={tutor.id} scrollToBooking={scrollToBooking} />
         <SessionTools tools={tutor.sessionTools} />
         <ReviewSection
           reviews={tutor.reviews}
@@ -154,76 +159,51 @@ export default function TutorProfilePage() {
         />
         <SessionResources resources={tutor.resources} tutorName={tutor.name} />
         <SimilarTutorsCarousel excludeId={tutor.id} />
-        
-        {showMessageModal && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 px-4" style={{ background: 'rgba(0,0,0,0.6)' }} onClick={closeMessageModal}>
-            <div className="p-6 rounded-2xl max-w-lg w-full" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }} onClick={(e) => e.stopPropagation()}>
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-xl font-bold">Message {tutor.name}</h3>
-                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Response time: ~2 hours</p>
-                </div>
-                <button onClick={closeMessageModal} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Hi! I'm interested in learning more about your tutoring services..."
-                className="w-full h-32 p-4 rounded-xl border resize-none mb-4"
-                style={{ 
-                  background: 'var(--bg-main)', 
-                  borderColor: 'var(--border-subtle)',
-                  color: 'var(--text-primary)'
-                }}
-              />
-              
-              <div className="flex gap-3">
-                <button
-                  onClick={closeMessageModal}
-                  className="flex-1 py-3 rounded-xl font-semibold border transition-all"
-                  style={{ borderColor: 'var(--border-subtle)' }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSendMessage}
-                  className="flex-1 py-3 rounded-xl font-semibold text-white transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
-                  style={{ background: 'linear-gradient(135deg, #0052cc, #0066ff)' }}
-                >
-                  <Send className="w-4 h-4" />
-                  Send Message
-                </button>
-              </div>
-            </div>
+
+        <Modal open={showMessageModal} onClose={closeMessageModal} title={`Message ${tutor.name}`} size="lg">
+          <p className="text-sm -mt-3 mb-4 text-fg-secondary">Response time: ~2 hours</p>
+
+          <Textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Hi! I'm interested in learning more about your tutoring services..."
+            rows={5}
+          />
+
+          <div className="flex gap-3 mt-4">
+            <Button onClick={closeMessageModal} variant="secondary" fullWidth>
+              Cancel
+            </Button>
+            <Button onClick={handleSendMessage} icon={Send} fullWidth className="hover:scale-[1.02]">
+              Send Message
+            </Button>
           </div>
-        )}
+        </Modal>
       </div>
+      <HomeFooter />
     </>
   );
 }
 
 function LoadingSkeleton() {
   return (
-    <div style={{ background: 'var(--bg-main)', minHeight: '100vh' }} className="tutor-page-wrapper">
+    <div className="bg-bg min-h-screen tutor-page-wrapper">
       <div className="max-w-5xl mx-auto px-6 py-12">
-        <div className="animate-pulse space-y-8">
+        <div className="space-y-8">
           <div className="flex gap-8">
-            <div className="w-32 h-32 rounded-2xl" style={{ background: 'var(--bg-card)' }} />
+            <Skeleton className="w-32 h-32 rounded-2xl" />
             <div className="flex-1 space-y-4">
-              <div className="h-8 rounded" style={{ background: 'var(--bg-card)', width: '60%' }} />
-              <div className="h-6 rounded" style={{ background: 'var(--bg-card)', width: '40%' }} />
+              <Skeleton className="h-8 w-[60%]" />
+              <Skeleton className="h-6 w-[40%]" />
               <div className="flex gap-2">
                 {[1, 2, 3].map(i => (
-                  <div key={i} className="h-8 w-24 rounded" style={{ background: 'var(--bg-card)' }} />
+                  <Skeleton key={i} className="h-8 w-24" />
                 ))}
               </div>
             </div>
           </div>
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-48 rounded-xl" style={{ background: 'var(--bg-card)' }} />
+            <Skeleton key={i} className="h-48" />
           ))}
         </div>
       </div>

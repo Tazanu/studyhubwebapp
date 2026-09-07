@@ -7,24 +7,18 @@ const STEPS = [
         step: '01',
         title: 'Create your account',
         body: "Sign up in under a minute. Set your university, field of study, and what you're looking for. Help or community.",
-        color: '#60a5fa',
-        bg: 'rgba(96,165,250,0.1)',
     },
     {
         Icon: Layers,
         step: '02',
         title: 'Join groups & find resources',
         body: "Browse study groups in your department, download shared notes, ask questions, or book a tutor for a topic you're stuck on.",
-        color: '#34d399',
-        bg: 'rgba(52,211,153,0.1)',
     },
     {
         Icon: TrendingUp,
         step: '03',
         title: 'Improve & succeed',
         body: 'Stay consistent with a community holding you accountable. Better grades, less stress, fewer all-nighters.',
-        color: '#8b5cf6',
-        bg: 'rgba(139,92,246,0.1)',
     },
 ];
 
@@ -32,41 +26,34 @@ export default function HowItWorks() {
     const [ref, inView] = useInView();
 
     return (
-        <section
-            aria-labelledby="how-heading"
-            className="py-20 sm:py-28 px-4 sm:px-6"
-            style={{ background: 'var(--bg-main)' }}
-        >
+        <section aria-labelledby="how-heading" className="py-20 sm:py-28 px-4 sm:px-6 bg-bg">
             <div className="max-w-5xl mx-auto">
                 <header className={`text-center mb-14 fade-up ${inView ? 'in-view' : ''}`} ref={ref}>
-                    <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--accent-blue)' }}>
+                    <p className="text-xs font-semibold uppercase tracking-widest mb-3 text-primary">
                         How it works
                     </p>
                     <h2
                         id="how-heading"
-                        className="font-bold"
-                        style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}
+                        className="font-bold text-fg"
+                        style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)', letterSpacing: '-0.02em' }}
                     >
                         Three steps to academic momentum
                     </h2>
                 </header>
 
                 <ol className="grid grid-cols-1 sm:grid-cols-3 gap-8 list-none p-0 m-0">
-                    {STEPS.map(({ Icon, step, title, body, color, bg }, i) => (
+                    {STEPS.map(({ Icon, step, title, body }, i) => (
                         <li key={step} className={`relative flex flex-col items-center text-center fade-up delay-${i + 1} ${inView ? 'in-view' : ''}`} style={{ zIndex: 1 }}>
-                            <div
-                                className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5 border-2 transition-transform hover:scale-105"
-                                style={{ background: bg, borderColor: color }}
-                            >
-                                <Icon size={26} color={color} strokeWidth={1.75} aria-hidden="true" />
+                            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5 border-2 border-primary bg-primary-subtle transition-transform hover:scale-105">
+                                <Icon size={26} className="text-primary" strokeWidth={1.75} aria-hidden="true" />
                             </div>
-                            <span className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--text-muted)' }}>
+                            <span className="text-xs font-bold uppercase tracking-widest mb-2 text-fg-muted">
                                 Step {step}
                             </span>
-                            <h3 className="font-semibold mb-2" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '1.05rem', color: 'var(--text-primary)' }}>
+                            <h3 className="font-semibold mb-2 text-fg" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '1.05rem' }}>
                                 {title}
                             </h3>
-                            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{body}</p>
+                            <p className="text-sm leading-relaxed text-fg-secondary">{body}</p>
                         </li>
                     ))}
                 </ol>

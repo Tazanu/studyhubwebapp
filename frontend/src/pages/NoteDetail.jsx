@@ -10,6 +10,10 @@ import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
 import PaymentModal from '../components/tutor/PaymentModal';
+import Button from '../components/ui/Button';
+import Badge from '../components/ui/Badge';
+import Skeleton from '../components/ui/Skeleton';
+import { useInlineConfirm } from '../hooks/useInlineConfirm';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -28,8 +32,8 @@ export default function NoteDetail() {
     const [note, setNote] = useState(null);
     const [loading, setLoading] = useState(true);
     const [downloading, setDownloading] = useState(false);
-    const [confirmDelete, setConfirmDelete] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const confirmDelete = useInlineConfirm();
     const [showPayment, setShowPayment] = useState(false);
     const [purchased, setPurchased] = useState(false);
     const [viewerUrl, setViewerUrl] = useState(null);
@@ -41,6 +45,9 @@ export default function NoteDetail() {
             try {
                 const { data } = await api.get(`/notes/${id}`);
                 setNote(data);
+                // The server decides what this viewer has unlocked — never
+                // assume access from client state alone.
+                setPurchased(!!data.purchased);
             } catch (err) {
                 toast.error('Note not found');
                 navigate('/notes');
@@ -61,17 +68,43 @@ export default function NoteDetail() {
 
         setDownloading(true);
         try {
-            const { data } = await api.post(`/notes/${id}/download`);
+            await api.post(`/notes/${id}/download`);
             const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
             const proxyUrl = `${baseUrl}/notes/${id}/file`;
-            setViewerUrl({ proxy: proxyUrl, direct: data.file_path });
+
+            if (note.is_premium) {
+                // Paid files are served only behind the auth check, so <img> and
+                // the PDF viewer can't fetch them directly — pull the bytes once
+                // and render from a blob instead.
+                const res = await fetch(proxyUrl, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                });
+                if (!res.ok) {
+                    const body = await res.json().catch(() => ({}));
+                    throw new Error(body.error || 'Could not open this note');
+                }
+                const blobUrl = URL.createObjectURL(await res.blob());
+                setViewerUrl({ proxy: blobUrl, direct: blobUrl, isBlob: true });
+            } else {
+                // Free notes stream (or redirect) straight from the server, so
+                // the viewer can point at the URL directly. `download=1` is a
+                // separate URL rather than an `<a download>` attribute, which
+                // browsers ignore cross-origin — the server sets an attachment
+                // disposition instead, so the file actually saves.
+                setViewerUrl({ proxy: proxyUrl, direct: `${proxyUrl}?download=1` });
+            }
             setNote(prev => ({ ...prev, downloads: (prev.downloads || 0) + 1 }));
         } catch (err) {
-            toast.error(err.response?.data?.error || 'Failed to open note');
+            toast.error(err.response?.data?.error || err.message || 'Failed to open note');
         } finally {
             setDownloading(false);
         }
     };
+
+    // Release blob URLs when the viewer closes or the page unmounts.
+    useEffect(() => () => {
+        if (viewerUrl?.isBlob) URL.revokeObjectURL(viewerUrl.proxy);
+    }, [viewerUrl]);
 
     const handleDelete = async () => {
         setDeleting(true);
@@ -82,20 +115,19 @@ export default function NoteDetail() {
         } catch (err) {
             toast.error(err.response?.data?.error || 'Failed to delete note');
             setDeleting(false);
-            setConfirmDelete(false);
         }
     };
 
     if (loading) {
         return (
-            <div className="lg:pl-60" style={{ background: 'var(--bg-main)', minHeight: '100vh' }}>
+            <div className="lg:pl-60 min-h-screen bg-bg">
                 <Sidebar />
                 <div className="pt-20 px-6 max-w-4xl mx-auto">
-                    <div className="rounded-2xl p-8 border" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}>
-                        <div className="skeleton-shimmer h-8 rounded w-3/4 mb-4" />
-                        <div className="skeleton-shimmer h-4 rounded w-full mb-2" />
-                        <div className="skeleton-shimmer h-4 rounded w-5/6 mb-6" />
-                        <div className="skeleton-shimmer h-12 rounded w-32" />
+                    <div className="rounded-2xl p-8 border border-border bg-surface">
+                        <Skeleton className="h-8 w-3/4 mb-4" />
+                        <Skeleton className="h-4 w-full mb-2" />
+                        <Skeleton className="h-4 w-5/6 mb-6" />
+                        <Skeleton className="h-12 w-32" />
                     </div>
                 </div>
             </div>
@@ -109,42 +141,36 @@ export default function NoteDetail() {
     const isPremiumLocked = note.is_premium && !isOwner && !purchased;
 
     return (
-        <div className="lg:pl-60" style={{ background: 'var(--bg-main)', minHeight: '100vh', color: 'var(--text-primary)' }}>
+        <div className="lg:pl-60 min-h-screen bg-bg text-fg">
             <Sidebar />
 
             <div className="pt-20 px-6 pb-16 max-w-4xl mx-auto">
                 {/* Back button */}
-                <Link to="/notes" className="inline-flex items-center gap-2 mb-6 text-sm transition-colors hover:text-blue-400"
-                    style={{ color: 'var(--text-secondary)' }}>
+                <Link to="/notes" className="inline-flex items-center gap-2 mb-6 text-sm text-fg-secondary transition-colors hover:text-primary">
                     <ArrowLeft size={16} /> Back to Notes
                 </Link>
 
                 <motion.div
-                    className="rounded-2xl p-8 border"
-                    style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+                    className="rounded-2xl p-8 border border-border bg-surface"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4 }}
                 >
                     {/* Header with icon and title */}
                     <div className="flex items-start gap-4 mb-6">
-                        <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0"
-                            style={{ background: 'rgba(0,102,255,0.12)' }}>
-                            <FileIcon size={28} style={{ color: 'var(--accent-blue)' }} strokeWidth={1.75} />
+                        <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 bg-primary-subtle">
+                            <FileIcon size={28} className="text-primary" strokeWidth={1.75} />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                            <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                                 {note.title}
                             </h1>
-                            <span className="text-sm px-3 py-1 rounded-full inline-block"
-                                style={{ background: 'rgba(0,102,255,0.12)', color: 'var(--accent-blue)' }}>
-                                {note.subject}
-                            </span>
+                            <Badge tone="primary">{note.subject}</Badge>
                         </div>
                     </div>
 
                     {/* Description */}
-                    <p className="mb-6 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                    <p className="mb-6 leading-relaxed text-fg-secondary">
                         {note.description}
                     </p>
 
@@ -152,8 +178,7 @@ export default function NoteDetail() {
                     {note.tags && note.tags.length > 0 && (
                         <div className="mb-6 flex flex-wrap gap-2">
                             {note.tags.map((tag, i) => (
-                                <span key={i} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg"
-                                    style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>
+                                <span key={i} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-surface-hover text-fg-secondary">
                                     <Tag size={12} /> {tag}
                                 </span>
                             ))}
@@ -161,26 +186,25 @@ export default function NoteDetail() {
                     )}
 
                     {/* Meta info */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 p-4 rounded-xl"
-                        style={{ background: 'var(--bg-hover)' }}>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 p-4 rounded-xl bg-surface-hover">
                         <div>
-                            <p className="text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Uploaded by</p>
+                            <p className="text-xs mb-1 text-fg-secondary">Uploaded by</p>
                             <p className="text-sm font-semibold flex items-center gap-1">
                                 <User size={14} /> {note.users?.first_name} {note.users?.last_name}
                             </p>
                         </div>
                         <div>
-                            <p className="text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Downloads</p>
+                            <p className="text-xs mb-1 text-fg-secondary">Downloads</p>
                             <p className="text-sm font-semibold flex items-center gap-1">
                                 <Download size={14} /> {note.downloads || 0}
                             </p>
                         </div>
                         <div>
-                            <p className="text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>File Type</p>
+                            <p className="text-xs mb-1 text-fg-secondary">File Type</p>
                             <p className="text-sm font-semibold uppercase">.{note.file_type}</p>
                         </div>
                         <div>
-                            <p className="text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Uploaded</p>
+                            <p className="text-xs mb-1 text-fg-secondary">Uploaded</p>
                             <p className="text-sm font-semibold flex items-center gap-1">
                                 <Calendar size={14} /> {new Date(note.created_at).toLocaleDateString()}
                             </p>
@@ -189,10 +213,9 @@ export default function NoteDetail() {
 
                     {/* Group info if linked */}
                     {note.groups && (
-                        <div className="mb-6 p-4 rounded-xl border" style={{ borderColor: 'var(--border-subtle)' }}>
-                            <p className="text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Shared in group</p>
-                            <Link to={`/groups/${note.groups.id}`} className="text-sm font-semibold transition-colors hover:text-blue-400"
-                                style={{ color: 'var(--accent-blue)' }}>
+                        <div className="mb-6 p-4 rounded-xl border border-border">
+                            <p className="text-xs mb-1 text-fg-secondary">Shared in group</p>
+                            <Link to={`/groups/${note.groups.id}`} className="text-sm font-semibold text-primary transition-colors hover:opacity-80">
                                 {note.groups.name}
                             </Link>
                         </div>
@@ -200,77 +223,38 @@ export default function NoteDetail() {
 
                     {/* Premium badge */}
                     {note.is_premium && (
-                        <div className="mb-6 flex items-center gap-2 text-sm font-semibold px-4 py-3 rounded-xl"
-                            style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', width: 'fit-content' }}>
-                            <Lock size={18} /> Premium Note. {note.price} XAF
-                        </div>
+                        <Badge tone="warning" size="md" className="mb-6 !text-sm !px-4 !py-3 w-fit" icon={Lock}>
+                            Premium Note. {note.price} XAF
+                        </Badge>
                     )}
 
                     {/* Actions */}
                     <div className="flex flex-wrap gap-3">
                         {isPremiumLocked ? (
-                            <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => setShowPayment(true)}
-                                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm"
-                                style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white' }}
-                            >
-                                <Lock size={16} /> Purchase to unlock — {note.price} XAF
-                            </motion.button>
+                            <Button onClick={() => setShowPayment(true)} icon={Lock} size="lg" className="!bg-[image:linear-gradient(135deg,#f59e0b,#d97706)]">
+                                Purchase to unlock — {note.price} XAF
+                            </Button>
                         ) : (
-                            <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={handleDownload}
-                                disabled={downloading}
-                                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white text-sm disabled:opacity-60"
-                                style={{ background: 'linear-gradient(135deg, #0052cc, #0066ff)' }}
-                            >
-                                <Download size={16} /> {downloading ? 'Opening...' : 'Open Note'}
-                            </motion.button>
+                            <Button onClick={handleDownload} disabled={downloading} loading={downloading} icon={downloading ? undefined : Download} size="lg">
+                                {downloading ? 'Opening...' : 'Open Note'}
+                            </Button>
                         )}
 
                         {isOwner && (
-                            <AnimatePresence mode="wait">
-                                {confirmDelete ? (
-                                    <motion.div
-                                        key="confirm"
-                                        initial={{ opacity: 0, scale: 0.95 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.95 }}
-                                        className="flex gap-2"
-                                    >
-                                        <button
-                                            onClick={handleDelete}
-                                            disabled={deleting}
-                                            className="px-4 py-3 rounded-xl font-semibold text-white text-sm disabled:opacity-60"
-                                            style={{ background: 'var(--error)' }}
-                                        >
-                                            {deleting ? 'Deleting...' : 'Yes, delete'}
-                                        </button>
-                                        <button
-                                            onClick={() => setConfirmDelete(false)}
-                                            className="px-4 py-3 rounded-xl font-semibold border text-sm"
-                                            style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-secondary)' }}
-                                        >
-                                            Cancel
-                                        </button>
-                                    </motion.div>
-                                ) : (
-                                    <motion.button
-                                        key="delete"
-                                        initial={{ opacity: 0, scale: 0.95 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.95 }}
-                                        onClick={() => setConfirmDelete(true)}
-                                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold border text-sm transition-colors hover:border-red-500 hover:text-red-500"
-                                        style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-secondary)' }}
-                                    >
-                                        <Trash2 size={16} /> Delete Note
-                                    </motion.button>
-                                )}
-                            </AnimatePresence>
+                            confirmDelete.active ? (
+                                <div className="flex gap-2">
+                                    <Button onClick={() => confirmDelete.run(handleDelete)} disabled={deleting} loading={deleting} variant="danger" size="lg">
+                                        Yes, delete
+                                    </Button>
+                                    <Button onClick={confirmDelete.cancel} variant="secondary" size="lg">
+                                        Cancel
+                                    </Button>
+                                </div>
+                            ) : (
+                                <Button onClick={confirmDelete.ask} variant="outline" icon={Trash2} size="lg" className="!border-border !text-fg-secondary hover:!border-danger hover:!text-danger hover:!bg-transparent">
+                                    Delete Note
+                                </Button>
+                            )
                         )}
                     </div>
                 </motion.div>
@@ -283,15 +267,14 @@ export default function NoteDetail() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex flex-col"
-                        style={{ background: 'rgba(0,0,0,0.92)' }}
+                        className="fixed inset-0 z-50 flex flex-col bg-black/90"
                     >
                         {/* Top bar */}
-                        <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ background: 'var(--bg-card)' }}>
-                            <span className="font-semibold text-sm truncate max-w-xs">{note.title}</span>
+                        <div className="flex items-center justify-between px-4 py-3 shrink-0 bg-surface">
+                            <span className="font-semibold text-sm truncate max-w-xs text-fg">{note.title}</span>
                             <div className="flex items-center gap-3">
                                 {numPages && (
-                                    <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                                    <div className="flex items-center gap-2 text-sm text-fg-secondary">
                                         <button onClick={() => setPageNumber(p => Math.max(1, p - 1))} disabled={pageNumber <= 1}>
                                             <ChevronLeft size={18} />
                                         </button>
@@ -302,13 +285,11 @@ export default function NoteDetail() {
                                     </div>
                                 )}
                                 <a href={viewerUrl.direct} download target="_blank" rel="noreferrer"
-                                    className="text-sm px-3 py-1.5 rounded-lg font-semibold inline-flex items-center gap-1"
-                                    style={{ background: 'var(--accent-blue)', color: 'white' }}>
+                                    className="text-sm px-3 py-1.5 rounded-lg font-semibold inline-flex items-center gap-1 bg-primary-solid text-white">
                                     <Download size={14} /> Download
                                 </a>
                                 <button onClick={() => { setViewerUrl(null); setNumPages(null); setPageNumber(1); }}
-                                    className="text-sm px-3 py-1.5 rounded-lg border"
-                                    style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                                    className="text-sm px-3 py-1.5 rounded-lg border border-border text-fg-secondary">
                                     Close
                                 </button>
                             </div>
@@ -324,7 +305,7 @@ export default function NoteDetail() {
                                     onLoadSuccess={({ numPages }) => { setNumPages(numPages); setPageNumber(1); }}
                                     onLoadError={() => toast.error('Failed to load PDF')}
                                     loading={<p className="text-white mt-10">Loading PDF...</p>}
-                                    error={<div className="text-white mt-20 text-center"><p className="mb-4">This file was uploaded before our storage migration and is no longer available.</p><p className="text-sm" style={{color:'var(--text-secondary)'}}>Please delete this note and re-upload the file.</p></div>}
+                                    error={<div className="text-white mt-20 text-center"><p className="mb-4">This file was uploaded before our storage migration and is no longer available.</p><p className="text-sm text-white/60">Please delete this note and re-upload the file.</p></div>}
                                 >
                                     <Page pageNumber={pageNumber} width={Math.min(window.innerWidth - 32, 800)} />
                                 </Document>
@@ -332,8 +313,7 @@ export default function NoteDetail() {
                                 <div className="text-white mt-20 text-center">
                                     <p className="mb-4">Preview not available for this file type.</p>
                                     <a href={viewerUrl.direct} download target="_blank" rel="noreferrer"
-                                        className="px-4 py-2 rounded-lg font-semibold"
-                                        style={{ background: 'var(--accent-blue)', color: 'white' }}>
+                                        className="px-4 py-2 rounded-lg font-semibold bg-primary-solid text-white">
                                         Download File
                                     </a>
                                 </div>
@@ -346,15 +326,19 @@ export default function NoteDetail() {
             <PaymentModal
                 open={showPayment}
                 onClose={() => setShowPayment(false)}
-                onSuccess={() => {
-                    setPurchased(true);
+                onSuccess={async () => {
                     setShowPayment(false);
+                    // Re-fetch so `purchased` and `file_path` come from the server.
+                    try {
+                        const { data } = await api.get(`/notes/${id}`);
+                        setNote(data);
+                        setPurchased(!!data.purchased);
+                    } catch { setPurchased(true); }
                     toast.success('Payment successful! You can now download this note.');
                 }}
                 amount={note?.price || 0}
                 description={`Premium Note: ${note?.title}`}
-                type="note_purchase"
-                metadata={{ noteId: note?.id }}
+                order={{ type: 'paid_note', noteId: note?.id }}
             />
         </div>
     );

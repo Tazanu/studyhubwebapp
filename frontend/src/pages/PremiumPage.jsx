@@ -1,10 +1,19 @@
 import { useEffect, useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Crown, Lock, Unlock, Upload, X, Loader2, Star, AlertCircle, FileText, Image as ImageIcon, File, Download, Receipt } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Crown, Lock, Unlock, Upload, Loader2, Star, AlertCircle, FileText, Image as ImageIcon, File, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
+import Modal from '../components/ui/Modal';
+import Field from '../components/ui/Field';
+import Input from '../components/ui/Input';
+import Textarea from '../components/ui/Textarea';
+import Button from '../components/ui/Button';
+import Badge from '../components/ui/Badge';
+import EmptyState from '../components/ui/EmptyState';
+import Skeleton from '../components/ui/Skeleton';
+import { cn } from '../lib/cn';
 
 const cardVariant = {
     hidden: { opacity: 0, y: 20 },
@@ -14,6 +23,30 @@ const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
 
 const API_ORIGIN = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
+/**
+ * Premium files are served only through an entitlement-checked route, which
+ * needs the auth header — so fetch the bytes and hand the browser a blob rather
+ * than linking straight at a storage URL.
+ */
+async function openPremiumNote(noteId) {
+    try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${API_ORIGIN}/api/premium/notes/${noteId}/file`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            toast.error(body.error || 'Could not open this note');
+            return;
+        }
+        const url = URL.createObjectURL(await res.blob());
+        window.open(url, '_blank', 'noopener');
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch {
+        toast.error('Could not open this note');
+    }
+}
+
 function getFileIcon(t) {
     const type = (t || '').toLowerCase();
     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(type)) return ImageIcon;
@@ -21,80 +54,86 @@ function getFileIcon(t) {
     return File;
 }
 
+// Cameroon prefixes, mirrored from the server so the operator always matches
+// the number the user typed.
+const OPERATOR_PATTERNS = {
+    MTN: /^6(?:7\d{7}|8[0-4]\d{6}|5[0-4]\d{6})$/,
+    ORANGE: /^6(?:9\d{7}|5[5-9]\d{6})$/,
+};
+
+function normalizePhone(input) {
+    let digits = String(input || '').replace(/\D/g, '');
+    if (digits.startsWith('00237')) digits = digits.slice(5);
+    else if (digits.length === 12 && digits.startsWith('237')) digits = digits.slice(3);
+    return digits;
+}
+
+function detectOperator(phone) {
+    return Object.keys(OPERATOR_PATTERNS).find(s => OPERATOR_PATTERNS[s].test(phone)) || null;
+}
+
 // ── Payment Modal ─────────────────────────────────────────────────────────────
-function PayModal({ title, amount, onConfirm, onClose, loading, waitingPhone }) {
+function PayModal({ open, title, amount, onConfirm, onClose, loading, waitingPhone }) {
     const [service, setService] = useState('MTN');
     const [payer, setPayer] = useState('');
 
+    const cleaned = normalizePhone(payer);
+    const detected = detectOperator(cleaned);
+
+    // Keep the selected operator in sync with the number.
+    useEffect(() => {
+        if (detected && detected !== service) setService(detected);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [detected]);
+
     const submit = (e) => {
         e.preventDefault();
-        if (!payer.trim()) return toast.error('Enter your phone number');
-        onConfirm({ service, payer: payer.trim() });
+        if (cleaned.length !== 9) return toast.error('Enter a valid 9-digit number, e.g. 677000000');
+        if (!detected) return toast.error('This is not a valid MTN or Orange Cameroon number');
+        onConfirm({ service: detected, payer: cleaned });
     };
 
     return (
-        <>
-            <motion.div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                onClick={loading ? undefined : onClose} />
-            <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-6 pointer-events-none"
-                initial={{ opacity: 0, scale: 0.95, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 16 }} transition={{ type: 'spring', stiffness: 320, damping: 28 }}>
-                <div className="w-full max-w-md rounded-2xl border p-8 pointer-events-auto"
-                    style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-lg font-bold" style={{ fontFamily: "'Space Grotesk',sans-serif", color: '#fbbf24' }}>
-                            <Crown size={18} className="inline mr-2" />{title}
-                        </h2>
-                        <button onClick={onClose} disabled={loading} className="p-1.5 rounded-lg hover:bg-red-500 hover:text-white"
-                            style={{ color: 'var(--text-secondary)' }}><X size={18} /></button>
-                    </div>
-
-                    {waitingPhone ? (
-                        <div className="text-center py-6">
-                            <Loader2 size={40} className="animate-spin mx-auto mb-4" style={{ color: '#fbbf24' }} />
-                            <p className="font-semibold mb-1">Check your phone!</p>
-                            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                                A USSD prompt has been sent to your phone.<br />Approve the payment to continue.
-                            </p>
-                            <p className="text-xs mt-4" style={{ color: 'var(--text-muted)' }}>Waiting for confirmation… (up to 60s)</p>
-                        </div>
-                    ) : (
-                        <>
-                            <p className="text-sm mb-5" style={{ color: 'var(--text-secondary)' }}>
-                                Amount: <span className="font-bold text-base" style={{ color: 'var(--text-primary)' }}>{amount.toLocaleString()} FCFA</span>
-                            </p>
-                            <form onSubmit={submit}>
-                                <div className="mb-4">
-                                    <label className="block text-sm font-semibold mb-1.5">Mobile Money Service</label>
-                                    <div className="flex gap-3">
-                                        {['MTN', 'ORANGE'].map(s => (
-                                            <button key={s} type="button" onClick={() => setService(s)}
-                                                className="flex-1 py-2.5 rounded-xl border text-sm font-semibold transition-all"
-                                                style={{
-                                                    borderColor: service === s ? '#fbbf24' : 'var(--border-subtle)',
-                                                    background: service === s ? 'rgba(251,191,36,0.12)' : 'var(--bg-hover)',
-                                                    color: service === s ? '#fbbf24' : 'var(--text-secondary)',
-                                                }}>{s}</button>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div className="mb-6">
-                                    <label className="block text-sm font-semibold mb-1.5">Phone Number</label>
-                                    <input type="tel" value={payer} onChange={e => setPayer(e.target.value)}
-                                        placeholder="e.g. 677000000" className="form-input px-4" />
-                                </div>
-                                <button type="submit" disabled={loading}
-                                    className="w-full py-3 rounded-xl font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-60"
-                                    style={{ background: 'linear-gradient(135deg,#d97706,#fbbf24)' }}>
-                                    {loading ? <><Loader2 size={16} className="animate-spin" /> Sending…</> : `Pay ${amount.toLocaleString()} FCFA`}
-                                </button>
-                            </form>
-                        </>
-                    )}
+        <Modal open={open} onClose={onClose} closeOnBackdrop={!loading} closeOnEscape={!loading} title={title} size="sm">
+            {waitingPhone ? (
+                <div className="text-center py-6">
+                    <Loader2 size={40} className="animate-spin mx-auto mb-4 text-premium" />
+                    <p className="font-semibold mb-1">Check your phone!</p>
+                    <p className="text-sm text-fg-secondary">
+                        A USSD prompt has been sent to your phone.<br />Approve the payment to continue.
+                    </p>
+                    <p className="text-xs mt-4 text-fg-muted">Waiting for confirmation… Keep this window open.</p>
                 </div>
-            </motion.div>
-        </>
+            ) : (
+                <>
+                    <p className="text-sm mb-5 text-fg-secondary">
+                        Amount: <span className="font-bold text-base text-fg">{amount.toLocaleString()} FCFA</span>
+                    </p>
+                    <form onSubmit={submit}>
+                        <Field label="Mobile Money Service">
+                            <div className="flex gap-3">
+                                {['MTN', 'ORANGE'].map(s => (
+                                    <button key={s} type="button" onClick={() => setService(s)}
+                                        className={cn(
+                                            'flex-1 py-2.5 rounded-xl border text-sm font-semibold transition-all',
+                                            service === s ? 'border-premium bg-premium-bg text-premium' : 'border-border bg-surface-hover text-fg-secondary',
+                                        )}>{s}</button>
+                                ))}
+                            </div>
+                        </Field>
+                        <Field label="Phone Number">
+                            <Input type="tel" inputMode="numeric" value={payer} onChange={e => setPayer(e.target.value)} placeholder="e.g. 677000000" />
+                            {cleaned.length === 9 && !detected && (
+                                <p className="text-xs mt-1.5 text-danger">Not a valid MTN or Orange Cameroon number.</p>
+                            )}
+                        </Field>
+                        <Button type="submit" disabled={loading} loading={loading} fullWidth className="!bg-[image:linear-gradient(135deg,#d97706,#fbbf24)]">
+                            {loading ? 'Sending…' : `Pay ${amount.toLocaleString()} FCFA`}
+                        </Button>
+                    </form>
+                </>
+            )}
+        </Modal>
     );
 }
 
@@ -133,33 +172,18 @@ h2{font-size:18px;margin:0 0 20px;border-bottom:2px solid #fbbf24;padding-bottom
     };
 
     return (
-        <>
-            <motion.div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                onClick={onClose} />
-            <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-6 pointer-events-none"
-                initial={{ opacity: 0, scale: 0.95, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 16 }} transition={{ type: 'spring', stiffness: 320, damping: 28 }}>
-                <div className="w-full max-w-md rounded-2xl border p-8 pointer-events-auto"
-                    style={{ background: 'var(--bg-card)', border: '1px solid rgba(52,211,153,0.3)', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
-                    <div className="flex items-center justify-between mb-5">
-                        <h2 className="text-lg font-bold flex items-center gap-2" style={{ color: '#34d399' }}>
-                            <Receipt size={18} /> Payment Receipt
-                        </h2>
-                        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-red-500 hover:text-white"
-                            style={{ color: 'var(--text-secondary)' }}><X size={18} /></button>
-                    </div>
-
+        <Modal open={!!receipt} onClose={onClose} title="Payment Receipt" size="sm">
+            {receipt && (
+                <>
                     <div className="text-center mb-5">
-                        <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3"
-                            style={{ background: 'rgba(52,211,153,0.15)' }}>
+                        <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3 bg-success-bg">
                             <span className="text-3xl">✓</span>
                         </div>
-                        <p className="font-bold text-lg" style={{ color: '#34d399' }}>Payment Successful</p>
-                        <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>Receipt #{receipt.receiptNo}</p>
+                        <p className="font-bold text-lg text-success">Payment Successful</p>
+                        <p className="text-xs mt-1 text-fg-secondary">Receipt #{receipt.receiptNo}</p>
                     </div>
 
-                    <div className="rounded-xl p-4 mb-5 space-y-2.5" style={{ background: 'var(--bg-hover)' }}>
+                    <div className="rounded-xl p-4 mb-5 space-y-2.5 bg-surface-hover">
                         {[
                             ['Date', new Date(receipt.date).toLocaleString()],
                             ['Name', receipt.name],
@@ -168,44 +192,35 @@ h2{font-size:18px;margin:0 0 20px;border-bottom:2px solid #fbbf24;padding-bottom
                             ['Reference', receipt.reference || 'N/A'],
                         ].map(([label, value]) => (
                             <div key={label} className="flex justify-between text-sm">
-                                <span style={{ color: 'var(--text-secondary)' }}>{label}</span>
+                                <span className="text-fg-secondary">{label}</span>
                                 <span className="font-medium text-right ml-4" style={{ maxWidth: '60%', wordBreak: 'break-all' }}>{value}</span>
                             </div>
                         ))}
-                        <div className="flex justify-between text-base font-bold pt-2 border-t" style={{ borderColor: 'var(--border-subtle)', color: '#fbbf24' }}>
+                        <div className="flex justify-between text-base font-bold pt-2 border-t border-border text-premium">
                             <span>Total Paid</span>
                             <span>{receipt.amount.toLocaleString()} FCFA</span>
                         </div>
                     </div>
 
                     <div className="flex gap-3">
-                        <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border text-sm font-medium"
-                            style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-secondary)' }}>Close</button>
-                        <button onClick={printReceipt}
-                            className="flex-1 py-2.5 rounded-xl font-semibold text-white text-sm flex items-center justify-center gap-2"
-                            style={{ background: 'linear-gradient(135deg,#059669,#34d399)' }}>
-                            <Download size={14} /> Download PDF
-                        </button>
+                        <Button onClick={onClose} variant="secondary" fullWidth>Close</Button>
+                        <Button onClick={printReceipt} icon={Download} fullWidth className="!bg-[image:linear-gradient(135deg,#059669,#34d399)]">
+                            Download PDF
+                        </Button>
                     </div>
-                </div>
-            </motion.div>
-        </>
+                </>
+            )}
+        </Modal>
     );
 }
 
 // ── Upload Modal ──────────────────────────────────────────────────────────────
-function UploadModal({ onClose, onUploaded }) {
+function UploadModal({ open, onClose, onUploaded }) {
     const [form, setForm] = useState({ title: '', description: '', subject: '', price: '', tags: '' });
     const [file, setFile] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [errors, setErrors] = useState({});
     const fileRef = useRef(null);
-
-    useEffect(() => {
-        const h = e => { if (e.key === 'Escape' && !uploading) onClose(); };
-        window.addEventListener('keydown', h);
-        return () => window.removeEventListener('keydown', h);
-    }, [onClose, uploading]);
 
     const submit = async (e) => {
         e.preventDefault();
@@ -231,81 +246,62 @@ function UploadModal({ onClose, onUploaded }) {
     };
 
     return (
-        <>
-            <motion.div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                onClick={uploading ? undefined : onClose} />
-            <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-6 pointer-events-none"
-                initial={{ opacity: 0, scale: 0.95, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 16 }} transition={{ type: 'spring', stiffness: 320, damping: 28 }}>
-                <div className="w-full max-w-xl rounded-2xl border p-8 pointer-events-auto max-h-[90vh] overflow-y-auto"
-                    style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-bold" style={{ fontFamily: "'Space Grotesk',sans-serif", color: '#fbbf24' }}>
-                            <Crown size={18} className="inline mr-2" />Post Premium Note
-                        </h2>
-                        <button onClick={onClose} disabled={uploading} className="p-1.5 rounded-lg hover:bg-red-500 hover:text-white"
-                            style={{ color: 'var(--text-secondary)' }}><X size={18} /></button>
-                    </div>
-                    <form onSubmit={submit}>
-                        {[['title', 'Title'], ['subject', 'Subject']].map(([k, l]) => (
-                            <div key={k} className="mb-4">
-                                <label className="block text-sm font-semibold mb-1.5">{l} *</label>
-                                <input type="text" value={form[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))}
-                                    className="form-input px-4" style={errors[k] ? { borderColor: 'var(--error)' } : {}} />
-                                {errors[k] && <p className="text-xs mt-1" style={{ color: 'var(--error)' }}>{errors[k]}</p>}
-                            </div>
-                        ))}
-                        <div className="mb-4">
-                            <label className="block text-sm font-semibold mb-1.5">Description *</label>
-                            <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                                rows={3} className="form-input px-4 py-3" style={{ height: 'auto', resize: 'vertical', ...(errors.description ? { borderColor: 'var(--error)' } : {}) }} />
-                            {errors.description && <p className="text-xs mt-1" style={{ color: 'var(--error)' }}>{errors.description}</p>}
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <label className="block text-sm font-semibold mb-1.5">Price (FCFA) *</label>
-                                <input type="number" min="1" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
-                                    placeholder="500" className="form-input px-4" style={errors.price ? { borderColor: 'var(--error)' } : {}} />
-                                {errors.price && <p className="text-xs mt-1" style={{ color: 'var(--error)' }}>{errors.price}</p>}
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold mb-1.5">Tags <span className="font-normal text-xs" style={{ color: 'var(--text-muted)' }}>(comma-sep)</span></label>
-                                <input type="text" value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
-                                    placeholder="math, calculus" className="form-input px-4" />
-                            </div>
-                        </div>
-                        <div className="mb-6">
-                            <label className="block text-sm font-semibold mb-1.5">File *</label>
-                            <div onClick={() => fileRef.current?.click()}
-                                className="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all"
-                                style={{ borderColor: errors.file ? 'var(--error)' : 'var(--border-subtle)', background: 'var(--bg-hover)' }}>
-                                <input ref={fileRef} type="file" className="hidden"
-                                    accept=".pdf,.doc,.docx,.txt,.md,.jpg,.jpeg,.png,.gif,.webp"
-                                    onChange={e => e.target.files?.[0] && setFile(e.target.files[0])} />
-                                <Upload size={28} className="mx-auto mb-2" style={{ color: '#fbbf24' }} />
-                                {file ? (
-                                    <p className="font-semibold text-sm">{file.name} <span className="font-normal text-xs" style={{ color: 'var(--text-secondary)' }}>({(file.size / 1024 / 1024).toFixed(2)} MB)</span></p>
-                                ) : (
-                                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Click to select file (PDF, DOC, images, max 20MB)</p>
-                                )}
-                            </div>
-                            {errors.file && <p className="text-xs mt-1 flex items-center gap-1" style={{ color: 'var(--error)' }}><AlertCircle size={12} />{errors.file}</p>}
-                        </div>
-                        <div className="flex gap-3 justify-end">
-                            <button type="button" onClick={onClose} disabled={uploading}
-                                className="px-5 py-2.5 rounded-lg border text-sm font-medium disabled:opacity-50"
-                                style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-secondary)' }}>Cancel</button>
-                            <button type="submit" disabled={uploading}
-                                className="px-5 py-2.5 rounded-xl font-semibold text-white text-sm inline-flex items-center gap-2 disabled:opacity-60"
-                                style={{ background: 'linear-gradient(135deg,#d97706,#fbbf24)' }}>
-                                {uploading ? <><Loader2 size={14} className="animate-spin" />Uploading…</> : <><Upload size={14} />Post Note</>}
-                            </button>
-                        </div>
-                    </form>
+        <Modal
+            open={open}
+            onClose={uploading ? () => {} : onClose}
+            closeOnBackdrop={!uploading}
+            closeOnEscape={!uploading}
+            title="Post Premium Note"
+            size="lg"
+            footer={
+                <>
+                    <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={uploading}>Cancel</Button>
+                    <Button type="submit" form="premium-upload-form" size="sm" loading={uploading} icon={uploading ? undefined : Upload} className="!bg-[image:linear-gradient(135deg,#d97706,#fbbf24)]">
+                        {uploading ? 'Uploading…' : 'Post Note'}
+                    </Button>
+                </>
+            }
+        >
+            <form onSubmit={submit} id="premium-upload-form">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Field label="Title" required error={errors.title}>
+                        <Input type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} invalid={!!errors.title} />
+                    </Field>
+                    <Field label="Subject" required error={errors.subject}>
+                        <Input type="text" value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} invalid={!!errors.subject} />
+                    </Field>
                 </div>
-            </motion.div>
-        </>
+                <Field label="Description" required error={errors.description}>
+                    <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} invalid={!!errors.description} />
+                </Field>
+                <div className="grid grid-cols-2 gap-4">
+                    <Field label="Price (FCFA)" required error={errors.price}>
+                        <Input type="number" min="1" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="500" invalid={!!errors.price} />
+                    </Field>
+                    <Field label="Tags" hint="comma-sep">
+                        <Input type="text" value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} placeholder="math, calculus" />
+                    </Field>
+                </div>
+                <Field label="File" required className="mb-0">
+                    <div onClick={() => fileRef.current?.click()}
+                        className={cn(
+                            'border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all bg-surface-hover',
+                            errors.file ? 'border-danger' : 'border-border',
+                        )}>
+                        <input ref={fileRef} type="file" className="hidden"
+                            accept=".pdf,.doc,.docx,.txt,.md,.jpg,.jpeg,.png,.gif,.webp"
+                            onChange={e => e.target.files?.[0] && setFile(e.target.files[0])} />
+                        <Upload size={28} className="mx-auto mb-2 text-premium" />
+                        {file ? (
+                            <p className="font-semibold text-sm">{file.name} <span className="font-normal text-xs text-fg-secondary">({(file.size / 1024 / 1024).toFixed(2)} MB)</span></p>
+                        ) : (
+                            <p className="text-sm text-fg-secondary">Click to select file (PDF, DOC, images, max 20MB)</p>
+                        )}
+                    </div>
+                    {errors.file && <p className="text-xs mt-1 flex items-center gap-1 text-danger"><AlertCircle size={12} />{errors.file}</p>}
+                </Field>
+            </form>
+        </Modal>
     );
 }
 
@@ -316,51 +312,41 @@ function NoteCard({ note, onPurchase, isAdmin }) {
 
     return (
         <motion.div variants={cardVariant}
-            className="rounded-2xl p-5 border flex flex-col relative overflow-hidden"
-            style={{ background: 'var(--bg-card)', borderColor: 'rgba(251,191,36,0.25)' }}>
+            className="rounded-2xl p-5 border border-premium/25 bg-surface flex flex-col relative overflow-hidden">
             {/* crown badge */}
-            <div className="absolute top-3 right-3 flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full"
-                style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24' }}>
-                <Crown size={11} /> PREMIUM
-            </div>
+            <Badge tone="premium" size="sm" icon={Crown} className="absolute top-3 right-3">PREMIUM</Badge>
 
             <div className="flex items-start gap-3 mb-3 pr-20">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: 'rgba(251,191,36,0.12)' }}>
-                    <FileIcon size={20} style={{ color: '#fbbf24' }} strokeWidth={1.75} />
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-premium-bg">
+                    <FileIcon size={20} className="text-premium" strokeWidth={1.75} />
                 </div>
                 <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-sm leading-snug truncate">{note.title}</h3>
-                    <span className="text-xs px-2 py-0.5 rounded-full inline-block mt-1"
-                        style={{ background: 'rgba(251,191,36,0.12)', color: '#fbbf24' }}>{note.subject}</span>
+                    <Badge tone="premium" size="sm" className="mt-1">{note.subject}</Badge>
                 </div>
             </div>
 
-            <p className="text-xs mb-4 flex-1 line-clamp-2" style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>
+            <p className="text-xs mb-4 flex-1 line-clamp-2 text-fg-secondary" style={{ lineHeight: 1.7 }}>
                 {note.description}
             </p>
 
-            <div className="flex justify-between text-xs mb-4" style={{ color: 'var(--text-secondary)' }}>
+            <div className="flex justify-between text-xs mb-4 text-fg-secondary">
                 <span className="flex items-center gap-1"><Download size={12} /> {note.downloads || 0}</span>
                 <span>by {note.users?.first_name} {note.users?.last_name}</span>
             </div>
 
             <div className="flex items-center justify-between">
-                <span className="text-base font-bold" style={{ color: '#fbbf24' }}>
+                <span className="text-base font-bold text-premium">
                     {Number(note.price).toLocaleString()} FCFA
                 </span>
                 {owned || isAdmin ? (
-                    <a href={`${API_ORIGIN}${note.file_path}`} target="_blank" rel="noreferrer"
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white"
-                        style={{ background: 'linear-gradient(135deg,#059669,#34d399)' }}>
-                        <Unlock size={13} /> Download
-                    </a>
+                    <Button onClick={() => openPremiumNote(note.id)} icon={Unlock} size="sm" className="!bg-[image:linear-gradient(135deg,#059669,#34d399)]">
+                        Download
+                    </Button>
                 ) : (
-                    <button onClick={() => onPurchase(note)}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white"
-                        style={{ background: 'linear-gradient(135deg,#d97706,#fbbf24)' }}>
-                        <Lock size={13} /> Buy
-                    </button>
+                    <Button onClick={() => onPurchase(note)} icon={Lock} size="sm" className="!bg-[image:linear-gradient(135deg,#d97706,#fbbf24)]">
+                        Buy
+                    </Button>
                 )}
             </div>
         </motion.div>
@@ -393,14 +379,6 @@ export default function PremiumPage() {
         finally { setLoading(false); }
     };
 
-    const loadSub = async () => {
-        try {
-            const { data } = await api.get('/premium/subscription/status');
-            setSubscription(data);
-        } catch { }
-        finally { setSubLoading(false); }
-    };
-
     useEffect(() => { loadNotes(); setSubLoading(false); }, []);
 
     const canPost = canPublish;
@@ -422,9 +400,13 @@ export default function PremiumPage() {
             const { txId } = data;
             setWaitingPhone(true);
 
-            // Poll every 3s, timeout after 60s
-            const deadline = Date.now() + 60_000;
+            // Poll every 3s. The window matches the server-side payment TTL —
+            // 60s was cutting off payments the payer was still approving.
+            const deadline = Date.now() + 3 * 60_000;
+            let inFlight = false;
             pollRef.current = setInterval(async () => {
+                if (inFlight) return; // don't stack requests if one poll is slow
+                inFlight = true;
                 try {
                     const { data: poll } = await api.get(`/premium/pay/status/${txId}`);
 
@@ -440,7 +422,7 @@ export default function PremiumPage() {
                         } else {
                             toast.success('Purchase successful!');
                             setNotes(prev => prev.map(n => n.id === currentTarget.note.id ? { ...n, purchased: true } : n));
-                            if (poll.file_path) window.open(`${API_ORIGIN}${poll.file_path}`, '_blank');
+                            if (poll.noteId) openPremiumNote(poll.noteId);
                         }
                         try {
                             const token = localStorage.getItem('token');
@@ -454,13 +436,20 @@ export default function PremiumPage() {
                         setWaitingPhone(false);
                         setPaying(false);
                         toast.error(poll.error || 'Payment declined. Please try again.');
-                    } else if (Date.now() > deadline) {
+                    } else if (poll.status === 'processing' || Date.now() > deadline) {
+                        // The charge may still land — the server settles it in
+                        // the background, so don't report a failure.
                         stopPolling();
                         setWaitingPhone(false);
                         setPaying(false);
-                        toast.error('Payment timed out. Please try again.');
+                        setPayTarget(null);
+                        toast.info(
+                            'Still confirming with the operator. If you approved the payment, your access unlocks automatically in a few minutes — do not pay again.',
+                            { duration: 8000 },
+                        );
                     }
                 } catch { /* keep polling on network hiccup */ }
+                finally { inFlight = false; }
             }, 3000);
         } catch (err) {
             setPaying(false);
@@ -469,51 +458,40 @@ export default function PremiumPage() {
     };
 
     return (
-        <div className="lg:pl-60" style={{ background: 'var(--bg-main)', minHeight: '100vh', color: 'var(--text-primary)' }}>
+        <div className="lg:pl-60 min-h-screen bg-bg text-fg">
             <Sidebar />
 
             {/* HERO */}
-            <section className="pt-20 px-6 py-12 text-center border-b"
-                style={{ background: 'linear-gradient(135deg,rgba(217,119,6,0.08),rgba(251,191,36,0.06))', borderColor: 'rgba(251,191,36,0.2)' }}>
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold mb-4"
-                    style={{ background: 'rgba(251,191,36,0.12)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.25)' }}>
-                    <Crown size={15} /> Premium Notes
-                </div>
-                <h1 className="text-3xl md:text-4xl font-bold mb-3" style={{ fontFamily: "'Space Grotesk',sans-serif" }}>
+            <section className="pt-20 px-6 py-12 text-center border-b border-premium/20 bg-premium-bg">
+                <Badge tone="premium" size="md" icon={Crown} className="mb-4">Premium Notes</Badge>
+                <h1 className="text-3xl md:text-4xl font-bold mb-3" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
                     Exclusive Study Materials
                 </h1>
-                <p className="max-w-xl mx-auto text-sm mb-8" style={{ color: 'var(--text-secondary)' }}>
+                <p className="max-w-xl mx-auto text-sm mb-8 text-fg-secondary">
                     High-quality notes curated by top students and tutors. Purchase individual notes or become a premium publisher.
                 </p>
 
                 {canPublish && (
-                    <div className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-sm font-semibold max-w-lg mx-auto mb-2"
-                        style={{ background: 'rgba(52,211,153,0.1)', color: '#34d399', border: '1px solid rgba(52,211,153,0.2)' }}>
-                        <Star size={15} /> Premium Publisher
-                    </div>
+                    <Badge tone="success" size="md" icon={Star} className="mx-auto mb-2 w-fit">Premium Publisher</Badge>
                 )}
 
                 {/* Stats */}
                 <div className="flex justify-center gap-12 flex-wrap mt-6">
                     {[[notes.length, 'Premium Notes'], [notes.reduce((s, n) => s + (n.downloads || 0), 0), 'Downloads']].map(([v, l]) => (
                         <div key={l} className="text-center">
-                            <div className="text-3xl font-bold tabular-nums" style={{ fontFamily: "'Space Grotesk',sans-serif", color: '#fbbf24' }}>{v}</div>
-                            <div className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>{l}</div>
+                            <div className="text-3xl font-bold tabular-nums text-premium" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>{v}</div>
+                            <div className="text-xs mt-0.5 text-fg-secondary">{l}</div>
                         </div>
                     ))}
                 </div>
             </section>
 
             {/* TOOLBAR */}
-            <div className="sticky top-16 z-30 px-4 sm:px-6 py-3 border-b flex justify-end items-center gap-3"
-                style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}>
+            <div className="sticky top-16 z-30 px-4 sm:px-6 py-3 border-b border-border bg-surface flex justify-end items-center gap-3">
                 {canPublish && (
-                    <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                        onClick={() => setShowUpload(true)}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-white text-sm"
-                        style={{ background: 'linear-gradient(135deg,#d97706,#fbbf24)' }}>
-                        <Upload size={15} /> Post Premium Note
-                    </motion.button>
+                    <Button onClick={() => setShowUpload(true)} icon={Upload} className="!bg-[image:linear-gradient(135deg,#d97706,#fbbf24)]">
+                        Post Premium Note
+                    </Button>
                 )}
             </div>
 
@@ -522,28 +500,20 @@ export default function PremiumPage() {
                 {loading ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[...Array(6)].map((_, i) => (
-                            <div key={i} className="rounded-2xl p-6 border" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}>
-                                <div className="skeleton-shimmer h-4 rounded w-3/4 mb-3" />
-                                <div className="skeleton-shimmer h-3 rounded w-full mb-2" />
-                                <div className="skeleton-shimmer h-8 rounded mt-4" />
+                            <div key={i} className="rounded-2xl p-6 border border-border bg-surface">
+                                <Skeleton className="h-4 w-3/4 mb-3" />
+                                <Skeleton className="h-3 w-full mb-2" />
+                                <Skeleton className="h-8 mt-4" />
                             </div>
                         ))}
                     </div>
                 ) : notes.length === 0 ? (
-                    <div className="text-center py-20">
-                        <p className="text-4xl mb-4">👑</p>
-                        <h3 className="text-xl font-semibold mb-2">No premium notes yet</h3>
-                        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                            {canPost ? 'Be the first to post a premium note!' : 'Check back soon.'}
-                        </p>
-                        {canPost && (
-                            <button onClick={() => setShowUpload(true)}
-                                className="mt-5 px-5 py-2.5 rounded-xl font-semibold text-white text-sm"
-                                style={{ background: 'linear-gradient(135deg,#d97706,#fbbf24)' }}>
-                                Post First Note
-                            </button>
-                        )}
-                    </div>
+                    <EmptyState
+                        icon={Crown}
+                        title="No premium notes yet"
+                        description={canPost ? 'Be the first to post a premium note!' : 'Check back soon.'}
+                        action={canPost && <Button onClick={() => setShowUpload(true)} className="!bg-[image:linear-gradient(135deg,#d97706,#fbbf24)]">Post First Note</Button>}
+                    />
                 ) : (
                     <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
                         variants={stagger} initial="hidden" animate="show">
@@ -556,25 +526,21 @@ export default function PremiumPage() {
             </div>
 
             {/* Modals */}
-            <AnimatePresence>
-                {showUpload && (
-                    <UploadModal onClose={() => setShowUpload(false)}
-                        onUploaded={() => { setShowUpload(false); loadNotes(); toast.success('Premium note posted!'); }} />
-                )}
-                {receipt && (
-                    <ReceiptModal receipt={receipt} onClose={() => setReceipt(null)} />
-                )}
-                {payTarget && (
-                    <PayModal
-                        title={payTarget.type === 'subscribe' ? 'Subscribe as Publisher' : `Buy: ${payTarget.note?.title}`}
-                        amount={payTarget.type === 'subscribe' ? 1000 : Number(payTarget.note?.price || 0)}
-                        onConfirm={handlePay}
-                        onClose={() => { if (!paying) { stopPolling(); setWaitingPhone(false); setPayTarget(null); } }}
-                        loading={paying}
-                        waitingPhone={waitingPhone}
-                    />
-                )}
-            </AnimatePresence>
+            <UploadModal
+                open={showUpload}
+                onClose={() => setShowUpload(false)}
+                onUploaded={() => { setShowUpload(false); loadNotes(); toast.success('Premium note posted!'); }}
+            />
+            <ReceiptModal receipt={receipt} onClose={() => setReceipt(null)} />
+            <PayModal
+                open={!!payTarget}
+                title={payTarget?.type === 'subscribe' ? 'Subscribe as Publisher' : `Buy: ${payTarget?.note?.title}`}
+                amount={payTarget?.type === 'subscribe' ? 1000 : Number(payTarget?.note?.price || 0)}
+                onConfirm={handlePay}
+                onClose={() => { if (!paying) { stopPolling(); setWaitingPhone(false); setPayTarget(null); } }}
+                loading={paying}
+                waitingPhone={waitingPhone}
+            />
         </div>
     );
 }

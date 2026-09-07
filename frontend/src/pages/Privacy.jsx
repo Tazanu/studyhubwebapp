@@ -1,11 +1,12 @@
 import HomeFooter from '../components/home/HomeFooter';
+import Seo from '../components/Seo';
 
 const Section = ({ title, children }) => (
     <div className="mb-10">
-        <h2 className="text-lg font-bold mb-3" style={{ color: 'var(--text-primary)', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+        <h2 className="text-lg font-bold mb-3 text-fg" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
             {title}
         </h2>
-        <div className="space-y-3 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+        <div className="space-y-3 text-sm leading-relaxed text-fg-secondary">
             {children}
         </div>
     </div>
@@ -14,13 +15,14 @@ const Section = ({ title, children }) => (
 export default function Privacy() {
     return (
         <>
-            <div className="min-h-screen pt-28 pb-20 px-6" style={{ background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
+            <Seo title="Privacy Policy" description="What personal data StudyHub collects, how it is used and stored, who it is shared with, and the rights you have over it." path="/privacy" />
+            <div className="min-h-screen pt-28 pb-20 px-6 bg-bg text-fg">
                 <div className="max-w-2xl mx-auto">
-                    <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--accent-blue)' }}>Legal</p>
+                    <p className="text-sm font-semibold uppercase tracking-widest mb-3 text-primary">Legal</p>
                     <h1 className="font-bold mb-2" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 'clamp(2rem, 5vw, 2.75rem)', letterSpacing: '-0.02em' }}>
                         Privacy Policy
                     </h1>
-                    <p className="text-sm mb-12" style={{ color: 'var(--text-muted)' }}>
+                    <p className="text-sm mb-12 text-fg-muted">
                         Last updated: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </p>
 
@@ -35,11 +37,11 @@ export default function Privacy() {
                     <Section title="2. Information We Collect">
                         <p>We collect the following information when you register or use the Platform:</p>
                         <ul className="list-disc pl-5 space-y-1.5">
-                            <li><strong style={{ color: 'var(--text-primary)' }}>Account data:</strong> first name, last name, email address, and password (stored as a secure hash).</li>
-                            <li><strong style={{ color: 'var(--text-primary)' }}>Profile data:</strong> university, field of study, profile photo, and bio (optional).</li>
-                            <li><strong style={{ color: 'var(--text-primary)' }}>Tutor data:</strong> subjects, teaching bio, years of experience, hourly rate, availability, and any proof-of-expertise documents you upload.</li>
-                            <li><strong style={{ color: 'var(--text-primary)' }}>Usage data:</strong> pages visited, features used, and general interaction patterns to help us improve the Platform.</li>
-                            <li><strong style={{ color: 'var(--text-primary)' }}>Communications:</strong> messages sent in group chats and the Q&A forum.</li>
+                            <li><strong className="text-fg">Account data:</strong> first name, last name, email address, and password (stored as a secure hash).</li>
+                            <li><strong className="text-fg">Profile data:</strong> university, field of study, profile photo, and bio (optional).</li>
+                            <li><strong className="text-fg">Tutor data:</strong> subjects, teaching bio, years of experience, hourly rate, availability, and any proof-of-expertise documents you upload.</li>
+                            <li><strong className="text-fg">Usage data:</strong> pages visited, features used, and general interaction patterns to help us improve the Platform.</li>
+                            <li><strong className="text-fg">Communications:</strong> messages sent in group chats and the Q&A forum.</li>
                         </ul>
                     </Section>
 
@@ -107,7 +109,7 @@ export default function Privacy() {
                         </ul>
                         <p>
                             To exercise any of these rights, contact us at{' '}
-                            <a href="mailto:support@studyhub.cm" className="hover:underline" style={{ color: 'var(--accent-blue)' }}>
+                            <a href="mailto:support@studyhub.cm" className="hover:underline text-primary">
                                 support@studyhub.cm
                             </a>.
                         </p>
@@ -132,7 +134,7 @@ export default function Privacy() {
                     <Section title="11. Contact">
                         <p>
                             If you have any questions or concerns about this Privacy Policy, please reach out at{' '}
-                            <a href="mailto:support@studyhub.cm" className="hover:underline" style={{ color: 'var(--accent-blue)' }}>
+                            <a href="mailto:support@studyhub.cm" className="hover:underline text-primary">
                                 support@studyhub.cm
                             </a>.
                         </p>
