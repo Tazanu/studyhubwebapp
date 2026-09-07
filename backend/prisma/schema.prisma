@@ -4,7 +4,13 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  // Pooled connection for the running app. Neon's pooler (PgBouncer in
+  // transaction mode) keeps the app within the free tier's connection limit.
   url      = env("DATABASE_URL")
+  // Migrations must bypass the pooler: they use session-level operations
+  // (advisory locks, CREATE TYPE) that a transaction-mode pooler cannot carry.
+  // Locally both point at the same server, which is fine.
+  directUrl = env("DIRECT_URL")
 }
 
 model answers {
