@@ -3,6 +3,7 @@ const prisma = require('../prisma');
 const authenticate = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const { storedPathFor } = require('../middleware/upload');
+const parseTags = require('../lib/parseTags');
 
 const router = express.Router();
 
@@ -190,7 +191,7 @@ router.post('/', authenticate, upload.fields([{ name: 'audio', maxCount: 1 }, { 
             content: content.trim(),
             subject,
             category: category || null,
-            tags: tags ? JSON.parse(tags) : [],
+            tags: parseTags(tags),
             author_id: req.userId
         };
 
@@ -237,7 +238,7 @@ router.patch('/:id', authenticate, upload.fields([{ name: 'audio', maxCount: 1 }
         if (content) data.content = content.trim();
         if (subject) data.subject = subject;
         if (category !== undefined) data.category = category;
-        if (tags) data.tags = JSON.parse(tags);
+        if (tags !== undefined) data.tags = parseTags(tags);
 
         if (req.files?.audio) {
             data.audio_url = storedPathFor(req.files.audio[0]);

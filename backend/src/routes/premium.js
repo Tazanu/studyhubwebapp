@@ -6,6 +6,7 @@ const upload = require('../middleware/upload');
 const { storedPathFor } = require('../middleware/upload');
 const { validatePayer, initiateCollect, checkStatus } = require('../services/mobileMoney');
 const { protectFile, streamFile } = require('../services/fileAccess');
+const parseTags = require('../lib/parseTags');
 const {
     OrderError,
     resolveOrder,
@@ -280,7 +281,7 @@ router.post('/notes', authenticate, upload.single('file'), async (req, res) => {
                 file_path: storedPath,
                 file_type: path.extname(req.file.originalname).replace('.', ''),
                 price: parseFloat(price) || 0,
-                tags: tags ? tags.split(',').map(t => t.trim()) : [],
+                tags: parseTags(tags),
                 uploaded_by: req.userId,
             },
         });

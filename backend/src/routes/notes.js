@@ -7,6 +7,7 @@ const upload = require('../middleware/upload');
 const { storedPathFor } = require('../middleware/upload');
 const { hasPurchasedPaidNote } = require('../services/entitlements');
 const { protectFile, streamFile, isRemote, publicUrlFor } = require('../services/fileAccess');
+const parseTags = require('../lib/parseTags');
 
 const router = express.Router();
 
@@ -137,7 +138,7 @@ router.post('/', authenticate, upload.single('file'), async (req, res) => {
                 group_id: groupId ? parseInt(groupId) : null,
                 is_premium: isPremium === 'true',
                 price: isPremium === 'true' ? parseFloat(price) || 0 : 0,
-                tags: tags ? tags.split(',').map(t => t.trim()) : []
+                tags: parseTags(tags)
             }
         });
 
