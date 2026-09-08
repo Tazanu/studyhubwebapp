@@ -86,6 +86,29 @@ function readContent(buffer, fileType) {
     return { text: '', pages: 0, inspectable: false };
 }
 
+/**
+ * Lexical variety, measured in fixed windows rather than over the whole text.
+ *
+ * A raw unique/total ratio falls as a document grows — common words recur — so
+ * judging a 5,000-word note by the same number as a 500-word one would reject
+ * long, legitimate material. Averaging the ratio across equal-sized windows
+ * removes that length dependence: padding scores low in every window, while
+ * real prose scores normally regardless of total length.
+ */
+function lexicalVariety(words, windowSize = 400) {
+    if (words.length === 0) return 1;
+    const normalise = w => w.toLowerCase().replace(/[^a-z0-9]/gi, '');
+    if (words.length <= windowSize) {
+        return new Set(words.map(normalise)).size / words.length;
+    }
+    const ratios = [];
+    for (let i = 0; i + windowSize <= words.length; i += windowSize) {
+        const win = words.slice(i, i + windowSize).map(normalise);
+        ratios.push(new Set(win).size / windowSize);
+    }
+    return ratios.reduce((a, b) => a + b, 0) / ratios.length;
+}
+
 /** Fraction of the text taken up by its most-repeated non-trivial line. */
 function repeatRatio(text) {
     const parts = text.split(/[.!?\n]/).map(s => s.trim()).filter(s => s.length > 25);
@@ -146,10 +169,9 @@ function assessNoteQuality({ buffer, fileType, title, description, price }) {
             blocking.push('There is not enough written material here to justify charging for it.');
         }
 
-        const unique = new Set(words.map(w => w.toLowerCase().replace(/[^a-z0-9]/gi, ''))).size;
-        const ratio = words.length ? unique / words.length : 0;
-        stats.uniqueWordRatio = Number(ratio.toFixed(3));
-        if (words.length > 100 && ratio < LIMITS.minUniqueWordRatio) {
+        const variety = lexicalVariety(words);
+        stats.lexicalVariety = Number(variety.toFixed(3));
+        if (words.length > 100 && variety < LIMITS.minUniqueWordRatio) {
             blocking.push('The text is highly repetitive, which usually means padding rather than content.');
         }
 
