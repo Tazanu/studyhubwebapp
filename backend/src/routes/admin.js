@@ -174,6 +174,77 @@ router.get('/premium/notes', async (req, res) => {
     }
 });
 
+// ── Review queue ─────────────────────────────────────────────────────────────
+// Everything awaiting a decision, oldest first so nothing sits forgotten.
+// Carries the automated report so the reviewer knows what the checks already
+// found — but the reviewer's job is the part no check can do: reading the
+// material and judging whether it is actually correct.
+router.get('/premium/notes/pending', async (req, res) => {
+    try {
+        const notes = await prisma.premium_notes.findMany({
+            where: { review_status: 'pending' },
+            include: { users: { select: { id: true, first_name: true, last_name: true, email: true } } },
+            orderBy: { created_at: 'asc' },
+        });
+        res.json(notes.map(({ file_path, ...n }) => n));
+    } catch (err) {
+        console.error('Fetch review queue error:', err);
+        res.status(500).json({ error: 'Failed to fetch the review queue' });
+    }
+});
+
+// Approve or reject. A rejection must say why: the author cannot fix material
+// when the only feedback is that it was refused.
+router.patch('/premium/notes/:id/review', async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        const { status, note: reviewNote } = req.body;
+
+        if (!['approved', 'rejected'].includes(status)) {
+            return res.status(400).json({ error: 'Status must be "approved" or "rejected"' });
+        }
+        if (status === 'rejected' && !String(reviewNote || '').trim()) {
+            return res.status(400).json({ error: 'A reason is required when rejecting, so the author can correct it.' });
+        }
+
+        const existing = await prisma.premium_notes.findUnique({ where: { id } });
+        if (!existing) return res.status(404).json({ error: 'Note not found' });
+
+        const updated = await prisma.premium_notes.update({
+            where: { id },
+            data: {
+                review_status: status,
+                review_note: String(reviewNote || '').trim() || null,
+                reviewed_by: req.userId,
+                reviewed_at: new Date(),
+                // A rejected note stays in the table for the author to see and
+                // revise, but must not be listed anywhere as if it were on sale.
+                ...(status === 'rejected' ? { is_active: false } : { is_active: true }),
+            },
+            select: { id: true, title: true, review_status: true, review_note: true, reviewed_at: true },
+        });
+
+        // `message` is VarChar(500) and there is no title column, so build one
+        // string and truncate it rather than letting the insert throw.
+        const body = status === 'approved'
+            ? `Your premium note "${existing.title}" was approved and is now available to buyers.`
+            : `Your premium note "${existing.title}" was not approved. Reason: ${String(reviewNote).trim()}`;
+
+        await prisma.notifications.create({
+            data: {
+                user_id: existing.uploaded_by,
+                type: status === 'approved' ? 'note_approved' : 'note_rejected',
+                message: body.slice(0, 500),
+            },
+        }).catch(e => console.error('Review notification failed:', e.message));
+
+        res.json({ success: true, note: updated });
+    } catch (err) {
+        console.error('Review premium note error:', err);
+        res.status(500).json({ error: 'Failed to record the review' });
+    }
+});
+
 router.patch('/premium/notes/:id/toggle', async (req, res) => {
     try {
         const note = await prisma.premium_notes.findUnique({ where: { id: Number(req.params.id) }, select: { is_active: true } });

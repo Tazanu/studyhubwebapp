@@ -262,6 +262,7 @@ model users {
   purchased_notes         purchased_notes[]
   session_credits         session_credits[]
   group_message_reactions group_message_reactions[]
+  reviewed_premium_notes  premium_notes[]           @relation("premium_note_reviewer")
 }
 
 model group_join_requests {
@@ -390,13 +391,28 @@ model premium_notes {
   tags        String[] @default([])
   uploaded_by Int
   is_active   Boolean  @default(true)
-  created_at  DateTime @default(now()) @db.Timestamp(6)
-  updated_at  DateTime @default(now()) @db.Timestamp(6)
+
+  // Paid content is not purchasable until a human has looked at it. Automated
+  // checks (services/contentQuality.js) can reject an empty or padded file, but
+  // nothing automated can tell whether the material is factually correct — and
+  // wrong notes sold to students are the failure that actually matters.
+  review_status  String    @default("pending") @db.VarChar(20)
+  review_note    String?
+  reviewed_by    Int?
+  reviewed_at    DateTime? @db.Timestamp(6)
+  // Snapshot of the automated assessment, kept so a reviewer can see what the
+  // checks found and so thresholds can be tuned against real uploads.
+  quality_report Json?
+
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @default(now()) @db.Timestamp(6)
 
   users           users             @relation(fields: [uploaded_by], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  reviewer        users?            @relation("premium_note_reviewer", fields: [reviewed_by], references: [id], onUpdate: NoAction)
   purchased_notes purchased_notes[]
 
   @@index([uploaded_by])
+  @@index([review_status])
 }
 
 model purchased_notes {

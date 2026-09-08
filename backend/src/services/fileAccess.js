@@ -167,6 +167,58 @@ function remoteCandidatesFor(url) {
     return cdn ? [cdn, signed] : [signed];
 }
 
+/**
+ * Read a just-uploaded file back into memory so it can be inspected.
+ *
+ * Uploads stream straight to Cloudinary, so multer never hands us a buffer.
+ * Callers that need to look inside the file — the quality gate — have to fetch
+ * it back. Capped, because the point is to sample content, not to load an
+ * arbitrarily large file into memory.
+ */
+async function readStoredFile(filePath, { maxBytes = 12 * 1024 * 1024 } = {}) {
+    if (!filePath) return null;
+
+    if (!isRemote(filePath)) {
+        const resolved = resolveLocal(filePath);
+        if (!resolved || !fs.existsSync(resolved)) return null;
+        return fs.readFileSync(resolved).subarray(0, maxBytes);
+    }
+
+    for (const candidate of remoteCandidatesFor(filePath)) {
+        try {
+            const res = await axios.get(candidate, {
+                responseType: 'arraybuffer',
+                maxContentLength: maxBytes,
+                headers: { 'User-Agent': 'StudyHub/1.0' },
+                validateStatus: s => s < 400,
+            });
+            return Buffer.from(res.data);
+        } catch {
+            // try the next candidate
+        }
+    }
+    return null;
+}
+
+/**
+ * Permanently remove a stored asset. Used to avoid leaving orphaned files
+ * behind when an upload is accepted by storage but rejected by validation.
+ */
+async function deleteStoredFile(filePath) {
+    if (!filePath) return;
+    if (!isRemote(filePath)) {
+        const resolved = resolveLocal(filePath);
+        if (resolved && fs.existsSync(resolved)) fs.unlinkSync(resolved);
+        return;
+    }
+    const parsed = parseCloudinaryUrl(filePath);
+    if (!parsed) return;
+    await cloudinary.uploader.destroy(parsed.publicId, {
+        resource_type: parsed.resourceType,
+        type: parsed.type,
+    });
+}
+
 // -- moving existing files into protection ------------------------------------
 
 /**
@@ -290,6 +342,8 @@ module.exports = {
     protectFile,
     protectRemoteAsset,
     publicUrlFor,
+    readStoredFile,
+    deleteStoredFile,
     signedUrlFor,
     streamFile,
 };

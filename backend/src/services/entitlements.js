@@ -104,6 +104,11 @@ async function resolveOrder(userId, { type, noteId, bookingId, tutorId, planKey 
         if (user.role === 'admin') throw new OrderError(400, 'Admins have free access');
         const note = await prisma.premium_notes.findUnique({ where: { id } });
         if (!note || !note.is_active) throw new OrderError(404, 'Note not found');
+        // Do not take money for material that has not passed review. A buyer
+        // could otherwise reach the payment step from a stale page.
+        if (note.review_status !== 'approved') {
+            throw new OrderError(409, 'This note is awaiting review and is not on sale yet.');
+        }
         if (note.uploaded_by === userId) throw new OrderError(400, 'You already own this note');
         if (await hasPurchasedPremiumNote(userId, id)) {
             throw new OrderError(400, 'You already own this note');

@@ -5,7 +5,8 @@ const authenticate = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const { storedPathFor } = require('../middleware/upload');
 const { validatePayer, initiateCollect, checkStatus } = require('../services/mobileMoney');
-const { protectFile, streamFile } = require('../services/fileAccess');
+const { protectFile, streamFile, readStoredFile, deleteStoredFile } = require('../services/fileAccess');
+const { assessNoteQuality } = require('../services/contentQuality');
 const parseTags = require('../lib/parseTags');
 const {
     OrderError,
@@ -230,14 +231,19 @@ router.get('/notes', authenticate, async (req, res) => {
         const user = await getUser(req.userId);
         const isAdmin = user?.role === 'admin';
 
-        const result = notes.map(n => {
-            // Free access: admins (everything) and each note's own uploader
-            // (their own notes only). Everyone else must buy it.
-            const purchased = isAdmin || n.uploaded_by === req.userId || purchasedIds.has(n.id);
-            // Never ship the storage path — access is through /notes/:id/file.
-            const { file_path, ...safe } = n;
-            return { ...safe, purchased };
-        });
+        const result = notes
+            // Unreviewed or rejected material must not be offered for sale. The
+            // uploader still sees their own so they can track its status, and an
+            // admin sees everything in order to review it.
+            .filter(n => n.review_status === 'approved' || isAdmin || n.uploaded_by === req.userId)
+            .map(n => {
+                // Free access: admins (everything) and each note's own uploader
+                // (their own notes only). Everyone else must buy it.
+                const purchased = isAdmin || n.uploaded_by === req.userId || purchasedIds.has(n.id);
+                // Never ship the storage path — access is through /notes/:id/file.
+                const { file_path, ...safe } = n;
+                return { ...safe, purchased };
+            });
 
         res.json(result);
     } catch (err) {
@@ -263,9 +269,40 @@ router.post('/notes', authenticate, upload.single('file'), async (req, res) => {
         }
         if (!req.file) return res.status(400).json({ error: 'A file is required' });
 
+        const rawPath = storedPathFor(req.file);
+        const fileType = path.extname(req.file.originalname).replace('.', '');
+
+        // ── Automated quality gate ──────────────────────────────────────────
+        // Read the bytes back and inspect them. This catches material that is
+        // plainly unfit to sell — empty, padded, placeholder. It cannot judge
+        // whether the content is CORRECT; that is what the review queue below
+        // is for. Runs before protectFile so a rejected file can be removed.
+        let assessment;
+        try {
+            const buffer = await readStoredFile(rawPath);
+            assessment = assessNoteQuality({
+                buffer: buffer || Buffer.alloc(0),
+                fileType, title, description, price,
+            });
+        } catch (e) {
+            // A failure to inspect must not become a failure to upload. Flag it
+            // for the reviewer instead of guessing.
+            console.error('Quality check failed to run:', e.message);
+            assessment = { ok: true, blocking: [], warnings: ['Automated checks could not run on this file.'], stats: {} };
+        }
+
+        if (!assessment.ok) {
+            // Do not keep a file we are refusing — it would orphan in storage.
+            try { await deleteStoredFile(rawPath); } catch (e) { console.error('Cleanup after rejection failed:', e.message); }
+            return res.status(422).json({
+                error: 'This does not yet meet the standard for paid content.',
+                reasons: assessment.blocking,
+                warnings: assessment.warnings,
+            });
+        }
+
         // Paid content must not be publicly fetchable, so take it out of the
         // public namespace before the record exists.
-        const rawPath = storedPathFor(req.file);
         let storedPath = rawPath;
         try {
             storedPath = await protectFile(rawPath);
@@ -279,14 +316,23 @@ router.post('/notes', authenticate, upload.single('file'), async (req, res) => {
                 description,
                 subject,
                 file_path: storedPath,
-                file_type: path.extname(req.file.originalname).replace('.', ''),
+                file_type: fileType,
                 price: parseFloat(price) || 0,
                 tags: parseTags(tags),
                 uploaded_by: req.userId,
+                // Passing the automated checks is not approval. Nothing becomes
+                // purchasable until a human has read it.
+                review_status: 'pending',
+                quality_report: assessment,
             },
         });
 
-        res.status(201).json({ success: true, note: { ...note, file_path: undefined } });
+        res.status(201).json({
+            success: true,
+            note: { ...note, file_path: undefined },
+            message: 'Submitted for review. It becomes available to buyers once approved.',
+            warnings: assessment.warnings,
+        });
     } catch (err) {
         console.error('Premium note upload error:', err);
         res.status(500).json({ error: 'Failed to upload premium note' });
@@ -325,6 +371,13 @@ router.get('/notes/:id/file', authenticate, async (req, res) => {
         if (!note || !note.is_active) return res.status(404).json({ error: 'Note not found' });
 
         const user = await getUser(req.userId);
+        // Unreviewed material is readable only by its author and by admins —
+        // the people who need to see it in order to review or revise it.
+        if (note.review_status !== 'approved'
+            && note.uploaded_by !== req.userId
+            && user?.role !== 'admin') {
+            return res.status(404).json({ error: 'Note not found' });
+        }
         // Free access: admin, or the user who uploaded this specific note.
         // Everyone else needs a completed purchase.
         const allowed =
