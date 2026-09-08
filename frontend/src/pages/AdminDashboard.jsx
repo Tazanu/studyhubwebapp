@@ -7,7 +7,7 @@ import {
     Crown, Trash2, ToggleLeft, ToggleRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import api from '../api/client';
+import api, { apiError } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Button from '../components/ui/Button';
@@ -23,7 +23,7 @@ const fadeUp = {
 };
 const stagger = (s = 0.07) => ({ hidden: {}, show: { transition: { staggerChildren: s } } });
 
-const TABS = ['overview', 'users', 'tutors', 'premium'];
+const TABS = ['overview', 'users', 'tutors', 'review', 'premium'];
 
 const STATUS_TONE = { approved: 'success', pending: 'warning', rejected: 'danger' };
 
@@ -323,6 +323,173 @@ function TutorsTab() {
     );
 }
 
+/* ── review queue ─────────────────────────────────────────────── */
+/**
+ * Paid notes awaiting a decision.
+ *
+ * The automated checks in the API already rejected the obviously unfit, and
+ * their report is shown here as context. The job on this screen is the part no
+ * check can do: open the file, read it, and decide whether it is correct enough
+ * to sell to a student.
+ */
+function ReviewTab() {
+    const [notes, setNotes] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [busyId, setBusyId] = useState(null);
+    const [openingId, setOpeningId] = useState(null);
+    const [rejectingId, setRejectingId] = useState(null);
+    const [reason, setReason] = useState('');
+
+    /**
+     * Fetch the note with credentials and open it as a blob.
+     *
+     * The file route is auth-gated, so a normal link in a new tab would arrive
+     * without the token and be refused.
+     */
+    const openFile = async (note) => {
+        setOpeningId(note.id);
+        try {
+            const res = await api.get(`/premium/notes/${note.id}/file`, { responseType: 'blob' });
+            const url = URL.createObjectURL(res.data);
+            window.open(url, '_blank', 'noopener');
+            // Give the new tab time to take the URL before releasing it.
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+        } catch (err) {
+            toast.error(apiError(err, 'Could not open the file'));
+        } finally {
+            setOpeningId(null);
+        }
+    };
+
+    // All state updates happen in async callbacks, never synchronously inside
+    // the effect, so mounting cannot trigger a cascading re-render.
+    useEffect(() => {
+        let cancelled = false;
+        api.get('/admin/premium/notes/pending')
+            .then(({ data }) => { if (!cancelled) setNotes(data); })
+            .catch(err => { if (!cancelled) toast.error(apiError(err, 'Failed to load the review queue')); })
+            .finally(() => { if (!cancelled) setLoading(false); });
+        return () => { cancelled = true; };
+    }, []);
+
+    const decide = async (id, status, note) => {
+        setBusyId(id);
+        try {
+            await api.patch(`/admin/premium/notes/${id}/review`, { status, note });
+            toast.success(status === 'approved' ? 'Approved and now on sale' : 'Rejected — the author has been told why');
+            setNotes(prev => prev.filter(n => n.id !== id));
+            setRejectingId(null);
+            setReason('');
+        } catch (err) {
+            toast.error(apiError(err, 'Failed to record the decision'));
+        } finally {
+            setBusyId(null);
+        }
+    };
+
+    if (loading) return <div className="text-center py-16 text-sm text-fg-secondary">Loading…</div>;
+    if (!notes.length) {
+        return <EmptyState icon={ShieldCheck} title="Nothing waiting"
+            description="Every submitted note has been reviewed." className="mt-5" />;
+    }
+
+    return (
+        <motion.div className="flex flex-col gap-4 mt-5" variants={stagger(0.06)} initial="hidden" animate="show">
+            <p className="text-xs text-fg-secondary">
+                {notes.length} note{notes.length === 1 ? '' : 's'} awaiting review. Nothing here is visible to buyers
+                or purchasable until approved.
+            </p>
+
+            {notes.map(n => {
+                const q = n.quality_report || {};
+                const stats = q.stats || {};
+                return (
+                    <motion.div key={n.id} variants={fadeUp} className="rounded-2xl p-6 border border-border bg-surface">
+                        <div className="flex flex-wrap items-start justify-between gap-4 mb-3">
+                            <div className="min-w-0 flex-1">
+                                <p className="font-semibold">{n.title}</p>
+                                <p className="text-xs mt-0.5 text-fg-secondary">
+                                    {n.users?.first_name} {n.users?.last_name} · {n.subject} ·{' '}
+                                    {Number(n.price).toLocaleString()} FCFA ·{' '}
+                                    {new Date(n.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                </p>
+                            </div>
+                            <Badge tone="warning">pending</Badge>
+                        </div>
+
+                        <p className="text-sm leading-relaxed mb-4 text-fg-secondary">{n.description}</p>
+
+                        {/* what the automated checks measured */}
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                            {stats.words != null && <Badge tone="neutral" size="sm">{stats.words} words</Badge>}
+                            {stats.pages ? <Badge tone="neutral" size="sm">{stats.pages} pages</Badge> : null}
+                            {stats.lexicalVariety != null && (
+                                <Badge tone={stats.lexicalVariety < 0.25 ? 'warning' : 'neutral'} size="sm">
+                                    variety {stats.lexicalVariety}
+                                </Badge>
+                            )}
+                            {stats.bytes != null && <Badge tone="neutral" size="sm">{Math.round(stats.bytes / 1024)} KB</Badge>}
+                        </div>
+
+                        {q.warnings?.length > 0 && (
+                            <div className="mb-4 px-3 py-2 rounded-lg text-xs bg-warning-bg text-warning border border-warning/25">
+                                {q.warnings.map((w, i) => <p key={i}>{w}</p>)}
+                            </div>
+                        )}
+
+                        {/* Reading the file is the actual review. A plain link
+                            cannot be used: the endpoint needs the auth header,
+                            which a new tab would not send, so fetch the bytes
+                            and hand the browser a blob. */}
+                        <div className="mb-4">
+                            <Button size="sm" variant="secondary" icon={FileText}
+                                loading={openingId === n.id} onClick={() => openFile(n)}>
+                                Open the file and read it before deciding
+                            </Button>
+                        </div>
+
+                        {rejectingId === n.id ? (
+                            <div className="pt-3 border-t border-border">
+                                <label htmlFor={`reason-${n.id}`} className="block text-xs font-semibold mb-2 text-fg-secondary">
+                                    Why is this being rejected? The author sees this, so be specific enough to act on.
+                                </label>
+                                <Input
+                                    id={`reason-${n.id}`}
+                                    value={reason}
+                                    onChange={e => setReason(e.target.value)}
+                                    placeholder="e.g. Section 3 states the derivative of x² as 3x — this is wrong and would mislead students."
+                                    className="mb-3"
+                                />
+                                <div className="flex gap-2">
+                                    <Button size="sm" variant="danger" disabled={!reason.trim() || busyId === n.id}
+                                        loading={busyId === n.id} onClick={() => decide(n.id, 'rejected', reason)}>
+                                        Confirm rejection
+                                    </Button>
+                                    <Button size="sm" variant="ghost" onClick={() => { setRejectingId(null); setReason(''); }}>
+                                        Cancel
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex gap-2 pt-3 border-t border-border">
+                                <Button size="sm" icon={CheckCircle} loading={busyId === n.id}
+                                    onClick={() => decide(n.id, 'approved')} className="!bg-[image:none] bg-success">
+                                    Approve
+                                </Button>
+                                <Button size="sm" icon={XCircle} variant="danger"
+                                    onClick={() => { setRejectingId(n.id); setReason(''); }}
+                                    className="!bg-danger-bg !text-danger">
+                                    Reject
+                                </Button>
+                            </div>
+                        )}
+                    </motion.div>
+                );
+            })}
+        </motion.div>
+    );
+}
+
 /* ── premium tab ──────────────────────────────────────────────── */
 function PremiumTab() {
     const [activeSection, setActiveSection] = useState('notes');
@@ -501,18 +668,33 @@ export default function AdminDashboard() {
     const navigate = useNavigate();
     const [tab,   setTab]   = useState('overview');
     const [stats, setStats] = useState(null);
+    const [pendingReviews, setPendingReviews] = useState(0);
 
     useEffect(() => {
         if (user?.role !== 'admin') { navigate('/dashboard'); return; }
         api.get('/admin/stats').then(({ data }) => setStats(data)).catch(() => {});
+        // Surfaced on the tab itself — a review queue nobody notices is a queue
+        // that silently blocks every tutor waiting on it.
+        api.get('/admin/premium/notes/pending')
+            .then(({ data }) => setPendingReviews(data.length))
+            .catch(() => {});
     }, [user]);
 
     if (user?.role !== 'admin') return null;
 
-    const TAB_ICONS = { overview: BarChart2, users: Users, tutors: GraduationCap, premium: Crown };
+    const TAB_ICONS = { overview: BarChart2, users: Users, tutors: GraduationCap, review: ShieldCheck, premium: Crown };
     const TAB_LABELS = Object.fromEntries(TABS.map(t => {
         const Icon = TAB_ICONS[t];
-        return [t, <span key={t} className="flex items-center gap-2"><Icon size={15} /> {t}</span>];
+        return [t, (
+            <span key={t} className="flex items-center gap-2">
+                <Icon size={15} /> {t}
+                {t === 'review' && pendingReviews > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none bg-warning text-white">
+                        {pendingReviews}
+                    </span>
+                )}
+            </span>
+        )];
     }));
 
     return (
@@ -553,6 +735,7 @@ export default function AdminDashboard() {
                         {tab === 'overview' && <Overview stats={stats} />}
                         {tab === 'users'    && <UsersTab />}
                         {tab === 'tutors'   && <TutorsTab />}
+                        {tab === 'review'   && <ReviewTab />}
                         {tab === 'premium'  && <PremiumTab />}
                     </motion.div>
                 </AnimatePresence>
