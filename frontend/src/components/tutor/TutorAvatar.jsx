@@ -3,14 +3,8 @@ import { Camera } from 'lucide-react';
 import { getAvatarColor } from '../../data/normalizeTutor';
 import api from '../../api/client';
 import { toast } from 'sonner';
+import { mediaUrl } from '../../lib/mediaUrl';
 
-const API_ORIGIN = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
-
-function fullSrc(path) {
-    if (!path) return null;
-    if (path.startsWith('http')) return path;
-    return `${API_ORIGIN}${path}`;
-}
 
 export default function TutorAvatar({ src, name, tutorId, size = 64, rounded = 'rounded-xl', isOwn = false, onUpload, className = '' }) {
     const [imgKey, setImgKey] = useState(0);
@@ -26,7 +20,7 @@ export default function TutorAvatar({ src, name, tutorId, size = 64, rounded = '
         .toUpperCase();
 
     const bg = getAvatarColor(tutorId);
-    const imgSrc = fullSrc(src);
+    const imgSrc = mediaUrl(src);
 
     const handleFile = async e => {
         const file = e.target.files?.[0];

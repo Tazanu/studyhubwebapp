@@ -10,9 +10,9 @@ import JoinRequestsPanel from '../components/JoinRequestsPanel';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Textarea from '../components/ui/Textarea';
+import { mediaUrl } from '../lib/mediaUrl';
 
 const POLL_MS = 4000;
-const API_ORIGIN = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '');
 
 function formatTime(ts) {
     return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -516,14 +516,14 @@ export default function GroupChat() {
                                                     <div className="mt-2">
                                                         {isImage ? (
                                                             <img
-                                                                src={`${API_ORIGIN}${msg.file_url}`}
+                                                                src={mediaUrl(msg.file_url)}
                                                                 alt="attachment"
                                                                 className="rounded-lg max-w-xs cursor-pointer hover:opacity-90 transition-opacity"
                                                                 onClick={() => setFullImageView(msg.file_url)}
                                                             />
                                                         ) : (
                                                             <a
-                                                                href={`${API_ORIGIN}${msg.file_url}`}
+                                                                href={mediaUrl(msg.file_url)}
                                                                 download
                                                                 className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:opacity-80 transition-opacity ${isOwn ? 'bg-white/15' : 'border border-border bg-bg'}`}
                                                             >
@@ -697,7 +697,7 @@ export default function GroupChat() {
                         <X size={24} />
                     </button>
                     <img
-                        src={`${API_ORIGIN}${fullImageView}`}
+                        src={mediaUrl(fullImageView)}
                         alt="Full size"
                         className="max-w-full max-h-full rounded-lg"
                         onClick={e => e.stopPropagation()}

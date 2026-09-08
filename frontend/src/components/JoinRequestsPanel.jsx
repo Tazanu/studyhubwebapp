@@ -4,8 +4,8 @@ import { Check, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import api, { apiError } from '../api/client';
 import Button from './ui/Button';
+import { mediaUrl } from '../lib/mediaUrl';
 
-const API_ORIGIN = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '');
 
 export default function JoinRequestsPanel({ groupId, isAdmin }) {
     const [requests, setRequests] = useState([]);
@@ -84,7 +84,7 @@ export default function JoinRequestsPanel({ groupId, isAdmin }) {
                         <div className="flex items-center gap-3">
                             {req.users.profile_picture ? (
                                 <img
-                                    src={`${API_ORIGIN}${req.users.profile_picture}`}
+                                    src={mediaUrl(req.users.profile_picture)}
                                     alt={req.users.first_name}
                                     className="w-10 h-10 rounded-full object-cover"
                                 />

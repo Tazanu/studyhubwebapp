@@ -13,8 +13,8 @@ import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { cn } from '../lib/cn';
+import { mediaUrl } from '../lib/mediaUrl';
 
-const API_ORIGIN = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '');
 
 export default function QuestionDetail() {
     const { id } = useParams();
@@ -195,14 +195,14 @@ export default function QuestionDetail() {
                                 {question.audio_url && (
                                     <div className="mb-4 p-3 rounded-lg flex items-center gap-3 bg-bg">
                                         <Volume2 size={20} className="text-primary" />
-                                        <audio src={`${API_ORIGIN}${question.audio_url}`} controls className="flex-1" />
+                                        <audio src={mediaUrl(question.audio_url)} controls className="flex-1" />
                                     </div>
                                 )}
 
                                 {question.images?.length > 0 && (
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
                                         {question.images.map((img, i) => (
-                                            <img key={i} src={`${API_ORIGIN}${img}`} alt={`Question image ${i + 1}`} className="rounded-lg w-full" />
+                                            <img key={i} src={mediaUrl(img)} alt={`Question image ${i + 1}`} className="rounded-lg w-full" />
                                         ))}
                                     </div>
                                 )}
@@ -269,7 +269,7 @@ export default function QuestionDetail() {
                                     {answer.audio_url && (
                                         <div className="mb-4 p-3 rounded-lg flex items-center gap-3 bg-bg">
                                             <Volume2 size={18} className="text-primary" />
-                                            <audio src={`${API_ORIGIN}${answer.audio_url}`} controls className="flex-1" />
+                                            <audio src={mediaUrl(answer.audio_url)} controls className="flex-1" />
                                         </div>
                                     )}
 
