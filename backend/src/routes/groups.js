@@ -4,7 +4,7 @@ const prisma = require('../prisma');
 const authenticate = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const { storedPathFor } = require('../middleware/upload');
-const { emitNewMessage, emitMessageEdit } = require('../socket');
+const { emitNewMessage, emitMessageEdit, emitMessageDelete, emitMessageReaction } = require('../socket');
 
 const router = express.Router();
 
@@ -296,6 +296,25 @@ router.delete('/:id/leave', authenticate, async (req, res) => {
 });
 
 // ===================== GET MESSAGES (with optional search) =====================
+/**
+ * Strip the content of a soft-deleted message before it leaves the server.
+ *
+ * The row survives so replies pointing at it still resolve and the thread keeps
+ * its shape, but the text and any attachment must not reach the client — a
+ * "deleted" message that still ships its body is not deleted at all.
+ */
+function redactIfDeleted(msg) {
+    if (!msg?.deleted_at) return msg;
+    return {
+        ...msg,
+        message: '',
+        file_url: null,
+        file_type: null,
+        reactions: [],
+        is_deleted: true,
+    };
+}
+
 router.get('/:id/messages', authenticate, async (req, res) => {
     try {
         const groupId = parseInt(req.params.id);
@@ -311,17 +330,22 @@ router.get('/:id/messages', authenticate, async (req, res) => {
             where.message = { contains: search, mode: 'insensitive' };
         }
 
+        // Newest 100, then reversed: `take` from the start would pin the view to
+        // the oldest messages and never show recent ones once a group passes 100.
         const messages = await prisma.group_messages.findMany({
             where,
             include: {
                 users: { select: { id: true, first_name: true, last_name: true } },
-                group_messages: { include: { users: { select: { first_name: true, last_name: true } } } }
+                group_messages: { include: { users: { select: { first_name: true, last_name: true } } } },
+                reactions: { select: { emoji: true, user_id: true } }
             },
-            orderBy: { created_at: 'asc' },
+            orderBy: { created_at: 'desc' },
             take: 100
         });
 
-        res.json(messages);
+        // A deleted message keeps its slot in the thread — replies still point at
+        // it — but its content must not travel to the client.
+        res.json(messages.reverse().map(redactIfDeleted));
     } catch (error) {
         console.error('Get messages error:', error);
         res.status(500).json({ error: 'Failed to fetch messages' });
@@ -362,7 +386,8 @@ router.post('/:id/messages', authenticate, upload.single('file'), async (req, re
             data,
             include: {
                 users: { select: { id: true, first_name: true, last_name: true } },
-                group_messages: { include: { users: { select: { first_name: true, last_name: true } } } }
+                group_messages: { include: { users: { select: { first_name: true, last_name: true } } } },
+                reactions: { select: { emoji: true, user_id: true } }
             }
         });
 
@@ -394,6 +419,9 @@ router.patch('/:id/messages/:messageId', authenticate, async (req, res) => {
 
         if (!existing) return res.status(404).json({ error: 'Message not found' });
         if (existing.user_id !== req.userId) return res.status(403).json({ error: 'Not authorized' });
+        // Editing a deleted message would resurrect it: the row still exists, so
+        // an update would repopulate the text the author just removed.
+        if (existing.deleted_at) return res.status(400).json({ error: 'Cannot edit a deleted message' });
 
         // 15-minute edit window
         const ageMinutes = (Date.now() - new Date(existing.created_at).getTime()) / 1000 / 60;
@@ -406,7 +434,8 @@ router.patch('/:id/messages/:messageId', authenticate, async (req, res) => {
             data: { message: message.trim(), is_edited: true },
             include: {
                 users: { select: { id: true, first_name: true, last_name: true } },
-                group_messages: { include: { users: { select: { first_name: true, last_name: true } } } }
+                group_messages: { include: { users: { select: { first_name: true, last_name: true } } } },
+                reactions: { select: { emoji: true, user_id: true } }
             }
         });
 
@@ -420,6 +449,106 @@ router.patch('/:id/messages/:messageId', authenticate, async (req, res) => {
     } catch (error) {
         console.error('Edit message error:', error);
         res.status(500).json({ error: 'Failed to edit message' });
+    }
+});
+
+// ===================== DELETE MESSAGE =====================
+// Soft delete, so replies pointing at this message still resolve. Deletable by
+// the author, or by a group owner/admin acting as a moderator — matching the
+// way a group admin can remove anyone's message in WhatsApp.
+router.delete('/:id/messages/:messageId', authenticate, async (req, res) => {
+    try {
+        const groupId = parseInt(req.params.id);
+        const messageId = parseInt(req.params.messageId);
+
+        const existing = await prisma.group_messages.findUnique({ where: { id: messageId } });
+        if (!existing || existing.group_id !== groupId) {
+            return res.status(404).json({ error: 'Message not found' });
+        }
+        if (existing.deleted_at) {
+            return res.json({ success: true, alreadyDeleted: true });
+        }
+
+        if (existing.user_id !== req.userId) {
+            const membership = await prisma.user_groups.findUnique({
+                where: { user_id_group_id: { user_id: req.userId, group_id: groupId } }
+            });
+            const isModerator = membership?.role === 'owner' || membership?.role === 'admin';
+            if (!isModerator) return res.status(403).json({ error: 'Not authorized to delete this message' });
+        }
+
+        const updated = await prisma.group_messages.update({
+            where: { id: messageId },
+            data: { deleted_at: new Date() },
+            include: {
+                users: { select: { id: true, first_name: true, last_name: true } },
+                group_messages: { include: { users: { select: { first_name: true, last_name: true } } } },
+                reactions: { select: { emoji: true, user_id: true } }
+            }
+        });
+
+        // Reactions on a deleted message are meaningless, and leaving them would
+        // keep a visible trace of a message nobody can read.
+        await prisma.group_message_reactions.deleteMany({ where: { message_id: messageId } });
+
+        const payload = redactIfDeleted(updated);
+        const io = req.app.get('io');
+        if (io) emitMessageDelete(io, groupId, payload);
+
+        res.json({ success: true, message: payload });
+    } catch (error) {
+        console.error('Delete message error:', error);
+        res.status(500).json({ error: 'Failed to delete message' });
+    }
+});
+
+// ===================== TOGGLE REACTION =====================
+// Reacting with an emoji you already used removes it, which is how every chat
+// app behaves and avoids needing a separate un-react call.
+router.post('/:id/messages/:messageId/reactions', authenticate, async (req, res) => {
+    try {
+        const groupId = parseInt(req.params.id);
+        const messageId = parseInt(req.params.messageId);
+        const emoji = String(req.body?.emoji || '').trim();
+
+        if (!emoji) return res.status(400).json({ error: 'An emoji is required' });
+        // Guard the VarChar(16) column: an emoji is a handful of code points at
+        // most, and anything longer is not a reaction.
+        if ([...emoji].length > 4) return res.status(400).json({ error: 'Not a valid reaction' });
+
+        const membership = await prisma.user_groups.findUnique({
+            where: { user_id_group_id: { user_id: req.userId, group_id: groupId } }
+        });
+        if (!membership) return res.status(403).json({ error: 'You are not a member of this group' });
+
+        const message = await prisma.group_messages.findUnique({ where: { id: messageId } });
+        if (!message || message.group_id !== groupId) return res.status(404).json({ error: 'Message not found' });
+        if (message.deleted_at) return res.status(400).json({ error: 'Cannot react to a deleted message' });
+
+        const existing = await prisma.group_message_reactions.findUnique({
+            where: { message_id_user_id_emoji: { message_id: messageId, user_id: req.userId, emoji } }
+        });
+
+        if (existing) {
+            await prisma.group_message_reactions.delete({ where: { id: existing.id } });
+        } else {
+            await prisma.group_message_reactions.create({
+                data: { message_id: messageId, user_id: req.userId, emoji }
+            });
+        }
+
+        const reactions = await prisma.group_message_reactions.findMany({
+            where: { message_id: messageId },
+            select: { emoji: true, user_id: true }
+        });
+
+        const io = req.app.get('io');
+        if (io) emitMessageReaction(io, groupId, { messageId, reactions });
+
+        res.json({ success: true, messageId, reactions, removed: !!existing });
+    } catch (error) {
+        console.error('Toggle reaction error:', error);
+        res.status(500).json({ error: 'Failed to update reaction' });
     }
 });
 

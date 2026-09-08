@@ -213,8 +213,26 @@ function emitMessageEdit(io, groupId, message) {
     io.to(`group:${groupId}`).emit('message:edit', message);
 }
 
+/**
+ * Emit a soft delete. The payload is the redacted message, not just an id, so
+ * clients can replace it in place and keep the thread's shape.
+ */
+function emitMessageDelete(io, groupId, message) {
+    io.to(`group:${groupId}`).emit('message:delete', message);
+}
+
+/**
+ * Emit the full reaction set for one message. Sending the whole set rather than
+ * a delta means a client that missed an event still converges on the truth.
+ */
+function emitMessageReaction(io, groupId, payload) {
+    io.to(`group:${groupId}`).emit('message:reaction', payload);
+}
+
 module.exports = {
     initializeSocket,
     emitNewMessage,
-    emitMessageEdit
+    emitMessageEdit,
+    emitMessageDelete,
+    emitMessageReaction
 };

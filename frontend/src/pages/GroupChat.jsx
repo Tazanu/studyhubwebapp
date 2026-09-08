@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, ArrowLeft, RefreshCw, Loader2, WifiOff, Paperclip, X, Image as ImageIcon, FileText, File, Reply, Edit2, Check, Search, Settings, Trash2, MessageCircle } from 'lucide-react';
+import { Send, ArrowLeft, RefreshCw, Loader2, WifiOff, Paperclip, X, Image as ImageIcon, FileText, File, Reply, Edit2, Check, Search, Settings, Trash2, MessageCircle, SmilePlus, Ban } from 'lucide-react';
 import { toast } from 'sonner';
 import api, { apiError } from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -11,11 +11,47 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Textarea from '../components/ui/Textarea';
 import { mediaUrl } from '../lib/mediaUrl';
+import useGroupSocket from '../hooks/useGroupSocket';
 
+// Socket delivery is the primary path. Polling stays as a fallback for when the
+// connection is down, but at a much slower cadence than the old 4s — it exists
+// to heal missed events, not to drive the chat.
 const POLL_MS = 4000;
+const POLL_MS_SOCKET_CONNECTED = 30000;
+
+// Reactions offered in the picker. A short, fixed set keeps the UI simple and
+// avoids shipping a full emoji keyboard.
+const QUICK_REACTIONS = ['👍', '❤️', '😂', '🎉', '🙏', '😮'];
 
 function formatTime(ts) {
     return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+/** "Today" / "Yesterday" / "12 March 2026" — the WhatsApp-style day divider. */
+function formatDayLabel(ts) {
+    const d = new Date(ts);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+    const sameDay = (a, b) => a.toDateString() === b.toDateString();
+    if (sameDay(d, today)) return 'Today';
+    if (sameDay(d, yesterday)) return 'Yesterday';
+    return d.toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+const dayKey = ts => new Date(ts).toDateString();
+
+/** Collapse a flat reaction list into [{ emoji, count, mine }] for rendering. */
+function groupReactions(reactions, userId) {
+    if (!reactions?.length) return [];
+    const byEmoji = new Map();
+    for (const r of reactions) {
+        const entry = byEmoji.get(r.emoji) || { emoji: r.emoji, count: 0, mine: false };
+        entry.count += 1;
+        if (r.user_id === userId) entry.mine = true;
+        byEmoji.set(r.emoji, entry);
+    }
+    return [...byEmoji.values()];
 }
 
 export default function GroupChat() {
@@ -54,6 +90,7 @@ export default function GroupChat() {
     const userScrolled   = useRef(false);  // true when user has scrolled up
     const justSent       = useRef(false);  // true right after user sends a message
     const [showJumpBtn, setShowJumpBtn] = useState(false);
+    const [reactionPickerFor, setReactionPickerFor] = useState(null);
 
     /* ── load group info once on mount ───────────────────────── */
     useEffect(() => {
@@ -98,21 +135,52 @@ export default function GroupChat() {
 
     useEffect(() => { loadMessages(); }, [loadMessages]);
 
-    /* ── poll every 4s, paused while input is focused ────────── */
+    /* ── realtime: the server already emitted these events, nothing listened ── */
+    const upsertMessage = useCallback(incoming => {
+        setMessages(prev => {
+            const i = prev.findIndex(m => m.id === incoming.id);
+            if (i !== -1) {
+                const next = [...prev];
+                next[i] = { ...next[i], ...incoming };
+                return next;
+            }
+            // Our own send already inserted an optimistic row and replaced it
+            // with the server's copy, so echoing it back would duplicate it.
+            if (prev.some(m => m._pending && m.user_id === incoming.user_id && m.message === incoming.message)) {
+                return prev;
+            }
+            return [...prev, incoming];
+        });
+    }, []);
+
+    const { connected: socketConnected, emitTyping } = useGroupSocket(id, {
+        onNewMessage: upsertMessage,
+        onEditMessage: upsertMessage,
+        onDeleteMessage: upsertMessage,
+        onReaction: ({ messageId, reactions }) =>
+            setMessages(prev => prev.map(m => (m.id === messageId ? { ...m, reactions } : m))),
+        onTyping: ({ users: names }) => setTypingUsers(names || []),
+    });
+
+    /* ── polling: primary when the socket is down, safety net when it is up ── */
     useEffect(() => {
+        const interval = socketConnected ? POLL_MS_SOCKET_CONNECTED : POLL_MS;
         const timer = setInterval(() => {
             if (!inputFocused.current) {
                 loadMessages(true);
                 // Update read status periodically
                 api.post(`/groups/${id}/read`).catch(() => {});
             }
-            // Poll typing status every interval
-            api.get(`/groups/${id}/typing`)
-                .then(({ data }) => setTypingUsers(data.typing || []))
-                .catch(() => {});
-        }, POLL_MS);
+            // The socket pushes typing updates; only fall back to polling for it
+            // when there is no connection to push over.
+            if (!socketConnected) {
+                api.get(`/groups/${id}/typing`)
+                    .then(({ data }) => setTypingUsers(data.typing || []))
+                    .catch(() => {});
+            }
+        }, interval);
         return () => clearInterval(timer);
-    }, [loadMessages, id]);
+    }, [loadMessages, id, socketConnected]);
 
     /* ── track whether user has scrolled up ──────────────────── */
     const handleScroll = useCallback(() => {
@@ -222,6 +290,47 @@ export default function GroupChat() {
         }
     };
 
+    /* ── delete message ──────────────────────────────────────── */
+    // Soft delete on the server, so replies pointing here still resolve and the
+    // bubble becomes "This message was deleted" rather than vanishing.
+    const handleDelete = async (msg) => {
+        const previous = messages;
+        setMessages(prev => prev.map(m =>
+            m.id === msg.id ? { ...m, is_deleted: true, message: '', file_url: null, reactions: [] } : m));
+        try {
+            await api.delete(`/groups/${id}/messages/${msg.id}`);
+        } catch (err) {
+            setMessages(previous);   // put it back; the delete did not happen
+            toast.error(apiError(err, 'Failed to delete message'));
+        }
+    };
+
+    /* ── reactions ───────────────────────────────────────────── */
+    const handleReact = async (msg, emoji) => {
+        setReactionPickerFor(null);
+        const previous = messages;
+        // Optimistic toggle so the tap feels instant; the server's full set
+        // replaces this either way.
+        setMessages(prev => prev.map(m => {
+            if (m.id !== msg.id) return m;
+            const list = m.reactions || [];
+            const mine = list.some(r => r.emoji === emoji && r.user_id === user?.id);
+            return {
+                ...m,
+                reactions: mine
+                    ? list.filter(r => !(r.emoji === emoji && r.user_id === user?.id))
+                    : [...list, { emoji, user_id: user?.id }],
+            };
+        }));
+        try {
+            const { data } = await api.post(`/groups/${id}/messages/${msg.id}/reactions`, { emoji });
+            setMessages(prev => prev.map(m => (m.id === msg.id ? { ...m, reactions: data.reactions } : m)));
+        } catch (err) {
+            setMessages(previous);
+            toast.error(apiError(err, 'Failed to react'));
+        }
+    };
+
     const startEdit = (msg) => {
         setEditingMsg(msg);
         setEditText(msg.message);
@@ -255,13 +364,14 @@ export default function GroupChat() {
     const handleInputChange = (e) => {
         setInput(e.target.value);
 
-        // Send typing signal
-        api.post(`/groups/${id}/typing`).catch(() => {});
+        // Prefer the socket: the HTTP endpoint fired a request per keystroke and
+        // the recipient only saw it on their next poll, up to 4s later.
+        if (socketConnected) emitTyping(true);
+        else api.post(`/groups/${id}/typing`).catch(() => {});
 
-        // Clear typing after 3s of inactivity
         clearTimeout(typingTimerRef.current);
         typingTimerRef.current = setTimeout(() => {
-            // Typing stopped (no explicit endpoint needed, will expire after 5s)
+            if (socketConnected) emitTyping(false);
         }, 3000);
     };
 
@@ -449,10 +559,34 @@ export default function GroupChat() {
                     </div>
                 ) : (
                     <AnimatePresence initial={false}>
-                        {messages.map(msg => {
+                        {messages.map((msg, idx) => {
                             const isOwn = msg.user_id === user?.id;
                             const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(msg.file_type?.toLowerCase());
                             const FileIcon = getFileIcon(msg.file_type);
+                            const reactions = groupReactions(msg.reactions, user?.id);
+                            const canDelete = isOwn || isAdmin;
+                            // A divider whenever the calendar day changes, and
+                            // before the very first message.
+                            const showDayDivider = idx === 0
+                                || dayKey(msg.created_at) !== dayKey(messages[idx - 1].created_at);
+
+                            if (msg.is_deleted) {
+                                return (
+                                    <div key={msg.id} ref={el => messageRefs.current[msg.id] = el}
+                                        className="flex flex-col max-w-[85%] md:max-w-[75%]"
+                                        style={{ alignSelf: isOwn ? 'flex-end' : 'flex-start' }}>
+                                        {showDayDivider && (
+                                            <div className="self-center my-3 px-3 py-1 rounded-full text-xs font-medium bg-surface-hover text-fg-secondary">
+                                                {formatDayLabel(msg.created_at)}
+                                            </div>
+                                        )}
+                                        <div className="px-4 py-2.5 rounded-2xl text-sm italic border border-dashed border-border text-fg-muted flex items-center gap-2">
+                                            <Ban size={13} /> This message was deleted
+                                        </div>
+                                        <span className="text-xs mt-1 px-1 text-fg-muted">{formatTime(msg.created_at)}</span>
+                                    </div>
+                                );
+                            }
 
                             return (
                                 <motion.div
@@ -464,6 +598,12 @@ export default function GroupChat() {
                                     className="flex flex-col max-w-[85%] md:max-w-[75%] message-bubble"
                                     style={{ alignSelf: isOwn ? 'flex-end' : 'flex-start' }}
                                 >
+                                    {showDayDivider && (
+                                        <div className="self-center my-3 px-3 py-1 rounded-full text-xs font-medium bg-surface-hover text-fg-secondary">
+                                            {formatDayLabel(msg.created_at)}
+                                        </div>
+                                    )}
+
                                     {!isOwn && (
                                         <span className="text-xs font-semibold mb-1 ml-1 text-primary">
                                             {msg.users?.first_name} {msg.users?.last_name}
@@ -537,24 +677,69 @@ export default function GroupChat() {
                                         )}
                                     </div>
 
+                                    {/* reaction chips */}
+                                    {reactions.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 mt-1" style={{ alignSelf: isOwn ? 'flex-end' : 'flex-start' }}>
+                                            {reactions.map(r => (
+                                                <button
+                                                    key={r.emoji}
+                                                    onClick={() => handleReact(msg, r.emoji)}
+                                                    title={r.mine ? 'Remove your reaction' : 'React'}
+                                                    className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border transition-colors ${
+                                                        r.mine
+                                                            ? 'border-primary bg-primary-subtle text-primary'
+                                                            : 'border-border bg-surface text-fg-secondary hover:border-primary'
+                                                    }`}
+                                                >
+                                                    <span>{r.emoji}</span>
+                                                    <span className="font-semibold">{r.count}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* reaction picker */}
+                                    {reactionPickerFor === msg.id && (
+                                        <div
+                                            className="flex gap-1 mt-1 p-1.5 rounded-full border border-border bg-surface-raised shadow-lg"
+                                            style={{ alignSelf: isOwn ? 'flex-end' : 'flex-start' }}
+                                        >
+                                            {QUICK_REACTIONS.map(e => (
+                                                <button
+                                                    key={e}
+                                                    onClick={() => handleReact(msg, e)}
+                                                    className="w-7 h-7 rounded-full text-base leading-none hover:bg-surface-hover hover:scale-110 transition-all"
+                                                    aria-label={`React with ${e}`}
+                                                >
+                                                    {e}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+
                                     <div className="flex items-center gap-2 mt-1 px-1">
                                         <span className="text-xs text-fg-secondary">
                                             {formatTime(msg.created_at)}
                                             {msg._pending && ' · sending…'}
                                             {msg.is_edited && ' · (edited)'}
                                         </span>
-                                        {isOwn && !msg._pending && (
+                                        {!msg._pending && !editingMsg && (
                                             <div className="flex gap-1">
-                                                {!editingMsg && (
-                                                    <button
-                                                        onClick={() => setReplyTo(msg)}
-                                                        className="p-1 rounded text-fg-secondary hover:bg-primary-solid hover:text-white transition-colors"
-                                                        title="Reply to this message"
-                                                    >
-                                                        <Reply size={12} />
-                                                    </button>
-                                                )}
-                                                {canEdit(msg) && !editingMsg && (
+                                                <button
+                                                    onClick={() => setReplyTo(msg)}
+                                                    className="p-1 rounded text-fg-secondary hover:bg-primary-solid hover:text-white transition-colors"
+                                                    title="Reply to this message"
+                                                >
+                                                    <Reply size={12} />
+                                                </button>
+                                                <button
+                                                    onClick={() => setReactionPickerFor(v => (v === msg.id ? null : msg.id))}
+                                                    className="p-1 rounded text-fg-secondary hover:bg-primary-solid hover:text-white transition-colors"
+                                                    title="React to this message"
+                                                >
+                                                    <SmilePlus size={12} />
+                                                </button>
+                                                {canEdit(msg) && (
                                                     <button
                                                         onClick={() => startEdit(msg)}
                                                         className="p-1 rounded text-fg-secondary hover:bg-primary-solid hover:text-white transition-colors"
@@ -563,16 +748,18 @@ export default function GroupChat() {
                                                         <Edit2 size={12} />
                                                     </button>
                                                 )}
+                                                {/* Authors delete their own; group owners/admins can
+                                                    remove anyone's, as a moderator would. */}
+                                                {canDelete && (
+                                                    <button
+                                                        onClick={() => handleDelete(msg)}
+                                                        className="p-1 rounded text-fg-secondary hover:bg-danger hover:text-white transition-colors"
+                                                        title={isOwn ? 'Delete this message' : 'Delete as group admin'}
+                                                    >
+                                                        <Trash2 size={12} />
+                                                    </button>
+                                                )}
                                             </div>
-                                        )}
-                                        {!isOwn && !msg._pending && !editingMsg && (
-                                            <button
-                                                onClick={() => setReplyTo(msg)}
-                                                className="p-1 rounded text-fg-secondary hover:bg-primary-solid hover:text-white transition-colors"
-                                                title="Reply to this message"
-                                            >
-                                                <Reply size={12} />
-                                            </button>
                                         )}
                                     </div>
                                 </motion.div>
