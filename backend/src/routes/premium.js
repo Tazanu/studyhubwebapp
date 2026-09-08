@@ -7,6 +7,7 @@ const { storedPathFor } = require('../middleware/upload');
 const { validatePayer, initiateCollect, checkStatus } = require('../services/mobileMoney');
 const { protectFile, streamFile, readStoredFile, deleteStoredFile } = require('../services/fileAccess');
 const { assessNoteQuality } = require('../services/contentQuality');
+const { assessUploaderTrust } = require('../services/uploaderTrust');
 const parseTags = require('../lib/parseTags');
 const {
     OrderError,
@@ -252,6 +253,19 @@ router.get('/notes', authenticate, async (req, res) => {
     }
 });
 
+// ── GET /premium/notes/publishing-status ─────────────────────────────────────
+// Lets a contributor see whether their next upload publishes immediately, and
+// what is still needed if not — otherwise the review wait looks arbitrary.
+router.get('/notes/publishing-status', authenticate, async (req, res) => {
+    try {
+        const trust = await assessUploaderTrust(req.userId);
+        res.json(trust);
+    } catch (err) {
+        console.error('Publishing status error:', err);
+        res.status(500).json({ error: 'Failed to check publishing status' });
+    }
+});
+
 // ── POST /premium/notes ───────────────────────────────────────────────────────
 router.post('/notes', authenticate, upload.single('file'), async (req, res) => {
     try {
@@ -310,6 +324,11 @@ router.post('/notes', authenticate, upload.single('file'), async (req, res) => {
             console.error('Failed to protect premium upload:', e.message);
         }
 
+        // Contributors with a clean review record publish straight away. The
+        // automated checks above still run on every upload — trust exempts an
+        // uploader from the human queue, not from the quality gate.
+        const trust = await assessUploaderTrust(req.userId);
+
         const note = await prisma.premium_notes.create({
             data: {
                 title,
@@ -320,17 +339,23 @@ router.post('/notes', authenticate, upload.single('file'), async (req, res) => {
                 price: parseFloat(price) || 0,
                 tags: parseTags(tags),
                 uploaded_by: req.userId,
-                // Passing the automated checks is not approval. Nothing becomes
-                // purchasable until a human has read it.
-                review_status: 'pending',
-                quality_report: assessment,
+                review_status: trust.trusted ? 'approved' : 'pending',
+                // Recorded either way so an admin can audit what published
+                // without review, and on what basis.
+                review_note: trust.trusted ? `Published without review — ${trust.reason}` : null,
+                reviewed_at: trust.trusted ? new Date() : null,
+                quality_report: { ...assessment, trust },
             },
         });
 
         res.status(201).json({
             success: true,
             note: { ...note, file_path: undefined },
-            message: 'Submitted for review. It becomes available to buyers once approved.',
+            message: trust.trusted
+                ? 'Published and available to buyers now.'
+                : 'Submitted for review. It becomes available to buyers once approved.',
+            trusted: trust.trusted,
+            trustReason: trust.reason,
             warnings: assessment.warnings,
         });
     } catch (err) {

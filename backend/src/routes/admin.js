@@ -174,6 +174,34 @@ router.get('/premium/notes', async (req, res) => {
     }
 });
 
+// ── Publishing trust override ────────────────────────────────────────────────
+// By default a tutor earns or loses the review exemption from their own record
+// (services/uploaderTrust.js). This overrides that in either direction: grant
+// it to someone known-good before they have the history, or withhold it from
+// someone whose record looks clean but whose work needs watching.
+// `null` hands them back to the automatic rule.
+router.patch('/tutors/:id/trust', async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        const { exempt } = req.body;
+
+        if (![true, false, null].includes(exempt)) {
+            return res.status(400).json({ error: 'exempt must be true, false or null' });
+        }
+
+        const tutor = await prisma.tutors.findUnique({ where: { id }, select: { user_id: true } });
+        if (!tutor) return res.status(404).json({ error: 'Tutor not found' });
+
+        await prisma.tutors.update({ where: { id }, data: { review_exempt: exempt } });
+        const trust = await assessUploaderTrust(tutor.user_id);
+
+        res.json({ success: true, review_exempt: exempt, trust });
+    } catch (err) {
+        console.error('Set publishing trust error:', err);
+        res.status(500).json({ error: 'Failed to update publishing trust' });
+    }
+});
+
 // ── Review queue ─────────────────────────────────────────────────────────────
 // Everything awaiting a decision, oldest first so nothing sits forgotten.
 // Carries the automated report so the reviewer knows what the checks already
