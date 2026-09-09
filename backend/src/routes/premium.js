@@ -77,7 +77,15 @@ router.post('/pay/initiate', authenticate, async (req, res) => {
                 type: order.type,
                 status: 'pending',
                 description: order.description,
-                metadata: order.metadata,
+                // Record which operator was chosen and a masked payer. Without
+                // these a failed payment is unanswerable after the fact: the row
+                // says only that it failed, with no way to tell whether the
+                // operator, the number or the amount was the problem.
+                metadata: {
+                    ...order.metadata,
+                    service: check.service,
+                    payerMasked: `${check.payer.slice(0, 3)}***${check.payer.slice(-2)}`,
+                },
             },
         });
 
@@ -91,9 +99,38 @@ router.post('/pay/initiate', authenticate, async (req, res) => {
                 externalId: tx.id,
             });
         } catch (mesombErr) {
+            const detail = mesombErr?.response?.data
+                ? JSON.stringify(mesombErr.response.data).slice(0, 300)
+                : (mesombErr?.message || String(mesombErr)).slice(0, 300);
+
+            // Keep the provider's own words on the row, not just in a log line
+            // that scrolls away on a free-tier host.
+            await prisma.transactions.update({
+                where: { id: tx.id },
+                data: {
+                    metadata: {
+                        ...(tx.metadata || {}),
+                        providerError: detail,
+                        providerErrorType: mesombErr?.name || 'unknown',
+                    },
+                },
+            }).catch(() => {});
             await failOrder(tx.id);
-            console.error('MeSomb initiate error:', mesombErr.message);
-            return res.status(502).json({ error: 'Could not reach the payment provider. Please try again.' });
+
+            console.error(
+                `MeSomb initiate failed — tx ${tx.id}, ${check.service}, ${order.amount} XAF:`,
+                mesombErr?.name, detail
+            );
+
+            // "Could not reach the provider" is wrong and misleading when the
+            // provider answered and refused. Say which is which.
+            const reachable = !!mesombErr?.response || /InvalidClientRequest|ServiceNotFound|rejected/i.test(String(mesombErr?.name) + detail);
+            return res.status(502).json({
+                error: reachable
+                    ? `${check.service === 'ORANGE' ? 'Orange Money' : 'MTN MoMo'} declined this request. If the problem repeats, try the other operator or contact support.`
+                    : 'Could not reach the payment provider. Please try again in a moment.',
+                txId: tx.id,
+            });
         }
 
         await prisma.transactions.update({ where: { id: tx.id }, data: { reference } });
