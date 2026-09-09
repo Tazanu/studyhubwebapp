@@ -201,6 +201,9 @@ app.use((err, req, res, next) => {
 
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    // Surface bad payment credentials at boot rather than at the moment a
+    // student tries to pay. Read-only; moves no money.
+    require('./services/paymentHealth').checkPaymentCredentials().catch(() => {});
     // Settles payments the browser stopped watching (tab closed, signal lost,
     // PIN entered late) so a successful charge always grants access.
     require('./services/reconciler').start();
