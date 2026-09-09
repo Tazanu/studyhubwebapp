@@ -227,7 +227,13 @@ export default function Profile() {
                                             userId={profile.id}
                                             size={96}
                                             isOwn={isOwn}
-                                            onUpload={u => setProfile(prev => ({ ...prev, ...u }))}
+                                            onUpload={u => {
+                                                setProfile(prev => ({ ...prev, ...u }));
+                                                // Also refresh the shared auth user, or the sidebar
+                                                // keeps showing initials until a full page reload —
+                                                // which reads as the upload having failed.
+                                                if (isOwn) refreshUser();
+                                            }}
                                         />
                                     </div>
 
