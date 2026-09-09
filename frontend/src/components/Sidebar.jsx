@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import StudyHubLogo from './StudyHubLogo';
+import UserAvatar from './ui/UserAvatar';
 
 const BASE_NAV = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -111,12 +112,16 @@ function SidebarContent({ onClose }) {
                     transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                 >
                     <motion.div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
-                        style={{ background: 'var(--gradient-primary)' }}
                         whileHover={{ scale: 1.15 }}
                         transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                        className="shrink-0"
                     >
-                        {user?.first_name?.[0]}{user?.last_name?.[0]}
+                        <UserAvatar
+                            src={user?.profile_picture}
+                            firstName={user?.first_name}
+                            lastName={user?.last_name}
+                            size={32}
+                        />
                     </motion.div>
                     <div className="min-w-0">
                         <p className="text-sm font-semibold truncate">{user?.first_name} {user?.last_name}</p>

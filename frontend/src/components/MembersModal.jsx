@@ -3,6 +3,7 @@ import { Loader2, UserCheck, Crown } from 'lucide-react';
 import api from '../api/client';
 import { toast } from 'sonner';
 import Modal from './ui/Modal';
+import UserAvatar from './ui/UserAvatar';
 
 export default function MembersModal({ open, groupId, onClose }) {
     const [members, setMembers] = useState([]);
@@ -43,12 +44,12 @@ export default function MembersModal({ open, groupId, onClose }) {
                             key={member.user_id}
                             className="flex items-center gap-3 p-3 rounded-xl transition-colors hover:bg-surface-hover"
                         >
-                            <div
-                                className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
-                                style={{ background: 'var(--gradient-primary)' }}
-                            >
-                                {member.users?.first_name?.[0]}{member.users?.last_name?.[0]}
-                            </div>
+                            <UserAvatar
+                                src={member.users?.profile_picture}
+                                firstName={member.users?.first_name}
+                                lastName={member.users?.last_name}
+                                size={40}
+                            />
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm font-semibold truncate text-fg">
                                     {member.users?.first_name} {member.users?.last_name}
