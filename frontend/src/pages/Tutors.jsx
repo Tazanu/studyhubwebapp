@@ -2,7 +2,9 @@ import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Users, Search, BookOpen, Award, TrendingUp, X, SearchX } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { normalizeTutorList } from '../data/normalizeTutor';
+import { formatNumber } from '../lib/formatDate';
 import Sidebar from '../components/Sidebar';
 import TutorAvatar from '../components/tutor/TutorAvatar';
 import api from '../api/client';
@@ -19,6 +21,7 @@ const cardVariants = {
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
 
 export default function Tutors() {
+    const { t } = useTranslation();
     // Starts empty. This used to seed a fabricated tutor with invented
     // ratings and session counts, shown whenever the API was slow, down or
     // returned nothing — presenting made-up people to real students.
@@ -41,24 +44,24 @@ export default function Tutors() {
             .catch(() => setLoadFailed(true));
     }, []);
 
-    const SUBJECTS = [...new Set(allTutors.flatMap(t =>
-        Array.isArray(t.subjects) ? t.subjects.map(s => s.name || s) : []
+    const SUBJECTS = [...new Set(allTutors.flatMap(x =>
+        Array.isArray(x.subjects) ? x.subjects.map(s => s.name || s) : []
     ))].sort();
 
     const filtered = useMemo(() => {
         let list = [...allTutors];
         if (search) {
             const q = search.toLowerCase();
-            list = list.filter(t =>
-                t.name.toLowerCase().includes(q) ||
-                t.title?.toLowerCase().includes(q) ||
-                (Array.isArray(t.subjects) ? t.subjects.some(s => (s.name || s).toLowerCase().includes(q)) : false)
+            list = list.filter(x =>
+                x.name.toLowerCase().includes(q) ||
+                x.title?.toLowerCase().includes(q) ||
+                (Array.isArray(x.subjects) ? x.subjects.some(s => (s.name || s).toLowerCase().includes(q)) : false)
             );
         }
         if (subject) {
-            list = list.filter(t =>
-                Array.isArray(t.subjects)
-                    ? t.subjects.some(s => (s.name || s) === subject)
+            list = list.filter(x =>
+                Array.isArray(x.subjects)
+                    ? x.subjects.some(s => (s.name || s) === subject)
                     : false
             );
         }
@@ -72,8 +75,8 @@ export default function Tutors() {
         return list;
     }, [search, subject, sortBy, allTutors]);
 
-    const totalStudents = allTutors.reduce((s, t) => s + (t.stats?.totalStudents || 0), 0);
-    const avgRating = (allTutors.reduce((s, t) => s + t.rating, 0) / allTutors.length).toFixed(1);
+    const totalStudents = allTutors.reduce((s, x) => s + (x.stats?.totalStudents || 0), 0);
+    const avgRating = (allTutors.reduce((s, x) => s + x.rating, 0) / allTutors.length).toFixed(1);
 
     return (
         <div className="lg:pl-60 min-h-screen bg-bg text-fg">
@@ -89,22 +92,22 @@ export default function Tutors() {
 
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                     <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-4 hero-badge">
-                        <BookOpen size={13} /> Expert Tutors Available Now
+                        <BookOpen size={13} /> {t('tutors.badge')}
                     </span>
                     <h1 className="text-3xl md:text-5xl font-bold mb-3 gradient-text" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
-                        Find Your Perfect Tutor
+                        {t('tutors.title')}
                     </h1>
                     <p className="max-w-xl mx-auto mb-10 text-sm md:text-base text-fg-secondary">
-                        Connect with verified experts, book sessions instantly, and achieve your academic goals.
+                        {t('tutors.subtitle')}
                     </p>
 
                     {/* Stats row */}
                     <div className="flex justify-center gap-10 md:gap-16 flex-wrap">
                         {[
-                            { icon: Users, value: allTutors.length, label: 'Expert Tutors' },
-                            { icon: TrendingUp, value: totalStudents + '+', label: 'Students Helped' },
-                            { icon: Award, value: avgRating, label: 'Avg. Rating' },
-                            { icon: Award, value: '100%', label: 'Verified' },
+                            { icon: Users, value: allTutors.length, label: t('tutors.statTutors') },
+                            { icon: TrendingUp, value: totalStudents + '+', label: t('tutors.statStudents') },
+                            { icon: Award, value: avgRating, label: t('tutors.statRating') },
+                            { icon: Award, value: '100%', label: t('tutors.statVerified') },
                         ].map(({ icon: Icon, value, label }) => (
                             <div key={label} className="text-center">
                                 <div className="flex items-center justify-center gap-1.5 text-2xl md:text-3xl font-bold tabular-nums text-primary" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
@@ -125,30 +128,31 @@ export default function Tutors() {
                         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
                         <Input
                             type="text"
-                            placeholder="Search tutors or subjects…"
+                            placeholder={t('tutors.searchPlaceholder')}
+                            aria-label={t('tutors.searchPlaceholder')}
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                             className="pl-9 h-10"
                         />
                     </div>
                     <Select value={subject} onChange={e => setSubject(e.target.value)} className="h-10 min-w-[140px]">
-                        <option value="">All Subjects</option>
-                        {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+                        <option value="">{t('tutors.allSubjects')}</option>
+                        {SUBJECTS.map(s => <option key={s} value={s}>{t(`subjectName.${s}`, { defaultValue: s })}</option>)}
                     </Select>
                     <Select value={sortBy} onChange={e => setSortBy(e.target.value)} className="h-10 min-w-[150px]">
-                        <option value="rating">Top Rated</option>
-                        <option value="reviews">Most Reviews</option>
-                        <option value="price_low">Price: Low → High</option>
-                        <option value="price_high">Price: High → Low</option>
+                        <option value="rating">{t('tutors.sortRating')}</option>
+                        <option value="reviews">{t('tutors.sortReviews')}</option>
+                        <option value="price_low">{t('tutors.sortPriceLow')}</option>
+                        <option value="price_high">{t('tutors.sortPriceHigh')}</option>
                     </Select>
                     {(search || subject) && (
                         <button onClick={() => { setSearch(''); setSubject(''); }}
                             className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs border border-border text-fg-secondary transition-colors hover:border-danger hover:text-danger">
-                            <X size={13} /> Clear
+                            <X size={13} /> {t('tutors.clear')}
                         </button>
                     )}
                     <span className="text-xs ml-auto text-fg-secondary">
-                        {filtered.length} tutor{filtered.length !== 1 ? 's' : ''}
+                        {t('tutors.count', { count: filtered.length })}
                     </span>
                 </div>
             </div>
@@ -162,17 +166,17 @@ export default function Tutors() {
                     loadFailed ? (
                         <EmptyState
                             icon={SearchX}
-                            title="Could not load tutors"
-                            description="Something went wrong reaching the server. Refresh the page to try again."
+                            title={t('tutors.loadFailedTitle')}
+                            description={t('tutors.loadFailedBody')}
                         />
                     ) : allTutors.length === 0 ? (
                         <EmptyState
                             icon={SearchX}
-                            title="No tutors yet"
-                            description="Nobody has been approved as a tutor so far. If you teach, apply and you could be the first."
+                            title={t('tutors.noneYetTitle')}
+                            description={t('tutors.noneYetBody')}
                         />
                     ) : (
-                        <EmptyState icon={SearchX} title="No tutors found" description="Try a different search or clear your filters." />
+                        <EmptyState icon={SearchX} title={t('tutors.noMatchTitle')} description={t('tutors.noMatchBody')} />
                     )
                 ) : (
                     <motion.div
@@ -188,6 +192,7 @@ export default function Tutors() {
 }
 
 function TutorCard({ tutor }) {
+    const { t } = useTranslation();
     const price = tutor.pricing?.single?.price;
     const subjects = Array.isArray(tutor.subjects)
         ? tutor.subjects.slice(0, 3).map(s => s.name || s)
@@ -228,28 +233,28 @@ function TutorCard({ tutor }) {
                     {/* Subject tags */}
                     <div className="flex flex-wrap gap-1.5 mb-4">
                         {subjects.map(s => (
-                            <Badge key={s} tone="primary" size="sm">{s}</Badge>
+                            <Badge key={s} tone="primary" size="sm">{t(`subjectName.${s}`, { defaultValue: s })}</Badge>
                         ))}
                     </div>
 
                     {/* Stats row */}
                     <div className="flex items-center gap-4 text-xs mb-4 text-fg-secondary">
                         <span className="flex items-center gap-1">
-                            <Users size={12} /> {tutor.stats?.totalStudents || 0} students
+                            <Users size={12} /> {t('tutors.students', { count: tutor.stats?.totalStudents || 0 })}
                         </span>
-                        <span>({tutor.totalReviews} reviews)</span>
+                        <span>{t('tutors.reviews', { count: tutor.totalReviews ?? 0 })}</span>
                     </div>
 
                     {/* Price + CTA */}
                     <div className="flex items-center justify-between pt-3 border-t border-border">
                         <div>
                             <span className="font-bold text-base text-primary">
-                                {price?.toLocaleString()}
+                                {formatNumber(price)}
                             </span>
-                            <span className="text-xs ml-1 text-fg-secondary">FCFA/session</span>
+                            <span className="text-xs ml-1 text-fg-secondary">{t('tutors.perSession')}</span>
                         </div>
                         <span className="text-xs px-3 py-1.5 rounded-lg font-semibold text-white transition-all group-hover:scale-105" style={{ background: 'var(--gradient-primary)' }}>
-                            View Profile
+                            {t('tutors.viewProfile')}
                         </span>
                     </div>
                 </div>

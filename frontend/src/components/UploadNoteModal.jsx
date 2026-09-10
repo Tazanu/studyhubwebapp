@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import api, { apiError } from '../api/client';
 import Modal from './ui/Modal';
 import Field from './ui/Field';
@@ -14,6 +15,7 @@ import { cn } from '../lib/cn';
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
 export default function UploadNoteModal({ open, onClose, onUploaded, canMarkPremium = false }) {
+    const { t } = useTranslation();
     const [form, setForm] = useState({
         title: '',
         description: '',
@@ -70,7 +72,7 @@ export default function UploadNoteModal({ open, onClose, onUploaded, canMarkPrem
         setErrors(prev => ({ ...prev, file: '' }));
 
         if (file.size > MAX_FILE_SIZE) {
-            setErrors(prev => ({ ...prev, file: 'File size must be less than 20MB' }));
+            setErrors(prev => ({ ...prev, file: t('uploadNote.fileTooLarge') }));
             return;
         }
 
@@ -81,12 +83,12 @@ export default function UploadNoteModal({ open, onClose, onUploaded, canMarkPrem
         e.preventDefault();
 
         const newErrors = {};
-        if (!form.title) newErrors.title = 'Title is required';
-        if (!form.description) newErrors.description = 'Description is required';
-        if (!form.subject) newErrors.subject = 'Subject is required';
-        if (!file) newErrors.file = 'Please select a file to upload';
+        if (!form.title) newErrors.title = t('uploadNote.titleRequired');
+        if (!form.description) newErrors.description = t('uploadNote.descriptionRequired');
+        if (!form.subject) newErrors.subject = t('uploadNote.subjectRequired');
+        if (!file) newErrors.file = t('uploadNote.fileRequired');
         if (form.isPremium && (!form.price || parseFloat(form.price) <= 0)) {
-            newErrors.price = 'Price is required for premium notes';
+            newErrors.price = t('uploadNote.priceRequired');
         }
 
         if (Object.keys(newErrors).length > 0) {
@@ -118,7 +120,7 @@ export default function UploadNoteModal({ open, onClose, onUploaded, canMarkPrem
 
             onUploaded();
         } catch (err) {
-            toast.error(apiError(err, 'Failed to upload note'));
+            toast.error(apiError(err, t('uploadNote.uploadFailed')));
             setUploading(false);
             setUploadProgress(0);
         }
@@ -130,66 +132,66 @@ export default function UploadNoteModal({ open, onClose, onUploaded, canMarkPrem
             onClose={uploading ? () => {} : onClose}
             closeOnBackdrop={!uploading}
             closeOnEscape={!uploading}
-            title="Upload Note"
+            title={t('uploadNote.title')}
             size="lg"
             initialFocusRef={firstInputRef}
             footer={
                 <>
                     <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={uploading}>
-                        Cancel
+                        {t('common.cancel')}
                     </Button>
                     <Button type="submit" form="upload-note-form" size="sm" loading={uploading} icon={uploading ? undefined : Upload}>
-                        {uploading ? 'Uploading...' : 'Upload Note'}
+                        {uploading ? t('uploadNote.uploading') : t('uploadNote.title')}
                     </Button>
                 </>
             }
         >
             <form onSubmit={handleSubmit} id="upload-note-form">
-                <Field label="Title" required error={errors.title}>
+                <Field label={t('uploadNote.titleLabel')} required error={errors.title}>
                     <Input
                         ref={firstInputRef}
                         type="text"
                         value={form.title}
                         onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                        placeholder="e.g. Calculus II - Integration Techniques"
+                        placeholder={t('uploadNote.titlePlaceholder')}
                         invalid={!!errors.title}
                     />
                 </Field>
 
-                <Field label="Description" required error={errors.description}>
+                <Field label={t('uploadNote.descriptionLabel')} required error={errors.description}>
                     <Textarea
                         value={form.description}
                         onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                        placeholder="Describe what this note covers..."
+                        placeholder={t('uploadNote.descriptionPlaceholder')}
                         rows={3}
                         invalid={!!errors.description}
                     />
                 </Field>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Field label="Subject" required error={errors.subject}>
+                    <Field label={t('uploadNote.subjectLabel')} required error={errors.subject}>
                         <Input
                             type="text"
                             value={form.subject}
                             onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}
-                            placeholder="e.g. Mathematics"
+                            placeholder={t('uploadNote.subjectPlaceholder')}
                             invalid={!!errors.subject}
                         />
                     </Field>
-                    <Field label="Tags" hint="comma-separated">
+                    <Field label={t('uploadNote.tagsLabel')} hint={t('uploadNote.tagsHint')}>
                         <Input
                             type="text"
                             value={form.tags}
                             onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
-                            placeholder="calculus, integration, math"
+                            placeholder={t('uploadNote.tagsPlaceholder')}
                         />
                     </Field>
                 </div>
 
                 {groups.length > 0 && (
-                    <Field label="Share with Group" hint="optional">
+                    <Field label={t('uploadNote.shareWithGroup')} hint={t('common.optional').toLowerCase()}>
                         <Select value={form.groupId} onChange={e => setForm(f => ({ ...f, groupId: e.target.value }))}>
-                            <option value="">None - public note</option>
+                            <option value="">{t('uploadNote.noGroup')}</option>
                             {groups.map(g => (
                                 <option key={g.id} value={g.id}>{g.name}</option>
                             ))}
@@ -197,7 +199,7 @@ export default function UploadNoteModal({ open, onClose, onUploaded, canMarkPrem
                     </Field>
                 )}
 
-                <Field label="File" required>
+                <Field label={t('uploadNote.fileLabel')} required>
                     <div
                         onDragEnter={handleDrag}
                         onDragLeave={handleDrag}
@@ -226,9 +228,9 @@ export default function UploadNoteModal({ open, onClose, onUploaded, canMarkPrem
                             </div>
                         ) : (
                             <div>
-                                <p className="font-semibold mb-1 text-fg">Click or drag file here</p>
+                                <p className="font-semibold mb-1 text-fg">{t('uploadNote.dropHint')}</p>
                                 <p className="text-xs text-fg-secondary">
-                                    PDF, DOC, images, etc. Max 20MB
+                                    {t('uploadNote.dropTypes')}
                                 </p>
                             </div>
                         )}
@@ -250,10 +252,10 @@ export default function UploadNoteModal({ open, onClose, onUploaded, canMarkPrem
                                 onChange={e => setForm(f => ({ ...f, isPremium: e.target.checked }))}
                                 className="w-4 h-4"
                             />
-                            <label htmlFor="premium" className="text-sm font-semibold text-fg">Mark as Premium</label>
+                            <label htmlFor="premium" className="text-sm font-semibold text-fg">{t('uploadNote.markPremium')}</label>
                         </div>
                         {form.isPremium && (
-                            <Field label="Price (XAF)" required error={errors.price} className="mb-0">
+                            <Field label={t('uploadNote.priceLabel')} required error={errors.price} className="mb-0">
                                 <Input
                                     type="number"
                                     min="1"
@@ -271,7 +273,7 @@ export default function UploadNoteModal({ open, onClose, onUploaded, canMarkPrem
                 {uploading && (
                     <div className="mb-4">
                         <div className="flex justify-between text-xs mb-2 text-fg-secondary">
-                            <span>Uploading...</span>
+                            <span>{t('uploadNote.uploading')}</span>
                             <span>{uploadProgress}%</span>
                         </div>
                         <div className="h-2 rounded-full overflow-hidden bg-border">

@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Check, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import api, { apiError } from '../api/client';
 import Button from './ui/Button';
 import { mediaUrl } from '../lib/mediaUrl';
 
 
 export default function JoinRequestsPanel({ groupId, isAdmin }) {
+    const { t } = useTranslation();
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(null);
@@ -34,10 +36,10 @@ export default function JoinRequestsPanel({ groupId, isAdmin }) {
         setProcessing(requestId);
         try {
             await api.post(`/groups/${groupId}/requests/${requestId}/approve`);
-            toast.success('Request approved');
+            toast.success(t('joinRequests.approved'));
             fetchRequests();
         } catch (err) {
-            toast.error(apiError(err, 'Failed to approve request'));
+            toast.error(apiError(err, t('joinRequests.approveFailed')));
         } finally {
             setProcessing(null);
         }
@@ -47,10 +49,10 @@ export default function JoinRequestsPanel({ groupId, isAdmin }) {
         setProcessing(requestId);
         try {
             await api.post(`/groups/${groupId}/requests/${requestId}/deny`);
-            toast.success('Request denied');
+            toast.success(t('joinRequests.denied'));
             fetchRequests();
         } catch (err) {
-            toast.error(apiError(err, 'Failed to deny request'));
+            toast.error(apiError(err, t('joinRequests.denyFailed')));
         } finally {
             setProcessing(null);
         }
@@ -71,7 +73,7 @@ export default function JoinRequestsPanel({ groupId, isAdmin }) {
     return (
         <div className="px-5 py-4 border-b border-border bg-primary-subtle/60">
             <h3 className="text-sm font-semibold mb-3 text-fg">
-                Pending Join Requests ({requests.length})
+                {t('joinRequests.title', { n: requests.length })}
             </h3>
             <div className="space-y-2">
                 {requests.map((req) => (
@@ -101,7 +103,7 @@ export default function JoinRequestsPanel({ groupId, isAdmin }) {
                                     {req.users.first_name} {req.users.last_name}
                                 </div>
                                 <div className="text-xs text-fg-secondary">
-                                    {req.users.university} · {req.users.field_of_study}
+                                    {req.users.university} · {t(`subjectName.${req.users.field_of_study}`, { defaultValue: req.users.field_of_study })}
                                 </div>
                             </div>
                         </div>
@@ -114,7 +116,7 @@ export default function JoinRequestsPanel({ groupId, isAdmin }) {
                                 size="sm"
                                 className="!bg-[image:none] bg-success hover:brightness-110"
                             >
-                                Approve
+                                {t('joinRequests.approve')}
                             </Button>
                             <Button
                                 onClick={() => handleDeny(req.id)}
@@ -124,7 +126,7 @@ export default function JoinRequestsPanel({ groupId, isAdmin }) {
                                 size="sm"
                                 variant="danger"
                             >
-                                Deny
+                                {t('joinRequests.deny')}
                             </Button>
                         </div>
                     </motion.div>

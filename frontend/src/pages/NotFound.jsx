@@ -6,9 +6,9 @@ import Seo from '../components/Seo';
 import { useTranslation } from 'react-i18next';
 
 const SUGGESTIONS = [
-    { to: '/groups', icon: Users,                 label: 'Study Groups', hint: 'Join or start a group' },
-    { to: '/notes',  icon: FileText,              label: 'Notes Library', hint: 'Browse shared course notes' },
-    { to: '/qa',     icon: MessageCircleQuestion, label: 'Q&A Forum',     hint: 'Ask and answer questions' },
+    { to: '/groups', icon: Users,                 labelKey: 'footer.studyGroups',  hintKey: 'notFound.groupsHint' },
+    { to: '/notes',  icon: FileText,              labelKey: 'footer.notesLibrary', hintKey: 'notFound.notesHint'  },
+    { to: '/qa',     icon: MessageCircleQuestion, labelKey: 'footer.qaForum',      hintKey: 'notFound.qaHint'     },
 ];
 
 export default function NotFound() {
@@ -17,7 +17,7 @@ export default function NotFound() {
 
     return (
         <>
-            <Seo title="Page Not Found" description="The page you asked for does not exist on StudyHub." noindex />
+            <Seo title={t('notFound.title')} description={t('notFound.body')} noindex />
             <main className="min-h-screen pt-28 pb-20 px-6 bg-bg text-fg flex items-center">
                 <div className="max-w-xl mx-auto w-full text-center">
                     <p
@@ -56,7 +56,7 @@ export default function NotFound() {
                             {t('notFound.tryInstead')}
                         </p>
                         <div className="grid sm:grid-cols-3 gap-3">
-                            {SUGGESTIONS.map(({ to, icon: Icon, label, hint }) => (
+                            {SUGGESTIONS.map(({ to, icon: Icon, labelKey, hintKey }) => (
                                 <Link
                                     key={to}
                                     to={to}
@@ -65,8 +65,8 @@ export default function NotFound() {
                                     <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3 bg-primary-subtle">
                                         <Icon size={17} className="text-primary" strokeWidth={1.75} />
                                     </div>
-                                    <p className="text-sm font-semibold text-fg">{label}</p>
-                                    <p className="text-xs mt-0.5 text-fg-muted">{hint}</p>
+                                    <p className="text-sm font-semibold text-fg">{t(labelKey)}</p>
+                                    <p className="text-xs mt-0.5 text-fg-muted">{t(hintKey)}</p>
                                 </Link>
                             ))}
                         </div>

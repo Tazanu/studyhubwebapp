@@ -164,18 +164,18 @@ export default function Login() {
                         loading={loading}
                         disabled={!isOnline}
                         icon={!isOnline ? WifiOff : undefined}
-                        title={!isOnline ? "You're offline — reconnect to sign in" : "Sign in to your account"}
+                        title={!isOnline ? t('auth.offlineSignInTitle') : t('auth.signInTitle')}
                     >
-                        {!isOnline ? "You're Offline" : loading ? 'Signing in…' : 'Sign In →'}
+                        {!isOnline ? t('auth.offlineLabel') : loading ? t('auth.signingIn') : `${t('auth.signIn')} →`}
                     </Button>
                 </form>
 
                 {/* secondary action — visually subordinate */}
                 <div className="text-center mt-6 pt-6 border-t border-border">
                     <p className="text-sm text-fg-secondary">
-                        Don't have an account?{' '}
+                        {t('auth.noAccount')}{' '}
                         <Link to="/register" className="font-semibold text-primary">
-                            Create one free
+                            {t('auth.createOne')}
                         </Link>
                     </p>
                 </div>

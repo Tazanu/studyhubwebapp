@@ -12,6 +12,17 @@ export const LANGUAGES = [
 export const SUPPORTED = LANGUAGES.map(l => l.code);
 
 /**
+ * A note on the `subjectName`, `days` and `times` blocks in the locale files:
+ * they are keyed by the canonical English value, because that value is what
+ * gets stored in the database and searched against. Only the label is
+ * translated — never the stored value — or a French tutor's "Mathématiques"
+ * would stop matching an English student's "Mathematics".
+ *
+ * Look those up with a `defaultValue`, since users can type subjects we have
+ * no translation for: t(`subjectName.${s}`, { defaultValue: s }).
+ */
+
+/**
  * Language setup.
  *
  * Detection order matters: a stored choice always beats the browser, because

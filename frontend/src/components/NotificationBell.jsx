@@ -2,9 +2,11 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Bell, UserPlus, CheckCircle2, XCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { cn } from '../lib/cn';
+import { formatDate } from '../lib/formatDate';
 
 const TYPE_ICON = {
     join_request:      UserPlus,
@@ -13,6 +15,7 @@ const TYPE_ICON = {
 };
 
 export default function NotificationBell() {
+    const { t } = useTranslation();
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [showPanel, setShowPanel] = useState(false);
@@ -99,7 +102,7 @@ export default function NotificationBell() {
                 ref={bellRef}
                 onClick={() => setShowPanel(!showPanel)}
                 className="w-10 h-10 rounded-full border-2 border-border bg-surface text-fg flex items-center justify-center transition-all hover:bg-primary-solid hover:text-white hover:border-primary relative"
-                aria-label="Notifications"
+                aria-label={t('notifications.title')}
             >
                 <Bell size={18} />
                 {unreadCount > 0 && (
@@ -126,17 +129,17 @@ export default function NotificationBell() {
                         className="fixed rounded-xl border border-border bg-surface-raised shadow-xl z-50 max-h-[70vh] sm:max-h-[28rem] overflow-y-auto overscroll-contain">
                         {/* header */}
                         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                            <h3 className="font-bold text-sm text-fg">Notifications</h3>
+                            <h3 className="font-bold text-sm text-fg">{t('notifications.title')}</h3>
                             {notifications.length > 0 && (
                                 <button onClick={handleMarkAllRead} className="text-xs font-medium text-primary">
-                                    Mark all read
+                                    {t('notifications.markAllRead')}
                                 </button>
                             )}
                         </div>
 
                         {notifications.length === 0 ? (
                             <div className="p-8 text-center text-sm text-fg-secondary">
-                                No notifications
+                                {t('notifications.empty')}
                             </div>
                         ) : (
                             notifications.map((notif) => {
@@ -160,7 +163,7 @@ export default function NotificationBell() {
                                                 {notif.message}
                                             </p>
                                             <p className="text-xs mt-1 text-fg-secondary">
-                                                {new Date(notif.created_at).toLocaleString([], {
+                                                {formatDate(notif.created_at, {
                                                     day: 'numeric', month: 'short',
                                                     hour: '2-digit', minute: '2-digit',
                                                 })}
@@ -168,7 +171,7 @@ export default function NotificationBell() {
                                             {/* actionable hint — only on unread join requests */}
                                             {notif.type === 'join_request' && !notif.is_read && (
                                                 <p className="text-xs mt-1 font-semibold text-primary">
-                                                    Tap to approve or deny →
+                                                    {t('notifications.tapToApprove')} →
                                                 </p>
                                             )}
                                         </div>

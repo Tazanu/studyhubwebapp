@@ -2,7 +2,10 @@ import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Crown, Lock, Unlock, Upload, Loader2, Star, AlertCircle, FileText, Image as ImageIcon, File, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import api, { apiError } from '../api/client';
+import i18n from '../i18n';
+import { formatDate, formatTime, formatNumber } from '../lib/formatDate';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
 import Modal from '../components/ui/Modal';
@@ -36,19 +39,19 @@ async function openPremiumNote(noteId) {
         });
         if (!res.ok) {
             const body = await res.json().catch(() => ({}));
-            toast.error(body.error || 'Could not open this note');
+            toast.error(body.error || i18n.t('premium.openFailed'));
             return;
         }
         const url = URL.createObjectURL(await res.blob());
         window.open(url, '_blank', 'noopener');
         setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch {
-        toast.error('Could not open this note');
+        toast.error(i18n.t('premium.openFailed'));
     }
 }
 
-function getFileIcon(t) {
-    const type = (t || '').toLowerCase();
+function getFileIcon(fileType) {
+    const type = (fileType || '').toLowerCase();
     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(type)) return ImageIcon;
     if (['pdf', 'doc', 'docx', 'txt', 'md'].includes(type)) return FileText;
     return File;
@@ -74,6 +77,7 @@ function detectOperator(phone) {
 
 // ── Payment Modal ─────────────────────────────────────────────────────────────
 function PayModal({ open, title, amount, onConfirm, onClose, onCancelPayment, loading, waitingPhone, cancelling }) {
+    const { t } = useTranslation();
     const [service, setService] = useState('MTN');
     const [payer, setPayer] = useState('');
 
@@ -88,8 +92,8 @@ function PayModal({ open, title, amount, onConfirm, onClose, onCancelPayment, lo
 
     const submit = (e) => {
         e.preventDefault();
-        if (cleaned.length !== 9) return toast.error('Enter a valid 9-digit number, e.g. 677000000');
-        if (!detected) return toast.error('This is not a valid MTN or Orange Cameroon number');
+        if (cleaned.length !== 9) return toast.error(t('premium.invalidNumber'));
+        if (!detected) return toast.error(t('premium.notMtnOrOrange'));
         onConfirm({ service: detected, payer: cleaned });
     };
 
@@ -98,11 +102,11 @@ function PayModal({ open, title, amount, onConfirm, onClose, onCancelPayment, lo
             {waitingPhone ? (
                 <div className="text-center py-6">
                     <Loader2 size={40} className="animate-spin mx-auto mb-4 text-premium" />
-                    <p className="font-semibold mb-1">Check your phone!</p>
+                    <p className="font-semibold mb-1">{t('payment.checkPhone')}</p>
                     <p className="text-sm text-fg-secondary">
-                        A USSD prompt has been sent to your phone.<br />Approve the payment to continue.
+                        {t('payment.promptSent')}<br />{t('payment.approveToContinue')}
                     </p>
-                    <p className="text-xs mt-4 mb-5 text-fg-muted">Waiting for confirmation… Keep this window open.</p>
+                    <p className="text-xs mt-4 mb-5 text-fg-muted">{t('payment.waiting')}</p>
                     {/* Without this the payer is trapped watching a spinner:
                         the modal refuses to close while a payment is in flight,
                         and the transaction sits pending for 30 minutes until
@@ -112,16 +116,16 @@ function PayModal({ open, title, amount, onConfirm, onClose, onCancelPayment, lo
                         loading={cancelling}
                         onClick={onCancelPayment}
                     >
-                        {cancelling ? 'Checking with the operator…' : 'Cancel this payment'}
+                        {cancelling ? t('payment.checkingOperator') : t('payment.cancelPayment')}
                     </Button>
                 </div>
             ) : (
                 <>
                     <p className="text-sm mb-5 text-fg-secondary">
-                        Amount: <span className="font-bold text-base text-fg">{amount.toLocaleString()} FCFA</span>
+                        {t('payment.amount')}: <span className="font-bold text-base text-fg">{formatNumber(amount)} FCFA</span>
                     </p>
                     <form onSubmit={submit}>
-                        <Field label="Mobile Money Service">
+                        <Field label={t('payment.service')}>
                             <div className="flex gap-3">
                                 {['MTN', 'ORANGE'].map(s => (
                                     <button key={s} type="button" onClick={() => setService(s)}
@@ -132,14 +136,14 @@ function PayModal({ open, title, amount, onConfirm, onClose, onCancelPayment, lo
                                 ))}
                             </div>
                         </Field>
-                        <Field label="Phone Number">
-                            <Input type="tel" inputMode="numeric" value={payer} onChange={e => setPayer(e.target.value)} placeholder="e.g. 677000000" />
+                        <Field label={t('payment.phoneNumber')}>
+                            <Input type="tel" inputMode="numeric" value={payer} onChange={e => setPayer(e.target.value)} placeholder={t('premium.phonePlaceholder')} />
                             {cleaned.length === 9 && !detected && (
-                                <p className="text-xs mt-1.5 text-danger">Not a valid MTN or Orange Cameroon number.</p>
+                                <p className="text-xs mt-1.5 text-danger">{t('premium.notMtnOrOrangeInline')}</p>
                             )}
                         </Field>
                         <Button type="submit" disabled={loading} loading={loading} fullWidth className="!bg-[image:linear-gradient(135deg,#d97706,#fbbf24)]">
-                            {loading ? 'Sending…' : `Pay ${amount.toLocaleString()} FCFA`}
+                            {loading ? t('premium.sending') : t('payment.pay', { amount: formatNumber(amount) })}
                         </Button>
                     </form>
                 </>
@@ -150,6 +154,7 @@ function PayModal({ open, title, amount, onConfirm, onClose, onCancelPayment, lo
 
 // ── Receipt Modal ─────────────────────────────────────────────────────────────
 function ReceiptModal({ receipt, onClose }) {
+    const { t } = useTranslation();
     const [saving, setSaving] = useState(false);
 
     /**
@@ -179,31 +184,31 @@ function ReceiptModal({ receipt, onClose }) {
             }
             setTimeout(() => URL.revokeObjectURL(url), 60000);
         } catch (err) {
-            toast.error(apiError(err, 'Could not open the receipt'));
+            toast.error(apiError(err, t('premium.receiptOpenFailed')));
         } finally {
             setSaving(false);
         }
     };
 
     return (
-        <Modal open={!!receipt} onClose={onClose} title="Payment Receipt" size="sm">
+        <Modal open={!!receipt} onClose={onClose} title={t('premium.receiptTitle')} size="sm">
             {receipt && (
                 <>
                     <div className="text-center mb-5">
                         <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3 bg-success-bg">
                             <span className="text-3xl">✓</span>
                         </div>
-                        <p className="font-bold text-lg text-success">Payment Successful</p>
-                        <p className="text-xs mt-1 text-fg-secondary">Receipt #{receipt.receiptNo}</p>
+                        <p className="font-bold text-lg text-success">{t('payment.paymentSuccessful')}</p>
+                        <p className="text-xs mt-1 text-fg-secondary">{t('premium.receiptNo', { no: receipt.receiptNo })}</p>
                     </div>
 
                     <div className="rounded-xl p-4 mb-5 space-y-2.5 bg-surface-hover">
                         {[
-                            ['Date', new Date(receipt.date).toLocaleString()],
-                            ['Name', receipt.name],
-                            ['Description', receipt.description],
-                            ['Type', receipt.type === 'subscription' ? 'Monthly Subscription' : 'Note Purchase'],
-                            ['Reference', receipt.reference || 'N/A'],
+                            [t('premium.receiptDate'), `${formatDate(receipt.date)} ${formatTime(receipt.date)}`],
+                            [t('premium.receiptName'), receipt.name],
+                            [t('premium.receiptDescription'), receipt.description],
+                            [t('premium.receiptType'), receipt.type === 'subscription' ? t('premium.typeSubscription') : t('premium.typeNotePurchase')],
+                            [t('premium.receiptReference'), receipt.reference || t('premium.notAvailable')],
                         ].map(([label, value]) => (
                             <div key={label} className="flex justify-between text-sm">
                                 <span className="text-fg-secondary">{label}</span>
@@ -211,15 +216,15 @@ function ReceiptModal({ receipt, onClose }) {
                             </div>
                         ))}
                         <div className="flex justify-between text-base font-bold pt-2 border-t border-border text-premium">
-                            <span>Total Paid</span>
-                            <span>{receipt.amount.toLocaleString()} FCFA</span>
+                            <span>{t('payment.totalPaid')}</span>
+                            <span>{formatNumber(receipt.amount)} FCFA</span>
                         </div>
                     </div>
 
                     <div className="flex gap-3">
-                        <Button onClick={onClose} variant="secondary" fullWidth>Close</Button>
+                        <Button onClick={onClose} variant="secondary" fullWidth>{t('common.close')}</Button>
                         <Button onClick={openReceipt} loading={saving} icon={Download} fullWidth className="!bg-[image:linear-gradient(135deg,#059669,#34d399)]">
-                            Receipt
+                            {t('premium.receiptButton')}
                         </Button>
                     </div>
                 </>
@@ -230,6 +235,7 @@ function ReceiptModal({ receipt, onClose }) {
 
 // ── Upload Modal ──────────────────────────────────────────────────────────────
 function UploadModal({ open, onClose, onUploaded }) {
+    const { t } = useTranslation();
     const [form, setForm] = useState({ title: '', description: '', subject: '', price: '', tags: '' });
     const [file, setFile] = useState(null);
     const [uploading, setUploading] = useState(false);
@@ -239,11 +245,11 @@ function UploadModal({ open, onClose, onUploaded }) {
     const submit = async (e) => {
         e.preventDefault();
         const errs = {};
-        if (!form.title) errs.title = 'Required';
-        if (!form.description) errs.description = 'Required';
-        if (!form.subject) errs.subject = 'Required';
-        if (!form.price || parseFloat(form.price) <= 0) errs.price = 'Enter a valid price';
-        if (!file) errs.file = 'Select a file';
+        if (!form.title) errs.title = t('premium.required');
+        if (!form.description) errs.description = t('premium.required');
+        if (!form.subject) errs.subject = t('premium.required');
+        if (!form.price || parseFloat(form.price) <= 0) errs.price = t('premium.invalidPrice');
+        if (!file) errs.file = t('premium.selectFile');
         if (Object.keys(errs).length) { setErrors(errs); return; }
 
         setUploading(true);
@@ -254,7 +260,7 @@ function UploadModal({ open, onClose, onUploaded }) {
             await api.post('/premium/notes', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
             onUploaded();
         } catch (err) {
-            toast.error(apiError(err, 'Upload failed'));
+            toast.error(apiError(err, t('premium.uploadFailed')));
             setUploading(false);
         }
     };
@@ -265,38 +271,38 @@ function UploadModal({ open, onClose, onUploaded }) {
             onClose={uploading ? () => {} : onClose}
             closeOnBackdrop={!uploading}
             closeOnEscape={!uploading}
-            title="Post Premium Note"
+            title={t('premium.uploadTitle')}
             size="lg"
             footer={
                 <>
-                    <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={uploading}>Cancel</Button>
+                    <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={uploading}>{t('common.cancel')}</Button>
                     <Button type="submit" form="premium-upload-form" size="sm" loading={uploading} icon={uploading ? undefined : Upload} className="!bg-[image:linear-gradient(135deg,#d97706,#fbbf24)]">
-                        {uploading ? 'Uploading…' : 'Post Note'}
+                        {uploading ? t('premium.uploading') : t('premium.postNote')}
                     </Button>
                 </>
             }
         >
             <form onSubmit={submit} id="premium-upload-form">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Field label="Title" required error={errors.title}>
+                    <Field label={t('premium.fieldTitle')} required error={errors.title}>
                         <Input type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} invalid={!!errors.title} />
                     </Field>
-                    <Field label="Subject" required error={errors.subject}>
+                    <Field label={t('premium.fieldSubject')} required error={errors.subject}>
                         <Input type="text" value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} invalid={!!errors.subject} />
                     </Field>
                 </div>
-                <Field label="Description" required error={errors.description}>
+                <Field label={t('premium.fieldDescription')} required error={errors.description}>
                     <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} invalid={!!errors.description} />
                 </Field>
                 <div className="grid grid-cols-2 gap-4">
-                    <Field label="Price (FCFA)" required error={errors.price}>
+                    <Field label={t('premium.fieldPrice')} required error={errors.price}>
                         <Input type="number" min="1" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="500" invalid={!!errors.price} />
                     </Field>
-                    <Field label="Tags" hint="comma-sep">
-                        <Input type="text" value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} placeholder="math, calculus" />
+                    <Field label={t('premium.fieldTags')} hint={t('premium.tagsHint')}>
+                        <Input type="text" value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} placeholder={t('premium.tagsPlaceholder')} />
                     </Field>
                 </div>
-                <Field label="File" required className="mb-0">
+                <Field label={t('premium.fieldFile')} required className="mb-0">
                     <div onClick={() => fileRef.current?.click()}
                         className={cn(
                             'border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all bg-surface-hover',
@@ -309,7 +315,7 @@ function UploadModal({ open, onClose, onUploaded }) {
                         {file ? (
                             <p className="font-semibold text-sm">{file.name} <span className="font-normal text-xs text-fg-secondary">({(file.size / 1024 / 1024).toFixed(2)} MB)</span></p>
                         ) : (
-                            <p className="text-sm text-fg-secondary">Click to select file (PDF, DOC, images, max 20MB)</p>
+                            <p className="text-sm text-fg-secondary">{t('premium.filePickerHint')}</p>
                         )}
                     </div>
                     {errors.file && <p className="text-xs mt-1 flex items-center gap-1 text-danger"><AlertCircle size={12} />{errors.file}</p>}
@@ -321,6 +327,7 @@ function UploadModal({ open, onClose, onUploaded }) {
 
 // ── Note Card ─────────────────────────────────────────────────────────────────
 function NoteCard({ note, onPurchase, isAdmin }) {
+    const { t } = useTranslation();
     const FileIcon = getFileIcon(note.file_type);
     const owned = note.purchased;
 
@@ -328,7 +335,7 @@ function NoteCard({ note, onPurchase, isAdmin }) {
         <motion.div variants={cardVariant}
             className="rounded-2xl p-5 border border-premium/25 bg-surface flex flex-col relative overflow-hidden">
             {/* crown badge */}
-            <Badge tone="premium" size="sm" icon={Crown} className="absolute top-3 right-3">PREMIUM</Badge>
+            <Badge tone="premium" size="sm" icon={Crown} className="absolute top-3 right-3">{t('premium.cardBadge')}</Badge>
 
             <div className="flex items-start gap-3 mb-3 pr-20">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-premium-bg">
@@ -336,7 +343,7 @@ function NoteCard({ note, onPurchase, isAdmin }) {
                 </div>
                 <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-sm leading-snug truncate">{note.title}</h3>
-                    <Badge tone="premium" size="sm" className="mt-1">{note.subject}</Badge>
+                    <Badge tone="premium" size="sm" className="mt-1">{t(`subjectName.${note.subject}`, { defaultValue: note.subject })}</Badge>
                 </div>
             </div>
 
@@ -346,20 +353,20 @@ function NoteCard({ note, onPurchase, isAdmin }) {
 
             <div className="flex justify-between text-xs mb-4 text-fg-secondary">
                 <span className="flex items-center gap-1"><Download size={12} /> {note.downloads || 0}</span>
-                <span>by {note.users?.first_name} {note.users?.last_name}</span>
+                <span>{t('premium.by', { name: `${note.users?.first_name ?? ''} ${note.users?.last_name ?? ''}`.trim() })}</span>
             </div>
 
             <div className="flex items-center justify-between">
                 <span className="text-base font-bold text-premium">
-                    {Number(note.price).toLocaleString()} FCFA
+                    {formatNumber(note.price)} FCFA
                 </span>
                 {owned || isAdmin ? (
                     <Button onClick={() => openPremiumNote(note.id)} icon={Unlock} size="sm" className="!bg-[image:linear-gradient(135deg,#059669,#34d399)]">
-                        Download
+                        {t('premium.download')}
                     </Button>
                 ) : (
                     <Button onClick={() => onPurchase(note)} icon={Lock} size="sm" className="!bg-[image:linear-gradient(135deg,#d97706,#fbbf24)]">
-                        Buy
+                        {t('premium.buy')}
                     </Button>
                 )}
             </div>
@@ -369,6 +376,7 @@ function NoteCard({ note, onPurchase, isAdmin }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function PremiumPage() {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const isAdmin = user?.role === 'admin';
     const canPublish = isAdmin || user?.tutor_status === 'approved';
@@ -391,7 +399,7 @@ export default function PremiumPage() {
         try {
             const { data } = await api.get('/premium/notes');
             setNotes(data);
-        } catch { toast.error('Failed to load premium notes'); }
+        } catch { toast.error(i18n.t('premium.loadFailed')); }
         finally { setLoading(false); }
     };
 
@@ -420,7 +428,7 @@ export default function PremiumPage() {
             if (data.status === 'completed') {
                 // It went through while they were cancelling — grant it, do not
                 // pretend it failed.
-                toast.success(data.message || 'Your payment went through.');
+                toast.success(data.message || t('premium.paymentWentThrough'));
                 if (data.noteId) {
                     setNotes(prev => prev.map(n => (n.id === data.noteId ? { ...n, purchased: true } : n)));
                     openPremiumNote(data.noteId);
@@ -428,12 +436,12 @@ export default function PremiumPage() {
             } else if (data.status === 'pending') {
                 toast.info(data.message, { duration: 9000 });
             } else {
-                toast.success(data.message || 'Payment cancelled. You have not been charged.');
+                toast.success(data.message || t('premium.paymentCancelled'));
             }
             setPayTarget(null);
             setActiveTxId(null);
         } catch (err) {
-            toast.error(apiError(err, 'Could not cancel the payment. Check your phone before trying again.'));
+            toast.error(apiError(err, t('premium.cancelFailed')));
         } finally {
             setCancelling(false);
         }
@@ -449,7 +457,7 @@ export default function PremiumPage() {
                 ...(payTarget.type === 'note' && { noteId: payTarget.note.id }),
             };
             const { data } = await api.post('/premium/pay/initiate', body);
-            if (!data.success) { toast.error(data.error || 'Failed to initiate payment'); setPaying(false); return; }
+            if (!data.success) { toast.error(data.error || t('premium.initiateFailed')); setPaying(false); return; }
 
             const { txId } = data;
             setActiveTxId(txId);
@@ -472,10 +480,10 @@ export default function PremiumPage() {
                         const currentTarget = payTarget;
                         setPayTarget(null);
                         if (poll.type === 'subscription') {
-                            toast.success('Subscription activated!');
+                            toast.success(i18n.t('premium.subscriptionActivated'));
                             setSubscription({ active: true, expires_at: poll.subscription?.expires_at });
                         } else {
-                            toast.success('Purchase successful!');
+                            toast.success(i18n.t('premium.purchaseSuccessful'));
                             setNotes(prev => prev.map(n => n.id === currentTarget.note.id ? { ...n, purchased: true } : n));
                             if (poll.noteId) openPremiumNote(poll.noteId);
                         }
@@ -490,7 +498,7 @@ export default function PremiumPage() {
                         stopPolling();
                         setWaitingPhone(false);
                         setPaying(false);
-                        toast.error(poll.error || 'Payment declined. Please try again.');
+                        toast.error(poll.error || i18n.t('premium.declined'));
                     } else if (poll.status === 'processing' || Date.now() > deadline) {
                         // The charge may still land — the server settles it in
                         // the background, so don't report a failure.
@@ -498,17 +506,14 @@ export default function PremiumPage() {
                         setWaitingPhone(false);
                         setPaying(false);
                         setPayTarget(null);
-                        toast.info(
-                            'Still confirming with the operator. If you approved the payment, your access unlocks automatically in a few minutes — do not pay again.',
-                            { duration: 8000 },
-                        );
+                        toast.info(i18n.t('premium.stillConfirming'), { duration: 8000 });
                     }
                 } catch { /* keep polling on network hiccup */ }
                 finally { inFlight = false; }
             }, 3000);
         } catch (err) {
             setPaying(false);
-            toast.error(apiError(err, 'Payment failed. Please try again.'));
+            toast.error(apiError(err, t('premium.payFailed')));
         }
     };
 
@@ -518,21 +523,21 @@ export default function PremiumPage() {
 
             {/* HERO */}
             <section className="pt-20 px-6 py-12 text-center border-b border-premium/20 bg-premium-bg">
-                <Badge tone="premium" size="md" icon={Crown} className="mb-4">Premium Notes</Badge>
+                <Badge tone="premium" size="md" icon={Crown} className="mb-4">{t('premium.badge')}</Badge>
                 <h1 className="text-3xl md:text-4xl font-bold mb-3" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
-                    Exclusive Study Materials
+                    {t('premium.title')}
                 </h1>
                 <p className="max-w-xl mx-auto text-sm mb-8 text-fg-secondary">
-                    High-quality notes curated by top students and tutors. Purchase individual notes or become a premium publisher.
+                    {t('premium.subtitle')}
                 </p>
 
                 {canPublish && (
-                    <Badge tone="success" size="md" icon={Star} className="mx-auto mb-2 w-fit">Premium Publisher</Badge>
+                    <Badge tone="success" size="md" icon={Star} className="mx-auto mb-2 w-fit">{t('premium.publisherBadge')}</Badge>
                 )}
 
                 {/* Stats */}
                 <div className="flex justify-center gap-12 flex-wrap mt-6">
-                    {[[notes.length, 'Premium Notes'], [notes.reduce((s, n) => s + (n.downloads || 0), 0), 'Downloads']].map(([v, l]) => (
+                    {[[notes.length, t('premium.statNotes')], [notes.reduce((s, n) => s + (n.downloads || 0), 0), t('premium.statDownloads')]].map(([v, l]) => (
                         <div key={l} className="text-center">
                             <div className="text-3xl font-bold tabular-nums text-premium" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>{v}</div>
                             <div className="text-xs mt-0.5 text-fg-secondary">{l}</div>
@@ -545,7 +550,7 @@ export default function PremiumPage() {
             <div className="sticky top-16 z-30 px-4 sm:px-6 py-3 border-b border-border bg-surface flex justify-end items-center gap-3">
                 {canPublish && (
                     <Button onClick={() => setShowUpload(true)} icon={Upload} className="!bg-[image:linear-gradient(135deg,#d97706,#fbbf24)]">
-                        Post Premium Note
+                        {t('premium.post')}
                     </Button>
                 )}
             </div>
@@ -565,9 +570,9 @@ export default function PremiumPage() {
                 ) : notes.length === 0 ? (
                     <EmptyState
                         icon={Crown}
-                        title="No premium notes yet"
-                        description={canPost ? 'Be the first to post a premium note!' : 'Check back soon.'}
-                        action={canPost && <Button onClick={() => setShowUpload(true)} className="!bg-[image:linear-gradient(135deg,#d97706,#fbbf24)]">Post First Note</Button>}
+                        title={t('premium.emptyTitle')}
+                        description={canPost ? t('premium.emptyCanPost') : t('premium.emptyCheckBack')}
+                        action={canPost && <Button onClick={() => setShowUpload(true)} className="!bg-[image:linear-gradient(135deg,#d97706,#fbbf24)]">{t('premium.postFirst')}</Button>}
                     />
                 ) : (
                     <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
@@ -584,12 +589,14 @@ export default function PremiumPage() {
             <UploadModal
                 open={showUpload}
                 onClose={() => setShowUpload(false)}
-                onUploaded={() => { setShowUpload(false); loadNotes(); toast.success('Premium note posted!'); }}
+                onUploaded={() => { setShowUpload(false); loadNotes(); toast.success(t('premium.posted')); }}
             />
             <ReceiptModal receipt={receipt} onClose={() => setReceipt(null)} />
             <PayModal
                 open={!!payTarget}
-                title={payTarget?.type === 'subscribe' ? 'Subscribe as Publisher' : `Buy: ${payTarget?.note?.title}`}
+                title={payTarget?.type === 'subscribe'
+                    ? t('premium.subscribeTitle')
+                    : t('premium.buyTitle', { title: payTarget?.note?.title ?? '' })}
                 amount={payTarget?.type === 'subscribe' ? 1000 : Number(payTarget?.note?.price || 0)}
                 onConfirm={handlePay}
                 onClose={() => { if (!paying) { stopPolling(); setWaitingPhone(false); setPayTarget(null); setActiveTxId(null); } }}

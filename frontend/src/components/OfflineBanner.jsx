@@ -1,8 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { WifiOff } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 
 export default function OfflineBanner() {
+    const { t } = useTranslation();
     const isOnline = useOnlineStatus();
 
     return (
@@ -18,7 +20,7 @@ export default function OfflineBanner() {
                     <div className="mx-auto max-w-2xl rounded-xl px-4 py-3 border shadow-xl flex items-center gap-3 bg-danger border-danger/30 backdrop-blur-md">
                         <WifiOff size={18} className="text-white" strokeWidth={2} />
                         <p className="text-sm font-semibold text-white flex-1">
-                            You're offline. Some features won't work until you reconnect.
+                            {t('app.offline')}
                         </p>
                     </div>
                 </motion.div>

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Download } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Banner from './ui/Banner';
 
 export default function InstallPrompt() {
+    const { t } = useTranslation();
     const [deferredPrompt, setDeferredPrompt] = useState(null);
     const [showPrompt, setShowPrompt] = useState(false);
     const [dismissed, setDismissed] = useState(() => {
@@ -52,12 +54,12 @@ export default function InstallPrompt() {
                 <Banner
                     tone="primary"
                     icon={Download}
-                    title="Install StudyHub"
-                    description="Quick access from your home screen"
+                    title={t('app.installTitle')}
+                    description={t('app.installBody')}
                     position="bottom"
                     dismissible
                     onDismiss={handleDismiss}
-                    action={{ label: 'Install', onClick: handleInstall }}
+                    action={{ label: t('app.install'), onClick: handleInstall }}
                 />
             )}
         </AnimatePresence>

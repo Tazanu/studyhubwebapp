@@ -3,7 +3,10 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Edit2, GraduationCap, BookOpen, MapPin, Users, FileText, Star, HelpCircle, MessageSquare, CheckCircle, Camera, X, Trophy, Download, Award } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import api from '../api/client';
+import i18n from '../i18n';
+import { formatDate } from '../lib/formatDate';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
 import Button from '../components/ui/Button';
@@ -16,13 +19,15 @@ import { cn } from '../lib/cn';
 
 // Note: this is a distinct, more granular reputation ladder from the one used on the
 // Dashboard widget (src/lib/tiers.js) — different labels, deliberately not unified here.
+// `label` is the stable identity used for translation lookup and for the
+// Master check below; the visible name comes from `profileTier.*`.
 const TIERS = [
-    { label: 'Newcomer',    color: '#9ca3af', min: 0,    next: 100,  desc: 'Keep engaging to unlock Explorer status.' },
-    { label: 'Explorer',    color: '#60a5fa', min: 100,  next: 250,  desc: 'Contributors can pin resources in groups.' },
-    { label: 'Contributor', color: '#34d399', min: 250,  next: 500,  desc: 'Scholars can create premium notes.' },
-    { label: 'Scholar',     color: '#8b5cf6', min: 500,  next: 1000, desc: 'Experts get priority tutor matching.' },
-    { label: 'Expert',      color: '#f59e0b', min: 1000, next: 2000, desc: 'Masters unlock exclusive community features.' },
-    { label: 'Master',      color: null,      min: 2000, next: null,  desc: "You've reached the top tier!" },
+    { label: 'Newcomer',    color: '#9ca3af', min: 0,    next: 100  },
+    { label: 'Explorer',    color: '#60a5fa', min: 100,  next: 250  },
+    { label: 'Contributor', color: '#34d399', min: 250,  next: 500  },
+    { label: 'Scholar',     color: '#8b5cf6', min: 500,  next: 1000 },
+    { label: 'Expert',      color: '#f59e0b', min: 1000, next: 2000 },
+    { label: 'Master',      color: null,      min: 2000, next: null },
 ];
 
 const FIELDS_OF_STUDY = [
@@ -63,8 +68,8 @@ function Avatar({ src, name, userId, size = 96, isOwn, onUpload }) {
             const { data } = await api.patch('/users/profile', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
             onUpload?.(data.user);
             setImgKey(k => k + 1);
-            toast.success('Photo updated!');
-        } catch { toast.error('Upload failed'); }
+            toast.success(i18n.t('profile.photoUpdated'));
+        } catch { toast.error(i18n.t('profile.photoFailed')); }
     };
 
     const fullSrc = imgUrl(src);
@@ -98,6 +103,7 @@ function Avatar({ src, name, userId, size = 96, isOwn, onUpload }) {
 }
 
 export default function Profile() {
+    const { t } = useTranslation();
     const { id } = useParams();
     const { user: authUser, refreshUser } = useAuth();
     const navigate = useNavigate();
@@ -119,7 +125,7 @@ export default function Profile() {
     const tier = getTier(profile?.reputation ?? 0);
     const name = profile ? `${profile.first_name} ${profile.last_name}` : '';
     const joinDate = profile?.created_at
-        ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+        ? formatDate(profile.created_at, { month: 'long', year: 'numeric' })
         : null;
 
     useEffect(() => {
@@ -189,8 +195,8 @@ export default function Profile() {
             setProfile(prev => ({ ...prev, ...data.user }));
             setEditOpen(false);
             await refreshUser();
-            toast.success('Profile updated!');
-        } catch { toast.error('Failed to save'); }
+            toast.success(t('profile.updated'));
+        } catch { toast.error(t('profile.saveFailed')); }
         finally { setSaving(false); }
     };
 
@@ -204,7 +210,7 @@ export default function Profile() {
                     <HeroSkeleton />
                 ) : !profile ? (
                     <div className="text-center py-24 text-fg-secondary">
-                        User not found.
+                        {t('profile.notFound')}
                     </div>
                 ) : (
                     <motion.div
@@ -239,7 +245,7 @@ export default function Profile() {
 
                                     {isOwn && (
                                         <Button variant="secondary" size="sm" icon={Edit2} onClick={() => setEditOpen(o => !o)}>
-                                            {editOpen ? 'Close' : 'Edit Profile'}
+                                            {editOpen ? t('profile.close') : t('profile.edit')}
                                         </Button>
                                     )}
                                 </div>
@@ -253,10 +259,10 @@ export default function Profile() {
                                         className="text-xs font-bold px-2.5 py-1 rounded-full"
                                         style={{ background: `${tier.color}22`, color: tier.color }}
                                     >
-                                        {tier.label}
+                                        {t(`profileTier.${tier.label}`, { defaultValue: tier.label })}
                                     </span>
                                     <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-primary-subtle text-primary">
-                                        {profile.reputation ?? 0} rep
+                                        {t('profile.rep', { n: profile.reputation ?? 0 })}
                                     </span>
                                 </div>
 
@@ -269,16 +275,16 @@ export default function Profile() {
                                     )}
                                     {profile.field_of_study && (
                                         <span className="flex items-center gap-1.5">
-                                            <BookOpen size={13} /> {profile.field_of_study}
+                                            <BookOpen size={13} /> {t(`subjectName.${profile.field_of_study}`, { defaultValue: profile.field_of_study })}
                                         </span>
                                     )}
                                     {profile.tutors?.status === 'approved' && (
                                         <span className="flex items-center gap-1.5">
-                                            <GraduationCap size={13} /> Tutor
+                                            <GraduationCap size={13} /> {t('profile.tutor')}
                                         </span>
                                     )}
                                     {joinDate && (
-                                        <span className="text-fg-muted">Member since {joinDate}</span>
+                                        <span className="text-fg-muted">{t('profile.memberSince', { date: joinDate })}</span>
                                     )}
                                 </div>
 
@@ -289,7 +295,7 @@ export default function Profile() {
                                     </p>
                                 ) : isOwn && (
                                     <p className="text-sm italic text-fg-muted">
-                                        No bio yet. Add one to let others know who you are.
+                                        {t('profile.noBio')}
                                     </p>
                                 )}
                             </div>
@@ -352,12 +358,12 @@ function useCountUp(target, duration = 900) {
 }
 
 const STAT_ITEMS = [
-    { key: 'groupsJoined',    label: 'Groups',           icon: Users,         color: 'var(--brand-600)' },
-    { key: 'notesUploaded',   label: 'Notes',            icon: FileText,      color: '#34d399' },
-    { key: 'totalDownloads',  label: 'Downloads',        icon: Star,          color: '#fbbf24' },
-    { key: 'questionsAsked',  label: 'Questions',        icon: HelpCircle,    color: '#f472b6' },
-    { key: 'answersGiven',    label: 'Answers',          icon: MessageSquare, color: '#a78bfa' },
-    { key: 'acceptedAnswers', label: 'Accepted',         icon: CheckCircle,   color: '#34d399' },
+    { key: 'groupsJoined',    labelKey: 'profile.statGroups',      icon: Users,         color: 'var(--brand-600)' },
+    { key: 'notesUploaded',   labelKey: 'profile.statNotes',       icon: FileText,      color: '#34d399' },
+    { key: 'totalDownloads',  labelKey: 'profile.statDownloads',   icon: Star,          color: '#fbbf24' },
+    { key: 'questionsAsked',  labelKey: 'profile.statQuestions',   icon: HelpCircle,    color: '#f472b6' },
+    { key: 'answersGiven',    labelKey: 'profile.statAnswers',     icon: MessageSquare, color: '#a78bfa' },
+    { key: 'acceptedAnswers', labelKey: 'profile.statAccepted',    icon: CheckCircle,   color: '#34d399' },
 ];
 
 function StatPill({ icon: Icon, label, value, color }) {
@@ -389,6 +395,7 @@ function StatPill({ icon: Icon, label, value, color }) {
 }
 
 function StatsRow({ stats }) {
+    const { t } = useTranslation();
     return (
         <motion.div
             className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-6"
@@ -396,12 +403,12 @@ function StatsRow({ stats }) {
             animate="show"
             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
         >
-            {STAT_ITEMS.map(({ key, label, icon, color }) => (
+            {STAT_ITEMS.map(({ key, labelKey, icon, color }) => (
                 <motion.div
                     key={key}
                     variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22,1,0.36,1] } } }}
                 >
-                    <StatPill icon={icon} label={label} value={stats[key] ?? 0} color={color} />
+                    <StatPill icon={icon} label={t(labelKey)} value={stats[key] ?? 0} color={color} />
                 </motion.div>
             ))}
         </motion.div>
@@ -427,6 +434,7 @@ function HeroSkeleton() {
 
 // ── REPUTATION CARD ──────────────────────────────────────────────
 function ReputationCard({ reputation }) {
+    const { t } = useTranslation();
     const tier = getTier(reputation);
     const tierIdx = TIERS.findIndex(t => t.label === tier.label);
     const next = TIERS[tierIdx + 1];
@@ -450,10 +458,10 @@ function ReputationCard({ reputation }) {
                     </div>
                     <div>
                         <div className="font-bold text-sm text-fg">
-                            Reputation Level
+                            {t('profile.reputationLevel')}
                         </div>
                         <div className="text-xs text-fg-secondary">
-                            {tier.desc}
+                            {t(`profileTierDesc.${tier.label}`, { defaultValue: '' })}
                         </div>
                     </div>
                 </div>
@@ -462,7 +470,7 @@ function ReputationCard({ reputation }) {
                         className={cn('text-sm font-bold px-3 py-1 rounded-full', isMaster && 'bg-premium text-white')}
                         style={!isMaster ? { background: `${tier.color}22`, color: tier.color } : undefined}
                     >
-                        {tier.label}
+                        {t(`profileTier.${tier.label}`, { defaultValue: tier.label })}
                     </span>
                     <span className="text-2xl font-bold tabular-nums" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", color: tier.color || 'var(--brand-600)' }}>
                         {reputation}
@@ -472,7 +480,11 @@ function ReputationCard({ reputation }) {
             {!isMaster && next && (
                 <>
                     <div className="flex justify-between text-xs mb-1.5 text-fg-secondary">
-                        <span>{reputation} / {next.min} to {next.label}</span>
+                        <span>{t('profile.toNextTier', {
+                            current: reputation,
+                            target: next.min,
+                            tier: t(`profileTier.${next.label}`, { defaultValue: next.label }),
+                        })}</span>
                         <span>{progress}%</span>
                     </div>
                     <div className="w-full h-2 rounded-full overflow-hidden bg-surface-hover">
@@ -492,18 +504,19 @@ function ReputationCard({ reputation }) {
 
 // ── ACTIVITY TABS ────────────────────────────────────────────────
 const TABS = [
-    { key: 'questions', label: 'Questions' },
-    { key: 'notes',     label: 'Notes'     },
-    { key: 'answers',   label: 'Answers'   },
+    { key: 'questions', labelKey: 'profile.tabQuestions' },
+    { key: 'notes',     labelKey: 'profile.tabNotes'     },
+    { key: 'answers',   labelKey: 'profile.tabAnswers'   },
 ];
 
 const EMPTY_MSGS = {
-    questions: { msg: 'No questions yet.', cta: 'Ask your first question →', to: '/qa' },
-    notes:     { msg: 'No notes uploaded yet.', cta: 'Upload a note →', to: '/notes' },
-    answers:   { msg: 'No answers yet.', cta: 'Browse questions →', to: '/qa' },
+    questions: { msgKey: 'profile.emptyQuestions', ctaKey: 'profile.emptyQuestionsCta', to: '/qa'    },
+    notes:     { msgKey: 'profile.emptyNotes',     ctaKey: 'profile.emptyNotesCta',     to: '/notes' },
+    answers:   { msgKey: 'profile.emptyAnswers',   ctaKey: 'profile.emptyAnswersCta',   to: '/qa'    },
 };
 
 function ActivityTabs({ activeTab, tabData, onTab, isOwn }) {
+    const { t } = useTranslation();
     return (
         <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -513,16 +526,16 @@ function ActivityTabs({ activeTab, tabData, onTab, isOwn }) {
         >
             {/* tab bar */}
             <div className="flex border-b border-border">
-                {TABS.map(t => (
+                {TABS.map(tab => (
                     <button
-                        key={t.key}
-                        onClick={() => onTab(t.key)}
+                        key={tab.key}
+                        onClick={() => onTab(tab.key)}
                         className={cn(
                             'flex-1 py-3 text-sm font-semibold transition-colors border-b-2',
-                            activeTab === t.key ? 'text-primary border-primary' : 'text-fg-secondary border-transparent',
+                            activeTab === tab.key ? 'text-primary border-primary' : 'text-fg-secondary border-transparent',
                         )}
                     >
-                        {t.label}
+                        {t(tab.labelKey)}
                     </button>
                 ))}
             </div>
@@ -530,15 +543,15 @@ function ActivityTabs({ activeTab, tabData, onTab, isOwn }) {
             {/* content */}
             <div className="p-4">
                 {tabData[activeTab] === null ? (
-                    <div className="py-8 text-center text-fg-muted">Loading…</div>
+                    <div className="py-8 text-center text-fg-muted">{t('common.loading')}</div>
                 ) : tabData[activeTab].length === 0 ? (
                     <div className="py-10 text-center">
                         <p className="text-sm mb-3 text-fg-secondary">
-                            {EMPTY_MSGS[activeTab].msg}
+                            {t(EMPTY_MSGS[activeTab].msgKey)}
                         </p>
                         {isOwn && (
                             <Link to={EMPTY_MSGS[activeTab].to} className="text-sm font-semibold text-primary">
-                                {EMPTY_MSGS[activeTab].cta}
+                                {t(EMPTY_MSGS[activeTab].ctaKey)} →
                             </Link>
                         )}
                     </div>
@@ -555,6 +568,9 @@ function ActivityTabs({ activeTab, tabData, onTab, isOwn }) {
 }
 
 function TabItem({ item, tab }) {
+    const { t } = useTranslation();
+    const subjectLabel = s => t(`subjectName.${s}`, { defaultValue: s });
+
     if (tab === 'questions') {
         return (
             <li className="py-3">
@@ -564,11 +580,11 @@ function TabItem({ item, tab }) {
                             {item.title}
                         </span>
                         <span className="text-xs shrink-0 text-fg-muted">
-                            {item.vote_count ?? 0} votes · {item.answer_count ?? 0} answers
+                            {t('profile.votesAnswers', { votes: item.vote_count ?? 0, answers: item.answer_count ?? 0 })}
                         </span>
                     </div>
                     {item.subject && (
-                        <span className="text-xs mt-0.5 inline-block text-fg-secondary">{item.subject}</span>
+                        <span className="text-xs mt-0.5 inline-block text-fg-secondary">{subjectLabel(item.subject)}</span>
                     )}
                 </Link>
             </li>
@@ -587,7 +603,7 @@ function TabItem({ item, tab }) {
                         </span>
                     </div>
                     {item.subject && (
-                        <span className="text-xs mt-0.5 inline-block text-fg-secondary">{item.subject}</span>
+                        <span className="text-xs mt-0.5 inline-block text-fg-secondary">{subjectLabel(item.subject)}</span>
                     )}
                 </Link>
             </li>
@@ -602,10 +618,10 @@ function TabItem({ item, tab }) {
                 </p>
                 <div className="flex items-center gap-2 mt-1">
                     {item.is_accepted && (
-                        <span className="text-xs font-semibold text-success">✓ Accepted</span>
+                        <span className="text-xs font-semibold text-success">✓ {t('profile.accepted')}</span>
                     )}
                     {item.questions?.title && (
-                        <span className="text-xs text-fg-muted">on: {item.questions.title}</span>
+                        <span className="text-xs text-fg-muted">{t('profile.onQuestion', { title: item.questions.title })}</span>
                     )}
                 </div>
             </Link>
@@ -615,6 +631,7 @@ function TabItem({ item, tab }) {
 
 // ── LEADERBOARD WIDGET ───────────────────────────────────────────
 function LeaderboardWidget({ list, currentUserId, myRank }) {
+    const { t } = useTranslation();
     if (!list.length) return null;
     const maxRep = list[0]?.reputation || 1;
 
@@ -627,7 +644,7 @@ function LeaderboardWidget({ list, currentUserId, myRank }) {
         >
             <div className="flex items-center gap-2 mb-4">
                 <Award size={18} className="text-primary" />
-                <h2 className="font-bold text-sm text-fg">Top Contributors</h2>
+                <h2 className="font-bold text-sm text-fg">{t('profile.topContributors')}</h2>
             </div>
             <ul className="space-y-2">
                 {list.map((u, i) => {
@@ -667,7 +684,7 @@ function LeaderboardWidget({ list, currentUserId, myRank }) {
             </ul>
             {myRank && (
                 <p className="text-xs mt-3 text-center text-fg-muted">
-                    You are ranked #{myRank}
+                    {t('profile.yourRank', { rank: myRank })}
                 </p>
             )}
         </motion.div>
@@ -676,6 +693,7 @@ function LeaderboardWidget({ list, currentUserId, myRank }) {
 
 // ── EDIT FORM ────────────────────────────────────────────────────
 function EditForm({ form, onChange, onSave, onCancel, saving }) {
+    const { t } = useTranslation();
     const set = (k, v) => onChange(prev => ({ ...prev, [k]: v }));
     const bioLen = form.bio?.length || 0;
 
@@ -689,27 +707,29 @@ function EditForm({ form, onChange, onSave, onCancel, saving }) {
         >
             <div className="rounded-2xl border border-border bg-surface p-6 mb-6">
                 <div className="flex items-center justify-between mb-5">
-                    <h2 className="font-bold text-fg">Edit Profile</h2>
-                    <button onClick={onCancel} className="text-fg-muted"><X size={18} /></button>
+                    <h2 className="font-bold text-fg">{t('profile.edit')}</h2>
+                    <button onClick={onCancel} aria-label={t('common.close')} className="text-fg-muted"><X size={18} /></button>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                    {[['firstName','First name'],['lastName','Last name'],['university','University']].map(([k, label]) => (
-                        <Field key={k} label={label} className="mb-0">
+                    {[['firstName','profile.firstName'],['lastName','profile.lastName'],['university','profile.university']].map(([k, labelKey]) => (
+                        <Field key={k} label={t(labelKey)} className="mb-0">
                             <Input value={form[k] || ''} onChange={e => set(k, e.target.value)} />
                         </Field>
                     ))}
-                    <Field label="Field of study" className="mb-0">
+                    <Field label={t('profile.fieldOfStudy')} className="mb-0">
                         <Select value={form.fieldOfStudy || ''} onChange={e => set('fieldOfStudy', e.target.value)}>
-                            <option value="">Select…</option>
-                            {FIELDS_OF_STUDY.map(f => <option key={f} value={f}>{f}</option>)}
+                            <option value="">{t('profile.selectPlaceholder')}</option>
+                            {FIELDS_OF_STUDY.map(f => (
+                                <option key={f} value={f}>{t(`subjectName.${f}`, { defaultValue: f })}</option>
+                            ))}
                         </Select>
                     </Field>
                 </div>
 
                 <div className="mb-5">
                     <div className="flex justify-between mb-1.5">
-                        <label className="text-xs font-semibold text-fg-secondary">Bio</label>
+                        <label className="text-xs font-semibold text-fg-secondary">{t('profile.bio')}</label>
                         <span className={cn('text-xs', bioLen > 280 ? 'text-danger' : 'text-fg-muted')}>{bioLen}/300</span>
                     </div>
                     <Textarea value={form.bio || ''} onChange={e => set('bio', e.target.value.slice(0, 300))} rows={3} />
@@ -717,10 +737,10 @@ function EditForm({ form, onChange, onSave, onCancel, saving }) {
 
                 <div className="flex gap-3 justify-end">
                     <Button onClick={onCancel} variant="ghost" size="sm">
-                        Cancel
+                        {t('common.cancel')}
                     </Button>
                     <Button onClick={onSave} disabled={saving} loading={saving} size="sm">
-                        {saving ? 'Saving…' : 'Save changes'}
+                        {saving ? t('profile.saving') : t('profile.saveChanges')}
                     </Button>
                 </div>
             </div>
