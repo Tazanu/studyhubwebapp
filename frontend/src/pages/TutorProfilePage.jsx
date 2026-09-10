@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Send } from 'lucide-react';
+import { Send, UserX, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import TutorHero from '../components/tutor/TutorHero';
@@ -14,7 +14,6 @@ import ReviewSection from '../components/tutor/ReviewSection';
 import SessionResources from '../components/tutor/SessionResources';
 import SimilarTutorsCarousel from '../components/tutor/SimilarTutorsCarousel';
 import HomeFooter from '../components/home/HomeFooter';
-import { mockTutor } from '../data/mockTutor';
 import { normalizeTutor } from '../data/normalizeTutor';
 import api from '../api/client';
 import Modal from '../components/ui/Modal';
@@ -54,7 +53,9 @@ export default function TutorProfilePage() {
         }
         setTutor(normalized);
       })
-      .catch(() => setTutor({ ...mockTutor, avatar: mockTutor.avatar, name: mockTutor.name }))
+      // Showing a fabricated profile here meant a failed lookup rendered an
+      // invented tutor, complete with reviews, as though they were real.
+      .catch(() => setTutor(null))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -123,6 +124,30 @@ export default function TutorProfilePage() {
 
   if (loading) {
     return <LoadingSkeleton />;
+  }
+
+  // A failed lookup previously rendered a fabricated tutor here. Say plainly
+  // that the profile could not be found instead of inventing one.
+  if (!tutor) {
+    return (
+      <>
+        <main className="min-h-screen pt-28 pb-20 px-6 bg-bg text-fg flex items-center">
+          <div className="max-w-md mx-auto w-full text-center">
+            <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 bg-surface-hover text-fg-muted">
+              <UserX size={26} strokeWidth={1.5} />
+            </div>
+            <h1 className="text-xl font-bold mb-2" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+              Tutor not found
+            </h1>
+            <p className="text-sm mb-7 text-fg-secondary">
+              This profile does not exist, or the tutor is no longer accepting bookings.
+            </p>
+            <Button to="/tutors" icon={ArrowLeft}>Back to tutors</Button>
+          </div>
+        </main>
+        <HomeFooter />
+      </>
+    );
   }
 
   return (

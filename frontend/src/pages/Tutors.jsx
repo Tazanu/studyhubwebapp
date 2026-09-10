@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Users, Search, BookOpen, Award, TrendingUp, X, SearchX } from 'lucide-react';
-import { mockTutor } from '../data/mockTutor';
 import { normalizeTutorList } from '../data/normalizeTutor';
 import Sidebar from '../components/Sidebar';
 import TutorAvatar from '../components/tutor/TutorAvatar';
@@ -13,10 +12,6 @@ import Badge from '../components/ui/Badge';
 import EmptyState from '../components/ui/EmptyState';
 import StarRating from '../components/ui/StarRating';
 
-const FALLBACK_TUTORS = [
-    normalizeTutorList({ ...mockTutor, users: { first_name: 'Dr. Sarah', last_name: 'Ndongo', profile_picture: mockTutor.avatar }, hourly_rate: mockTutor.pricing.single.price, total_sessions: mockTutor.totalReviews })
-];
-
 const cardVariants = {
     hidden: { opacity: 0, y: 24 },
     show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
@@ -24,7 +19,11 @@ const cardVariants = {
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
 
 export default function Tutors() {
-    const [allTutors, setAllTutors] = useState(FALLBACK_TUTORS);
+    // Starts empty. This used to seed a fabricated tutor with invented
+    // ratings and session counts, shown whenever the API was slow, down or
+    // returned nothing — presenting made-up people to real students.
+    const [allTutors, setAllTutors] = useState([]);
+    const [loadFailed, setLoadFailed] = useState(false);
     const [search, setSearch] = useState('');
     const [subject, setSubject] = useState('');
     const [sortBy, setSortBy] = useState('rating');
@@ -39,7 +38,7 @@ export default function Tutors() {
                     setAllTutors(normalized);
                 }
             })
-            .catch(() => {}); // keep fallback on error
+            .catch(() => setLoadFailed(true));
     }, []);
 
     const SUBJECTS = [...new Set(allTutors.flatMap(t =>
@@ -157,7 +156,24 @@ export default function Tutors() {
             {/* ── GRID ── */}
             <div className="max-w-6xl mx-auto px-6 py-10">
                 {filtered.length === 0 ? (
-                    <EmptyState icon={SearchX} title="No tutors found" description="Try a different search or clear your filters." />
+                    // Three different situations, and telling them apart matters:
+                    // a failed request is not the same as an empty platform, and
+                    // neither is the same as a filter that matched nothing.
+                    loadFailed ? (
+                        <EmptyState
+                            icon={SearchX}
+                            title="Could not load tutors"
+                            description="Something went wrong reaching the server. Refresh the page to try again."
+                        />
+                    ) : allTutors.length === 0 ? (
+                        <EmptyState
+                            icon={SearchX}
+                            title="No tutors yet"
+                            description="Nobody has been approved as a tutor so far. If you teach, apply and you could be the first."
+                        />
+                    ) : (
+                        <EmptyState icon={SearchX} title="No tutors found" description="Try a different search or clear your filters." />
+                    )
                 ) : (
                     <motion.div
                         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
