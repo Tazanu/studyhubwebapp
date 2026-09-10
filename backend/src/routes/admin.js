@@ -174,6 +174,60 @@ router.get('/premium/notes', async (req, res) => {
     }
 });
 
+// ── Payment credential diagnostics ───────────────────────────────────────────
+// Admin-only. Reports a fingerprint of each MeSomb key — never the key itself —
+// so a value that differs between environments can be identified without
+// anyone reading secrets out of a dashboard. Added because a deployed server
+// kept returning "Bad signature" while the identical keys signed fine locally,
+// and there was no way to see which value the server actually held.
+router.get('/payments/diagnostics', async (req, res) => {
+    try {
+        const fingerprint = (name) => {
+            const raw = process.env[name];
+            if (!raw) return { name, present: false };
+            const trimmed = raw.trim();
+            return {
+                name,
+                present: true,
+                length: raw.length,
+                head: trimmed.slice(0, 6),
+                tail: trimmed.slice(-4),
+                hasWhitespace: raw !== trimmed,
+                hasQuotes: /^["']|["']$/.test(trimmed),
+                // A short digest is enough to compare two environments without
+                // revealing anything usable.
+                sha256_8: require('crypto').createHash('sha256').update(raw).digest('hex').slice(0, 8),
+            };
+        };
+
+        const keys = ['MESOMB_APPLICATION_KEY', 'MESOMB_ACCESS_KEY', 'MESOMB_SECRET_KEY']
+            .map(fingerprint);
+
+        let live = { ok: false };
+        try {
+            const status = await require('../mesomb').getPaymentClient().getStatus();
+            live = {
+                ok: true,
+                application: status?.name,
+                providers: (status?.balances || []).map(b => `${b.provider}:${b.value}${b.currency}`),
+                countries: status?.countries,
+            };
+        } catch (e) {
+            live = { ok: false, error: e?.name, detail: (e?.message || '').split('\n')[0].slice(0, 160) };
+        }
+
+        res.json({
+            nodeEnv: process.env.NODE_ENV || '(unset)',
+            serverTime: new Date().toISOString(),
+            keys,
+            live,
+        });
+    } catch (err) {
+        console.error('Payment diagnostics error:', err);
+        res.status(500).json({ error: 'Diagnostics failed' });
+    }
+});
+
 // ── Publishing trust override ────────────────────────────────────────────────
 // By default a tutor earns or loses the review exemption from their own record
 // (services/uploaderTrust.js). This overrides that in either direction: grant
