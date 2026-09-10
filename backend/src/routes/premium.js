@@ -124,13 +124,22 @@ router.post('/pay/initiate', authenticate, async (req, res) => {
 
             // "Could not reach the provider" is wrong and misleading when the
             // provider answered and refused. Say which is which.
-            const reachable = !!mesombErr?.response || /InvalidClientRequest|ServiceNotFound|rejected/i.test(String(mesombErr?.name) + detail);
-            return res.status(502).json({
-                error: reachable
-                    ? `${check.service === 'ORANGE' ? 'Orange Money' : 'MTN MoMo'} declined this request. If the problem repeats, try the other operator or contact support.`
-                    : 'Could not reach the payment provider. Please try again in a moment.',
-                txId: tx.id,
-            });
+            // Three distinct situations, previously collapsed into one
+            // misleading "could not reach the provider":
+            //   1. the provider answered and explained itself — say what it said
+            //   2. the provider answered and refused without detail
+            //   3. we genuinely could not reach it
+            const operatorLabel = check.service === 'ORANGE' ? 'Orange Money' : 'MTN MoMo';
+            let message;
+            if (mesombErr?.providerRejected) {
+                message = `${operatorLabel} could not process this payment: ${mesombErr.message}`;
+            } else if (mesombErr?.response || /InvalidClientRequest|ServiceNotFound|PermissionDenied|rejected/i.test(String(mesombErr?.name) + detail)) {
+                message = `${operatorLabel} declined this request. If the problem repeats, try the other operator or contact support.`;
+            } else {
+                message = 'Could not reach the payment provider. Please try again in a moment.';
+            }
+
+            return res.status(502).json({ error: message, txId: tx.id });
         }
 
         await prisma.transactions.update({ where: { id: tx.id }, data: { reference } });

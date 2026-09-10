@@ -58,11 +58,44 @@ function validatePayer(service, rawPayer) {
 }
 
 /**
+ * Reduce text to plain ASCII for the payment provider.
+ *
+ * MeSomb rejects a request whose body contains non-ASCII characters with
+ * "Bad signature": the SDK hashes the payload client-side and the server's
+ * recomputed hash disagrees once anything above U+007F is present. Verified
+ * directly — an identical request is ACCEPTED with an ASCII description and
+ * REJECTED with the same text carrying a single em dash.
+ *
+ * This bites silently, because the offending character is usually typographic
+ * punctuation in a title that nobody thinks of as "special". Every premium
+ * note title here contains an em dash, so every purchase failed.
+ *
+ * Only the text sent to the provider is flattened; stored titles keep their
+ * real punctuation.
+ */
+function toAsciiSafe(text) {
+    return String(text || '')
+        .replace(/[‐-―]/g, '-')      // hyphens, en/em dashes
+        .replace(/[‘’‛]/g, "'") // curly single quotes
+        .replace(/[“”‟]/g, '"') // curly double quotes
+        .replace(/…/g, '...')             // ellipsis
+        .replace(/[   ]/g, ' ') // non-breaking spaces
+        // Anything still outside printable ASCII (accents, symbols, emoji) is
+        // dropped rather than guessed at.
+        .replace(/[^\x20-\x7E]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 120);
+}
+
+/**
  * Send the USSD push. Asynchronous mode: resolves as soon as the operator
  * accepts the request, long before the payer enters their PIN.
  * @returns {Promise<string|null>} the MeSomb transaction reference (pk)
  */
 async function initiateCollect({ amount, service, payer, description, externalId }) {
+    const safeDescription = toAsciiSafe(description);
+
     const response = await getPaymentClient().makeCollect({
         amount,
         service,
@@ -72,11 +105,20 @@ async function initiateCollect({ amount, service, payer, description, externalId
         mode: 'asynchronous',
         nonce: RandomGenerator.nonce(),
         ...(externalId != null && { trxID: String(externalId) }),
-        ...(description && { extra: { description } }),
+        ...(safeDescription && { extra: { description: safeDescription } }),
     });
 
     if (!response.isOperationSuccess()) {
-        throw new Error('Provider rejected the payment request');
+        // The provider explains itself — "does not know the recipient" for a
+        // number that is not on the network, for instance. Passing that
+        // through is far more useful than a generic rejection, and it is the
+        // difference between a payer correcting a typo and giving up.
+        const reason = response.message
+            || response.transaction?.data?.message
+            || 'Provider rejected the payment request';
+        const err = new Error(reason);
+        err.providerRejected = true;
+        throw err;
     }
     return response.transaction?.pk || null;
 }
@@ -96,4 +138,4 @@ async function checkStatus(reference) {
     return 'PENDING';
 }
 
-module.exports = { SERVICES, normalizePhone, detectOperator, validatePayer, initiateCollect, checkStatus };
+module.exports = { SERVICES, normalizePhone, detectOperator, validatePayer, initiateCollect, checkStatus, toAsciiSafe };
