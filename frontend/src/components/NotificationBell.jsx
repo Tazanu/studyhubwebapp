@@ -83,7 +83,13 @@ export default function NotificationBell() {
             {showPanel && (
                 <>
                     <div className="fixed inset-0 z-40" onClick={() => setShowPanel(false)} />
-                    <div className="absolute right-0 mt-2 w-screen max-w-sm rounded-xl border border-border bg-surface-raised shadow-xl z-50 max-h-[28rem] overflow-y-auto" style={{ minWidth: '280px' }}>
+                    {/* On a phone this is a sheet pinned inside the viewport.
+                        It was an absolutely-positioned dropdown anchored to the
+                        bell with w-screen and max-w-sm: on a narrow screen that
+                        pushed its left edge past the viewport, so the start of
+                        every message was cut off rather than wrapped. From sm up
+                        it goes back to a normal dropdown. */}
+                    <div className="fixed left-3 right-3 top-[4.5rem] sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[26rem] rounded-xl border border-border bg-surface-raised shadow-xl z-50 max-h-[70vh] sm:max-h-[28rem] overflow-y-auto overscroll-contain">
                         {/* header */}
                         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                             <h3 className="font-bold text-sm text-fg">Notifications</h3>
@@ -116,11 +122,14 @@ export default function NotificationBell() {
                                         </span>
 
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm leading-snug text-fg">
+                                            <p className="text-sm leading-snug text-fg break-words whitespace-pre-line">
                                                 {notif.message}
                                             </p>
                                             <p className="text-xs mt-1 text-fg-secondary">
-                                                {new Date(notif.created_at).toLocaleString()}
+                                                {new Date(notif.created_at).toLocaleString([], {
+                                                    day: 'numeric', month: 'short',
+                                                    hour: '2-digit', minute: '2-digit',
+                                                })}
                                             </p>
                                             {/* actionable hint — only on unread join requests */}
                                             {notif.type === 'join_request' && !notif.is_read && (
