@@ -168,10 +168,13 @@ router.get('/availability/me', authenticate, async (req, res) => {
 // ===================== BECOME A TUTOR =====================
 router.post('/', authenticate, async (req, res) => {
     try {
-        const { bio, subjects, hourlyRate, experienceYears } = req.body;
+        const { bio, subjects, hourlyRate, experienceYears, yearsExperience } = req.body;
 
         if (!bio || !subjects || !hourlyRate) {
             return res.status(400).json({ error: 'Bio, subjects, and hourly rate are required' });
+        }
+        if (!Array.isArray(subjects) || subjects.length === 0) {
+            return res.status(400).json({ error: 'At least one subject is required' });
         }
 
         const existingTutor = await prisma.tutors.findUnique({ where: { user_id: req.userId } });
@@ -185,7 +188,13 @@ router.post('/', authenticate, async (req, res) => {
                 bio,
                 subjects,
                 hourly_rate: hourlyRate,
-                experience_years: experienceYears || 0
+                // The column is `years_experience` and holds a string ("3-5").
+                // This wrote `experience_years: 0` — a field that does not
+                // exist and a type that does not match — so every application
+                // through this route failed with an opaque 500.
+                ...(yearsExperience ?? experienceYears
+                    ? { years_experience: String(yearsExperience ?? experienceYears) }
+                    : {}),
             }
         });
 
