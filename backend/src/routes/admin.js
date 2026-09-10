@@ -1,6 +1,7 @@
 const express = require('express');
 const prisma = require('../prisma');
 const adminAuth = require('../middleware/admin');
+const { assessUploaderTrust } = require('../services/uploaderTrust');
 
 const router = express.Router();
 
