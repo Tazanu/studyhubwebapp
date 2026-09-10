@@ -5,10 +5,13 @@ import { useAuth } from '../context/AuthContext';
 import NotificationBell from './NotificationBell';
 import StudyHubLogo from './StudyHubLogo';
 import Button from './ui/Button';
+import { useTranslation } from 'react-i18next';
+import LanguageToggle from './LanguageToggle';
 
 const DASHBOARD_ROUTES = ['/dashboard', '/groups', '/notes', '/qa', '/tutors', '/profile', '/settings', '/become-tutor', '/admin', '/premium'];
 
 export default function Navbar() {
+    const { t } = useTranslation();
     const { theme, toggleTheme } = useTheme();
     const { user, logout } = useAuth();
     const navigate = useNavigate();
@@ -52,11 +55,12 @@ export default function Navbar() {
             {isDash && <div />}
 
             <div className="flex items-center gap-1.5 sm:gap-3">
+                <LanguageToggle compact />
                 {user && isDash && <NotificationBell />}
                 <button
                     onClick={toggleTheme}
                     className="w-11 h-11 rounded-full border-2 border-border bg-surface text-fg flex items-center justify-center transition-all hover:bg-primary-solid hover:text-white hover:border-primary shrink-0"
-                    aria-label="Toggle theme"
+                    aria-label={t('nav.toggleTheme')}
                 >
                     {theme === 'light' ? <Sun size={18} /> : <Moon size={18} />}
                 </button>
@@ -65,7 +69,7 @@ export default function Navbar() {
                     !isDash && (
                         <>
                             <Button to="/dashboard" variant="outline" size="sm" icon={LayoutDashboard} className="whitespace-nowrap">
-                                <span className="hidden sm:inline">Dashboard</span>
+                                <span className="hidden sm:inline">{t('nav.dashboard')}</span>
                             </Button>
                             <button onClick={handleLogout}
                                 className="flex items-center gap-1.5 px-3 py-2 rounded-md font-semibold border-2 border-border text-fg transition-all hover:bg-danger hover:text-white hover:border-danger text-xs sm:text-sm whitespace-nowrap">
@@ -77,10 +81,10 @@ export default function Navbar() {
                 ) : (
                     <>
                         <Button to="/login" variant="outline" size="sm">
-                            Log in
+                            {t('nav.login')}
                         </Button>
                         <Button to="/register" size="sm" className="hover:-translate-y-0.5">
-                            Sign Up
+                            {t('nav.signup')}
                         </Button>
                     </>
                 )}

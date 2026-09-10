@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { onServerWaking } from '../api/client';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Explains the wait when the API is being retried after a transport failure.
@@ -12,6 +13,7 @@ import { onServerWaking } from '../api/client';
  * group, means most of them never come back.
  */
 export default function ServerWakingBanner() {
+    const { t } = useTranslation();
     const [waking, setWaking] = useState(false);
 
     useEffect(() => onServerWaking(setWaking), []);
@@ -30,7 +32,7 @@ export default function ServerWakingBanner() {
                 >
                     <Loader2 size={15} className="animate-spin text-primary shrink-0" />
                     <span className="text-xs font-medium text-fg whitespace-nowrap">
-                        Waking the server &mdash; this can take up to a minute
+                        {t('server.waking')}
                     </span>
                 </motion.div>
             )}

@@ -3,6 +3,7 @@ import { Home, Search, ArrowLeft, Users, FileText, MessageCircleQuestion } from 
 import Button from '../components/ui/Button';
 import HomeFooter from '../components/home/HomeFooter';
 import Seo from '../components/Seo';
+import { useTranslation } from 'react-i18next';
 
 const SUGGESTIONS = [
     { to: '/groups', icon: Users,                 label: 'Study Groups', hint: 'Join or start a group' },
@@ -11,6 +12,7 @@ const SUGGESTIONS = [
 ];
 
 export default function NotFound() {
+    const { t } = useTranslation();
     const { pathname } = useLocation();
 
     return (
@@ -29,11 +31,11 @@ export default function NotFound() {
                         className="font-bold mb-3"
                         style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 'clamp(1.5rem, 4vw, 2rem)', letterSpacing: '-0.02em' }}
                     >
-                        We couldn&rsquo;t find that page
+                        {t('notFound.title')}
                     </h1>
 
                     <p className="text-sm leading-relaxed mb-2 text-fg-secondary">
-                        The page you asked for doesn&rsquo;t exist, or it may have been moved or deleted.
+                        {t('notFound.body')}
                     </p>
 
                     {/* Showing the attempted path makes a mistyped or stale link
@@ -42,16 +44,16 @@ export default function NotFound() {
                     <p className="text-xs mb-9 font-mono break-all text-fg-muted">{pathname}</p>
 
                     <div className="flex flex-col sm:flex-row gap-3 justify-center mb-14">
-                        <Button to="/" icon={Home}>Back to home</Button>
+                        <Button to="/" icon={Home}>{t('notFound.backHome')}</Button>
                         <Button variant="secondary" icon={ArrowLeft} onClick={() => window.history.back()}>
-                            Go back
+                            {t('notFound.goBack')}
                         </Button>
                     </div>
 
                     <div className="pt-8 border-t border-border">
                         <p className="text-xs font-bold uppercase tracking-widest mb-5 text-fg-secondary">
                             <Search size={13} className="inline mr-1.5 -mt-0.5" />
-                            Try one of these instead
+                            {t('notFound.tryInstead')}
                         </p>
                         <div className="grid sm:grid-cols-3 gap-3">
                             {SUGGESTIONS.map(({ to, icon: Icon, label, hint }) => (

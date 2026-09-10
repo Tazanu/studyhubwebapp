@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Cookie } from 'lucide-react';
 import Button from './ui/Button';
+import { useTranslation } from 'react-i18next';
 
 const STORAGE_KEY = 'cookie-notice';
 
@@ -21,6 +22,7 @@ const STORAGE_KEY = 'cookie-notice';
  * visitor opts in.
  */
 export default function CookieNotice() {
+    const { t } = useTranslation();
     const [visible, setVisible] = useState(false);
 
     useEffect(() => {
@@ -37,8 +39,8 @@ export default function CookieNotice() {
         if (!seen) {
             // Let the page paint and settle first; appearing mid-load competes
             // with the content the visitor actually came for.
-            const t = setTimeout(() => setVisible(true), 1200);
-            return () => clearTimeout(t);
+            const timer = setTimeout(() => setVisible(true), 1200);
+            return () => clearTimeout(timer);
         }
     }, []);
 
@@ -61,7 +63,7 @@ export default function CookieNotice() {
                     exit={{ opacity: 0, y: 24 }}
                     transition={{ type: 'spring', stiffness: 320, damping: 30 }}
                     role="region"
-                    aria-label="Cookie notice"
+                    aria-label={t('cookies.noticeTitle')}
                     className="fixed bottom-4 left-4 right-4 sm:left-6 sm:right-auto sm:max-w-md z-50 rounded-2xl border border-border bg-surface-raised shadow-lg p-4 flex gap-3"
                 >
                     <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-primary-subtle">
@@ -69,21 +71,19 @@ export default function CookieNotice() {
                     </div>
 
                     <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-fg">A quick note on cookies</p>
+                        <p className="text-sm font-bold text-fg">{t('cookies.noticeTitle')}</p>
                         <p className="text-xs mt-1 leading-relaxed text-fg-secondary">
-                            We store only what keeps you signed in and remembers your theme. No
-                            advertising cookies, and our analytics is cookieless &mdash; nothing
-                            follows you to other sites.{' '}
+                            {t('cookies.noticeBody')}{' '}
                             <Link
                                 to="/cookies"
                                 className="font-semibold text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary rounded"
                             >
-                                Read the details
+                                {t('cookies.readDetails')}
                             </Link>
                         </p>
                         <div className="mt-3">
                             <Button size="sm" onClick={dismiss} autoFocus>
-                                Got it
+                                {t('cookies.gotIt')}
                             </Button>
                         </div>
                     </div>

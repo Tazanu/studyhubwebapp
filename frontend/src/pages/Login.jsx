@@ -8,8 +8,10 @@ import Field from '../components/ui/Field';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import Seo from '../components/Seo';
+import { useTranslation } from 'react-i18next';
 
 export default function Login() {
+    const { t } = useTranslation();
     const { login }  = useAuth();
     const navigate   = useNavigate();
     const isOnline   = useOnlineStatus();
@@ -26,11 +28,11 @@ export default function Login() {
     /* ── blur-time validation ───────────────────────────────── */
     const validateField = (name, value) => {
         if (name === 'email') {
-            if (!value)                          return 'Email is required';
-            if (!/\S+@\S+\.\S+/.test(value))     return 'Enter a valid email address';
+            if (!value)                          return t('auth.emailRequired');
+            if (!/\S+@\S+\.\S+/.test(value))     return t('auth.emailInvalid');
         }
         if (name === 'password') {
-            if (!value)                          return 'Password is required';
+            if (!value)                          return t('auth.passwordRequired');
         }
         return '';
     };
@@ -67,7 +69,7 @@ export default function Login() {
             navigate('/dashboard');
         } catch (err) {
             // Keep email — only flag password field on auth failure
-            setErrors({ general: apiError(err, 'Login failed. Please try again.') });
+            setErrors({ general: apiError(err, t('auth.loginFailed')) });
             setPassword('');
         } finally {
             setLoading(false);
@@ -81,8 +83,8 @@ export default function Login() {
                 {/* header */}
                 <div className="text-center mb-8">
                     <div className="text-2xl font-bold mb-3 logo-gradient">StudyHub</div>
-                    <h1 className="text-2xl font-bold mb-2 text-fg">Welcome Back</h1>
-                    <p className="text-fg-secondary">Sign in to continue your learning journey</p>
+                    <h1 className="text-2xl font-bold mb-2 text-fg">{t('auth.welcomeBack')}</h1>
+                    <p className="text-fg-secondary">{t('auth.signInPrompt')}</p>
                 </div>
 
                 {/* general error — aria-live so screen readers announce it */}
@@ -97,14 +99,14 @@ export default function Login() {
                 <form onSubmit={handleSubmit} noValidate>
 
                     {/* email */}
-                    <Field label="Email Address" htmlFor="email" error={touched.email ? errors.email : ''}>
+                    <Field label={t('auth.email')} htmlFor="email" error={touched.email ? errors.email : ''}>
                         <Input
                             id="email"
                             type="email"
                             value={email}
                             onChange={e => setEmail(e.target.value)}
                             onBlur={e => handleBlur('email', e.target.value)}
-                            placeholder="you@university.cm"
+                            placeholder={t('auth.emailPlaceholder')}
                             autoComplete="email"
                             aria-describedby={errors.email ? 'email-error' : undefined}
                             invalid={!!(errors.email && touched.email)}
@@ -112,7 +114,7 @@ export default function Login() {
                     </Field>
 
                     {/* password + toggle */}
-                    <Field label="Password" htmlFor="password" error={touched.password ? errors.password : ''}>
+                    <Field label={t('auth.password')} htmlFor="password" error={touched.password ? errors.password : ''}>
                         <div className="relative">
                             <Input
                                 id="password"
@@ -120,7 +122,7 @@ export default function Login() {
                                 value={password}
                                 onChange={e => setPassword(e.target.value)}
                                 onBlur={e => handleBlur('password', e.target.value)}
-                                placeholder="Enter your password"
+                                placeholder={t('auth.passwordPlaceholder')}
                                 autoComplete="current-password"
                                 aria-describedby={errors.password ? 'password-error' : undefined}
                                 invalid={!!(errors.password && touched.password)}
@@ -130,7 +132,7 @@ export default function Login() {
                                 type="button"
                                 onClick={() => setShowPw(v => !v)}
                                 className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded transition-colors text-fg-muted hover:text-fg"
-                                aria-label={showPw ? 'Hide password' : 'Show password'}
+                                aria-label={showPw ? t('auth.hidePassword') : t('auth.showPassword')}
                                 tabIndex={0}
                             >
                                 {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -150,7 +152,7 @@ export default function Login() {
                             className="w-4 h-4 shrink-0 m-1 cursor-pointer"
                         />
                         <label htmlFor="remember" className="text-sm select-none cursor-pointer py-1 text-fg-secondary">
-                            Remember me
+                            {t('auth.rememberMe')}
                         </label>
                     </div>
 
