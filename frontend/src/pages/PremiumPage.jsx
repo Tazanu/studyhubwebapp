@@ -139,36 +139,39 @@ function PayModal({ open, title, amount, onConfirm, onClose, loading, waitingPho
 
 // ── Receipt Modal ─────────────────────────────────────────────────────────────
 function ReceiptModal({ receipt, onClose }) {
-    const printReceipt = () => {
-        const w = window.open('', '_blank', 'width=600,height=700');
-        w.document.write(`<!DOCTYPE html><html><head><title>Receipt ${receipt.receiptNo}</title>
-<style>
-body{font-family:Arial,sans-serif;padding:40px;color:#111;max-width:520px;margin:0 auto}
-.logo{font-size:22px;font-weight:800;color:#d97706;margin-bottom:4px}
-.sub{font-size:12px;color:#666;margin-bottom:28px}
-h2{font-size:18px;margin:0 0 20px;border-bottom:2px solid #fbbf24;padding-bottom:10px}
-.row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;font-size:13px}
-.label{color:#666}.value{font-weight:600;text-align:right;max-width:60%}
-.total{display:flex;justify-content:space-between;padding:14px 0;font-size:16px;font-weight:800;color:#d97706}
-.badge{display:inline-block;background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700}
-.footer{margin-top:28px;font-size:11px;color:#999;text-align:center}
-</style></head><body>
-<div class="logo">&#128081; StudyHub</div>
-<div class="sub">Payment Receipt</div>
-<h2>Receipt #${receipt.receiptNo}</h2>
-<div class="row"><span class="label">Date</span><span class="value">${new Date(receipt.date).toLocaleString()}</span></div>
-<div class="row"><span class="label">Name</span><span class="value">${receipt.name}</span></div>
-<div class="row"><span class="label">Email</span><span class="value">${receipt.email}</span></div>
-<div class="row"><span class="label">Description</span><span class="value">${receipt.description}</span></div>
-<div class="row"><span class="label">Payment Type</span><span class="value">${receipt.type === 'subscription' ? 'Monthly Subscription' : 'Note Purchase'}</span></div>
-<div class="row"><span class="label">MeSomb Reference</span><span class="value">${receipt.reference || 'N/A'}</span></div>
-<div class="row"><span class="label">Status</span><span class="value"><span class="badge">&#10003; Completed</span></span></div>
-<div class="total"><span>Total Paid</span><span>${receipt.amount.toLocaleString()} FCFA</span></div>
-<div class="footer">Thank you for using StudyHub. This is an official payment receipt.<br/>Keep this for your records.</div>
-</body></html>`);
-        w.document.close();
-        w.focus();
-        setTimeout(() => w.print(), 300);
+    const [saving, setSaving] = useState(false);
+
+    /**
+     * Open the server-rendered receipt.
+     *
+     * Building the document in a popup and calling print() is blocked or
+     * mangled by most mobile browsers. Fetching the real document with the auth
+     * header and handing the browser a blob works everywhere, and the same URL
+     * can be opened again later from payment history.
+     */
+    const openReceipt = async () => {
+        if (!receipt) return;
+        setSaving(true);
+        try {
+            const res = await api.get(`/premium/pay/receipt/${receipt.txId}?format=html`, { responseType: 'blob' });
+            const url = URL.createObjectURL(new Blob([res.data], { type: 'text/html' }));
+            const win = window.open(url, '_blank', 'noopener');
+            if (!win) {
+                // Popup blocked — fall back to a direct download so the receipt
+                // is still saved rather than silently lost.
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `StudyHub-receipt-${receipt.receiptNo}.html`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            }
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+        } catch (err) {
+            toast.error(apiError(err, 'Could not open the receipt'));
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
@@ -204,8 +207,8 @@ h2{font-size:18px;margin:0 0 20px;border-bottom:2px solid #fbbf24;padding-bottom
 
                     <div className="flex gap-3">
                         <Button onClick={onClose} variant="secondary" fullWidth>Close</Button>
-                        <Button onClick={printReceipt} icon={Download} fullWidth className="!bg-[image:linear-gradient(135deg,#059669,#34d399)]">
-                            Download PDF
+                        <Button onClick={openReceipt} loading={saving} icon={Download} fullWidth className="!bg-[image:linear-gradient(135deg,#059669,#34d399)]">
+                            Receipt
                         </Button>
                     </div>
                 </>

@@ -240,7 +240,41 @@ async function completeOrder(txId) {
     }
     // paid_note needs no extra row - the completed transaction is the receipt.
 
+    // Tell the payer. This lives here rather than in the polling route because
+    // a payment can settle long after the browser gave up — the background
+    // reconciler calls this too, and without a notification that money simply
+    // disappears from the payer's point of view.
+    await notifyPayer(tx, 'completed');
+
     return describeGranted(tx);
+}
+
+/**
+ * Record an in-app notification about a settled payment.
+ *
+ * Deliberately never throws: a notification failing must not roll back or mask
+ * a payment that actually succeeded.
+ */
+async function notifyPayer(tx, outcome) {
+    const amount = `${Number(tx.amount).toLocaleString()} FCFA`;
+    const what = tx.metadata?.noteTitle
+        || (tx.type === 'subscription' ? 'your Premium subscription' : tx.description || 'your purchase');
+
+    const message = outcome === 'completed'
+        ? `Payment of ${amount} for "${what}" was successful. Receipt SH-${String(tx.id).padStart(6, '0')} is available in your payment history.`
+        : `Payment of ${amount} for "${what}" did not go through. You have not been charged. You can try again from the Premium page.`;
+
+    try {
+        await prisma.notifications.create({
+            data: {
+                user_id: tx.user_id,
+                type: outcome === 'completed' ? 'payment_success' : 'payment_failed',
+                message: message.slice(0, 500),
+            },
+        });
+    } catch (e) {
+        console.error(`Payment notification failed for tx ${tx.id}:`, e.message);
+    }
 }
 
 /** Build the response payload for a completed transaction. */
@@ -325,13 +359,21 @@ async function refundCredit(packId) {
 
 /** Mark a pending transaction failed (no-op if already settled). */
 async function failOrder(txId) {
-    await prisma.transactions.updateMany({
+    const claimed = await prisma.transactions.updateMany({
         where: { id: txId, status: 'pending' },
         data: { status: 'failed', updated_at: new Date() },
     });
+
+    // Only notify on the transition, so a retried or re-polled failure does not
+    // send the same bad news twice.
+    if (claimed.count > 0) {
+        const tx = await prisma.transactions.findUnique({ where: { id: txId } });
+        if (tx) await notifyPayer(tx, 'failed');
+    }
 }
 
 module.exports = {
+    notifyPayer,
     PLATFORM_FEE,
     TUTOR_PLANS,
     ORDER_TYPES,
