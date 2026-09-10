@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Bell, UserPlus, CheckCircle2, XCircle } from 'lucide-react';
 import api from '../api/client';
@@ -15,6 +16,33 @@ export default function NotificationBell() {
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [showPanel, setShowPanel] = useState(false);
+    const bellRef = useRef(null);
+    const [anchor, setAnchor] = useState(null);
+
+    /**
+     * Measure the bell so the portal can be placed next to it.
+     *
+     * The panel is rendered into document.body rather than beside the bell,
+     * because `position: fixed` resolves against the nearest ancestor carrying
+     * a transform rather than the viewport. One of the navbar's ancestors has
+     * one, which collapsed the panel to the width of the navbar's right-hand
+     * section — about 106px, one word per line. A portal has no such ancestor.
+     */
+    const placePanel = useCallback(() => {
+        const r = bellRef.current?.getBoundingClientRect();
+        if (r) setAnchor({ top: r.bottom + 8, right: window.innerWidth - r.right });
+    }, []);
+
+    useEffect(() => {
+        if (!showPanel) return undefined;
+        placePanel();
+        window.addEventListener('resize', placePanel);
+        window.addEventListener('scroll', placePanel, true);
+        return () => {
+            window.removeEventListener('resize', placePanel);
+            window.removeEventListener('scroll', placePanel, true);
+        };
+    }, [showPanel, placePanel]);
     const navigate = useNavigate();
     const { user } = useAuth();
 
@@ -68,6 +96,7 @@ export default function NotificationBell() {
     return (
         <div className="relative">
             <button
+                ref={bellRef}
                 onClick={() => setShowPanel(!showPanel)}
                 className="w-10 h-10 rounded-full border-2 border-border bg-surface text-fg flex items-center justify-center transition-all hover:bg-primary-solid hover:text-white hover:border-primary relative"
                 aria-label="Notifications"
@@ -80,16 +109,21 @@ export default function NotificationBell() {
                 )}
             </button>
 
-            {showPanel && (
+            {showPanel && anchor && createPortal(
                 <>
                     <div className="fixed inset-0 z-40" onClick={() => setShowPanel(false)} />
-                    {/* On a phone this is a sheet pinned inside the viewport.
-                        It was an absolutely-positioned dropdown anchored to the
-                        bell with w-screen and max-w-sm: on a narrow screen that
-                        pushed its left edge past the viewport, so the start of
-                        every message was cut off rather than wrapped. From sm up
-                        it goes back to a normal dropdown. */}
-                    <div className="fixed left-3 right-3 top-[4.5rem] sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[26rem] rounded-xl border border-border bg-surface-raised shadow-xl z-50 max-h-[70vh] sm:max-h-[28rem] overflow-y-auto overscroll-contain">
+                    {/* Full-width sheet on a phone, anchored dropdown from sm up.
+                        Positioned from the bell's measured rect because this is
+                        portalled to document.body, away from the transformed
+                        ancestor that was containing `fixed`. */}
+                    <div
+                        style={{
+                            top: anchor.top,
+                            right: window.innerWidth < 640 ? 12 : anchor.right,
+                            left: window.innerWidth < 640 ? 12 : 'auto',
+                            width: window.innerWidth < 640 ? 'auto' : 'min(26rem, calc(100vw - 24px))',
+                        }}
+                        className="fixed rounded-xl border border-border bg-surface-raised shadow-xl z-50 max-h-[70vh] sm:max-h-[28rem] overflow-y-auto overscroll-contain">
                         {/* header */}
                         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                             <h3 className="font-bold text-sm text-fg">Notifications</h3>
@@ -148,7 +182,8 @@ export default function NotificationBell() {
                             })
                         )}
                     </div>
-                </>
+                </>,
+                document.body,
             )}
         </div>
     );
