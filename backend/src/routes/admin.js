@@ -216,11 +216,46 @@ router.get('/payments/diagnostics', async (req, res) => {
             live = { ok: false, error: e?.name, detail: (e?.message || '').split('\n')[0].slice(0, 160) };
         }
 
+        // The SDK builds its signing scope from LOCAL-time getters
+        // (getFullYear/getMonth/getDate), so the same instant produces a
+        // different scope in different timezones. Report what this server
+        // would sign with, to compare against a working environment.
+        const now = new Date();
+        const scope = `${now.getFullYear()}${now.getMonth()}${now.getDate()}`;
+
+        // A POST is what actually fails; getStatus is a GET with no body, so it
+        // proves the keys but not the signing of a bodied request.
+        let collect = { attempted: false };
+        if (req.query.testCollect === '1') {
+            try {
+                const { getPaymentClient, RandomGenerator } = require('../mesomb');
+                const r = await getPaymentClient().makeCollect({
+                    amount: 100, service: 'MTN', payer: '670000000',
+                    country: 'CM', currency: 'XAF', mode: 'asynchronous',
+                    nonce: RandomGenerator.nonce(),
+                });
+                collect = { attempted: true, accepted: true, success: r.isOperationSuccess?.(), pk: r.transaction?.pk || null };
+            } catch (e) {
+                collect = {
+                    attempted: true, accepted: false,
+                    type: e?.name,
+                    detail: (e?.message || '').split('\n')[0].slice(0, 200),
+                    code: e?.code ?? null,
+                };
+            }
+        }
+
         res.json({
             nodeEnv: process.env.NODE_ENV || '(unset)',
-            serverTime: new Date().toISOString(),
+            serverTime: now.toISOString(),
+            timezoneOffsetMinutes: now.getTimezoneOffset(),
+            tz: process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone,
+            signingScopeDate: scope,
+            nodeVersion: process.version,
+            sdkVersion: require('@hachther/mesomb/package.json').version,
             keys,
             live,
+            collect,
         });
     } catch (err) {
         console.error('Payment diagnostics error:', err);
