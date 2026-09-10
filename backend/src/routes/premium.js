@@ -158,6 +158,88 @@ router.post('/pay/initiate', authenticate, async (req, res) => {
     }
 });
 
+// ── POST /premium/pay/cancel/:txId ───────────────────────────────────────────
+/**
+ * Give up on a payment the payer no longer wants to wait for.
+ *
+ * The subtlety is that cancelling here cannot recall the USSD prompt already
+ * sitting on their phone. Marking the transaction failed and walking away would
+ * mean that if they then entered their PIN, the money would move and they would
+ * receive nothing — the one outcome that must never happen.
+ *
+ * So this asks the provider what actually happened first:
+ *   - already succeeded  -> grant it, and say so; they paid, they get the note
+ *   - already failed     -> mark it failed, nothing was taken
+ *   - never reached them -> cancel outright, there is nothing in flight
+ *   - still in flight    -> stop the UI waiting, but leave the row pending so
+ *                           the reconciler keeps watching it. A late approval
+ *                           still grants access and still notifies them.
+ */
+router.post('/pay/cancel/:txId', authenticate, async (req, res) => {
+    try {
+        const txId = parseInt(req.params.txId);
+        if (!txId) return res.status(400).json({ error: 'Invalid transaction ID' });
+
+        const tx = await prisma.transactions.findUnique({ where: { id: txId } });
+        if (!tx || tx.user_id !== req.userId) {
+            return res.status(404).json({ error: 'Transaction not found' });
+        }
+
+        // Idempotent: cancelling something already settled just reports it.
+        if (tx.status === 'completed') {
+            return res.json({ status: 'completed', message: 'This payment already went through.', ...(await describeGranted(tx)) });
+        }
+        if (tx.status !== 'pending') {
+            return res.json({ status: tx.status, message: 'This payment is no longer in progress.' });
+        }
+
+        // No reference means the provider never accepted it, so nothing is in
+        // flight and it is safe to close outright.
+        if (!tx.reference) {
+            await failOrder(txId);
+            return res.json({ status: 'cancelled', message: 'Payment cancelled. You have not been charged.' });
+        }
+
+        let providerStatus;
+        try {
+            providerStatus = await checkStatus(tx.reference);
+        } catch (e) {
+            console.error(`Cancel: status check failed for tx ${txId}:`, e.message);
+            providerStatus = 'PENDING';   // unknown — treat as still in flight
+        }
+
+        if (providerStatus === 'SUCCESS') {
+            const granted = await completeOrder(txId);
+            return res.json({
+                status: 'completed',
+                message: 'Your payment had already gone through, so it has been applied rather than cancelled.',
+                ...granted,
+            });
+        }
+
+        if (providerStatus === 'FAILED') {
+            await failOrder(txId);
+            return res.json({ status: 'cancelled', message: 'Payment cancelled. You have not been charged.' });
+        }
+
+        // Still in flight. Record the intent but leave it pending — the
+        // reconciler must keep watching, or an approval seconds from now would
+        // take the money with nothing to show for it.
+        await prisma.transactions.update({
+            where: { id: txId },
+            data: { metadata: { ...(tx.metadata || {}), userCancelledAt: new Date().toISOString() } },
+        }).catch(() => {});
+
+        res.json({
+            status: 'pending',
+            message: 'Stopped waiting. If you have already approved the payment on your phone it will still go through, and your access unlocks automatically — do not pay again.',
+        });
+    } catch (err) {
+        console.error('Cancel payment error:', err);
+        res.status(500).json({ error: 'Failed to cancel the payment' });
+    }
+});
+
 // ── GET /premium/pay/status/:txId ─────────────────────────────────────────────
 // Polled by the Premium page. Granting is idempotent, so overlapping polls are
 // safe: exactly one of them performs the grant.

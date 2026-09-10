@@ -73,7 +73,7 @@ function detectOperator(phone) {
 }
 
 // ── Payment Modal ─────────────────────────────────────────────────────────────
-function PayModal({ open, title, amount, onConfirm, onClose, loading, waitingPhone }) {
+function PayModal({ open, title, amount, onConfirm, onClose, onCancelPayment, loading, waitingPhone, cancelling }) {
     const [service, setService] = useState('MTN');
     const [payer, setPayer] = useState('');
 
@@ -102,7 +102,18 @@ function PayModal({ open, title, amount, onConfirm, onClose, loading, waitingPho
                     <p className="text-sm text-fg-secondary">
                         A USSD prompt has been sent to your phone.<br />Approve the payment to continue.
                     </p>
-                    <p className="text-xs mt-4 text-fg-muted">Waiting for confirmation… Keep this window open.</p>
+                    <p className="text-xs mt-4 mb-5 text-fg-muted">Waiting for confirmation… Keep this window open.</p>
+                    {/* Without this the payer is trapped watching a spinner:
+                        the modal refuses to close while a payment is in flight,
+                        and the transaction sits pending for 30 minutes until
+                        the reconciler abandons it. */}
+                    <Button
+                        variant="ghost" size="sm" fullWidth
+                        loading={cancelling}
+                        onClick={onCancelPayment}
+                    >
+                        {cancelling ? 'Checking with the operator…' : 'Cancel this payment'}
+                    </Button>
                 </div>
             ) : (
                 <>
@@ -373,6 +384,8 @@ export default function PremiumPage() {
     const [waitingPhone, setWaitingPhone] = useState(false);
     const [receipt, setReceipt] = useState(null);
     const pollRef = useRef(null);
+    const [activeTxId, setActiveTxId] = useState(null);
+    const [cancelling, setCancelling] = useState(false);
 
     const loadNotes = async () => {
         try {
@@ -388,6 +401,44 @@ export default function PremiumPage() {
 
     const stopPolling = () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
 
+    /**
+     * Stop waiting on a payment.
+     *
+     * The server decides what that means: a payment that already succeeded is
+     * applied rather than cancelled, so nobody pays and walks away empty
+     * handed, and one still in flight keeps being watched in the background.
+     */
+    const handleCancelPayment = async () => {
+        if (!activeTxId) { stopPolling(); setWaitingPhone(false); setPaying(false); setPayTarget(null); return; }
+        setCancelling(true);
+        try {
+            const { data } = await api.post(`/premium/pay/cancel/${activeTxId}`);
+            stopPolling();
+            setWaitingPhone(false);
+            setPaying(false);
+
+            if (data.status === 'completed') {
+                // It went through while they were cancelling — grant it, do not
+                // pretend it failed.
+                toast.success(data.message || 'Your payment went through.');
+                if (data.noteId) {
+                    setNotes(prev => prev.map(n => (n.id === data.noteId ? { ...n, purchased: true } : n)));
+                    openPremiumNote(data.noteId);
+                }
+            } else if (data.status === 'pending') {
+                toast.info(data.message, { duration: 9000 });
+            } else {
+                toast.success(data.message || 'Payment cancelled. You have not been charged.');
+            }
+            setPayTarget(null);
+            setActiveTxId(null);
+        } catch (err) {
+            toast.error(apiError(err, 'Could not cancel the payment. Check your phone before trying again.'));
+        } finally {
+            setCancelling(false);
+        }
+    };
+
     const handlePay = async ({ service, payer }) => {
         setPaying(true);
         try {
@@ -401,6 +452,7 @@ export default function PremiumPage() {
             if (!data.success) { toast.error(data.error || 'Failed to initiate payment'); setPaying(false); return; }
 
             const { txId } = data;
+            setActiveTxId(txId);
             setWaitingPhone(true);
 
             // Poll every 3s. The window matches the server-side payment TTL —
@@ -540,9 +592,11 @@ export default function PremiumPage() {
                 title={payTarget?.type === 'subscribe' ? 'Subscribe as Publisher' : `Buy: ${payTarget?.note?.title}`}
                 amount={payTarget?.type === 'subscribe' ? 1000 : Number(payTarget?.note?.price || 0)}
                 onConfirm={handlePay}
-                onClose={() => { if (!paying) { stopPolling(); setWaitingPhone(false); setPayTarget(null); } }}
+                onClose={() => { if (!paying) { stopPolling(); setWaitingPhone(false); setPayTarget(null); setActiveTxId(null); } }}
+                onCancelPayment={handleCancelPayment}
                 loading={paying}
                 waitingPhone={waitingPhone}
+                cancelling={cancelling}
             />
         </div>
     );
