@@ -42,6 +42,7 @@ const Tutors         = lazy(() => import('./pages/Tutors'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const PremiumPage    = lazy(() => import('./pages/PremiumPage'));
 const Cookies        = lazy(() => import('./pages/Cookies'));
+const Contact        = lazy(() => import('./pages/Contact'));
 const NotFound       = lazy(() => import('./pages/NotFound'));
 
 const DASH_ROUTES = ['/dashboard', '/groups', '/notes', '/qa', '/tutors', '/profile', '/settings', '/become-tutor', '/socket-test', '/admin', '/premium', '/tutor-dashboard'];
@@ -74,6 +75,7 @@ function Layout() {
                     <Route path="/terms"    element={<Terms />} />
                     <Route path="/privacy"  element={<Privacy />} />
                     <Route path="/cookies"  element={<Cookies />} />
+                    <Route path="/contact"  element={<Contact />} />
 
                     {/* protected */}
                     <Route path="/dashboard"           element={<Protected><Dashboard /></Protected>} />

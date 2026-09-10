@@ -20,6 +20,7 @@ const notificationRoutes = require('./routes/notifications');
 const userRoutes = require('./routes/users');
 const adminRoutes = require('./routes/admin');
 const premiumRoutes = require('./routes/premium');
+const contactRoutes = require('./routes/contact');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -154,6 +155,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/premium', premiumRoutes);
+app.use('/api/contact', contactRoutes);
 
 app.get('/', (req, res) => {
     res.json({ message: 'StudyHub API', version: '2.0.0' });

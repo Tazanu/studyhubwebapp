@@ -15,6 +15,7 @@ const PUBLIC_ROUTES = [
   { path: '/privacy',  changefreq: 'yearly',  priority: '0.3' },
   { path: '/terms',    changefreq: 'yearly',  priority: '0.3' },
   { path: '/cookies',  changefreq: 'yearly',  priority: '0.3' },
+  { path: '/contact',  changefreq: 'yearly',  priority: '0.6' },
 ]
 
 const PRIVATE_PREFIXES = [

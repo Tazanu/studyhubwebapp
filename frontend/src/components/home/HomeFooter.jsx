@@ -6,7 +6,6 @@ import Button from '../ui/Button';
 // Every entry must resolve to a real destination. The previous version pointed
 // nine of these at /register as a placeholder, so "Cookie Policy" and "Careers"
 // both landed on the signup form — worse than not listing them at all.
-const CONTACT_EMAIL = 'support@studyhub.example';
 
 const LINKS = {
     Platform: [
@@ -20,7 +19,7 @@ const LINKS = {
         { label: 'About Us',    to: '/about'    },
         { label: 'Sign Up',     to: '/register' },
         { label: 'Log In',      to: '/login'    },
-        { label: 'Contact Us',  href: `mailto:${CONTACT_EMAIL}` },
+        { label: 'Contact Us',  to: '/contact'  },
     ],
     Legal: [
         { label: 'Privacy Policy',   to: '/privacy' },
