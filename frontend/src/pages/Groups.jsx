@@ -5,6 +5,10 @@ import { toast } from 'sonner';
 import { Search, Plus, Users, UserCheck, SearchX,
     Laptop2, Calculator, FlaskConical, Cog, Briefcase,
     Scale, TrendingUp, Dna, Atom, WifiOff, Clock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+// Imperative toast copy comes from the instance, not the hook, so `t` stays out
+// of fetch closures and their dependency arrays.
+import i18n from '../i18n';
 import api, { apiError } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
@@ -49,6 +53,7 @@ const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
 
 /* ── main ─────────────────────────────────────────────────────── */
 export default function Groups() {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const navigate  = useNavigate();
     const isOnline = useOnlineStatus();
@@ -64,8 +69,8 @@ export default function Groups() {
 
     // Debounce search input — only update filter after 280ms of no typing
     useEffect(() => {
-        const t = setTimeout(() => setDebouncedSearch(search), 280);
-        return () => clearTimeout(t);
+        const timer = setTimeout(() => setDebouncedSearch(search), 280);
+        return () => clearTimeout(timer);
     }, [search]);
 
     const loadGroups = useCallback(async (silent = false) => {
@@ -74,7 +79,7 @@ export default function Groups() {
             const { data } = await api.get('/groups');
             setGroups(data);
         } catch (error) {
-            if (!silent) toast.error('Failed to load groups');
+            if (!silent) toast.error(i18n.t('groups.loadFailed'));
         } finally {
             if (!silent) setLoading(false);
         }
@@ -84,8 +89,8 @@ export default function Groups() {
 
     // Poll every 15s so new groups/membership changes appear
     useEffect(() => {
-        const t = setInterval(() => loadGroups(true), 15000);
-        return () => clearInterval(t);
+        const timer = setInterval(() => loadGroups(true), 15000);
+        return () => clearInterval(timer);
     }, [loadGroups]);
 
     /* ── filter ───────────────────────────────────────────────── */
@@ -111,13 +116,13 @@ export default function Groups() {
 
             if (data.requestStatus === 'pending') {
                 // Group requires approval — show pending state, don't mark as member yet
-                toast.info('Join request sent! Waiting for admin approval.');
+                toast.info(t('groups.requestSent'));
                 setGroups(prev => prev.map(g =>
                     g.id === groupId ? { ...g, pendingRequest: true } : g
                 ));
             } else {
                 // Instant join
-                toast.success('You joined the group!');
+                toast.success(t('groups.joined'));
                 setGroups(prev => prev.map(g =>
                     g.id === groupId
                         ? { ...g, isMember: true, memberRole: 'member', current_members: (g.current_members || 0) + 1 }
@@ -125,10 +130,10 @@ export default function Groups() {
                 ));
             }
         } catch (err) {
-            const msg = apiError(err, 'Failed to join group');
+            const msg = apiError(err, t('groups.joinFailed'));
             // Already pending
             if (err.response?.data?.requestStatus === 'pending') {
-                toast.info('Your join request is already pending approval.');
+                toast.info(t('groups.alreadyPending'));
             } else {
                 toast.error(msg);
             }
@@ -147,7 +152,7 @@ export default function Groups() {
 
         try {
             await api.delete(`/groups/${groupId}/leave`);
-            toast.success('You left the group');
+            toast.success(t('groups.left'));
         } catch (err) {
             // Roll back on failure
             setGroups(prev => prev.map(g =>
@@ -155,7 +160,7 @@ export default function Groups() {
                     ? { ...g, isMember: true, memberRole: 'member', current_members: (g.current_members || 0) + 1 }
                     : g
             ));
-            toast.error(apiError(err, 'Failed to leave group'));
+            toast.error(apiError(err, t('groups.leaveFailed')));
         }
     };
 
@@ -167,15 +172,15 @@ export default function Groups() {
 
             {/* ── HERO ────────────────────────────────────────── */}
             <section className="pt-20 px-6 py-12 text-center border-b border-border bg-primary-subtle">
-                <h1 className="text-3xl md:text-4xl font-bold mb-2 gradient-text" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>Study Groups</h1>
+                <h1 className="text-3xl md:text-4xl font-bold mb-2 gradient-text" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>{t('groups.title')}</h1>
                 <p className="max-w-xl mx-auto mb-8 text-sm text-fg-secondary">
-                    Join collaborative learning communities, share knowledge, and grow with peers.
+                    {t('groups.subtitle')}
                 </p>
                 <div className="flex justify-center gap-12 flex-wrap">
                     {[
-                        [groups.length,  'Active Groups'],
-                        [totalMembers,   'Total Members'],
-                        [subjects.length,'Subjects'],
+                        [groups.length,  t('groups.activeGroups')],
+                        [totalMembers,   t('groups.totalMembers')],
+                        [subjects.length,t('groups.subjects')],
                     ].map(([n, l]) => (
                         <div key={l} className="text-center">
                             <div className="text-3xl font-bold tabular-nums text-primary" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>{n}</div>
@@ -192,7 +197,8 @@ export default function Groups() {
                         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
                         <Input
                             type="text"
-                            placeholder="Search groups…"
+                            placeholder={t('groups.searchPlaceholder')}
+                            aria-label={t('groups.searchPlaceholder')}
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                             className="pl-9 h-10"
@@ -203,8 +209,8 @@ export default function Groups() {
                         onChange={e => setSubjectFilter(e.target.value)}
                         className="h-10 min-w-[140px]"
                     >
-                        <option value="">All Subjects</option>
-                        {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+                        <option value="">{t('groups.allSubjects')}</option>
+                        {subjects.map(s => <option key={s} value={s}>{t(`subjectName.${s}`, { defaultValue: s })}</option>)}
                     </Select>
                     {user ? (
                         <Button
@@ -212,13 +218,13 @@ export default function Groups() {
                             disabled={!isOnline}
                             icon={!isOnline ? WifiOff : Plus}
                             className="w-full sm:w-auto"
-                            title={!isOnline ? "You're offline — reconnect to create groups" : "Create a new group"}
+                            title={!isOnline ? t('groups.offlineCreateTitle') : t('groups.createTitle')}
                         >
-                            Create Group
+                            {t('groups.create')}
                         </Button>
                     ) : (
                         <Button to="/login" variant="outline" className="w-full sm:w-auto">
-                            Sign In to Create
+                            {t('groups.signInToCreate')}
                         </Button>
                     )}
                 </div>
@@ -243,9 +249,9 @@ export default function Groups() {
                 ) : filtered.length === 0 ? (
                     <EmptyState
                         icon={SearchX}
-                        title="No groups found"
-                        description={search || subjectFilter ? 'Try a different search or filter.' : 'Be the first to create a study group!'}
-                        action={user && <Button onClick={() => setShowModal(true)}>Create First Group</Button>}
+                        title={t('groups.emptyTitle')}
+                        description={search || subjectFilter ? t('groups.emptyFiltered') : t('groups.emptyNone')}
+                        action={user && <Button onClick={() => setShowModal(true)}>{t('groups.createFirst')}</Button>}
                     />
                 ) : (
                     <motion.div
@@ -272,7 +278,7 @@ export default function Groups() {
             <CreateGroupModal
                 open={showModal}
                 onClose={() => setShowModal(false)}
-                onCreated={() => { setShowModal(false); loadGroups(false); toast.success('Group created!'); }}
+                onCreated={() => { setShowModal(false); loadGroups(false); toast.success(i18n.t('groups.created')); }}
             />
 
             {/* ── MEMBERS MODAL ───────────────────────────────── */}
@@ -287,6 +293,7 @@ export default function Groups() {
 
 /* ── group card ───────────────────────────────────────────────── */
 function GroupCard({ group, user, joining, onJoin, onLeave, onViewMembers, isOnline }) {
+    const { t }    = useTranslation();
     const banner   = getBanner(group.subject);
     const isFull   = group.current_members >= group.max_members;
     const isMember = group.isMember;
@@ -335,7 +342,7 @@ function GroupCard({ group, user, joining, onJoin, onLeave, onViewMembers, isOnl
             <div className="p-5 flex flex-col flex-1">
                 <div className="flex justify-between items-start gap-2 mb-2">
                     <h3 className="font-semibold text-sm leading-snug text-fg">{group.name}</h3>
-                    <Badge tone="primary" size="sm" className="shrink-0">{group.subject}</Badge>
+                    <Badge tone="primary" size="sm" className="shrink-0">{t(`subjectName.${group.subject}`, { defaultValue: group.subject })}</Badge>
                 </div>
                 <p className="text-xs mb-3 flex-1 line-clamp-2 text-fg-secondary" style={{ lineHeight: 1.7 }}>
                     {group.description}
@@ -343,37 +350,38 @@ function GroupCard({ group, user, joining, onJoin, onLeave, onViewMembers, isOnl
                 <div className="flex justify-between text-xs mb-4 text-fg-secondary">
                     <button
                         onClick={onViewMembers}
+                        aria-label={t('groups.viewMembers')}
                         className={`inline-flex items-center gap-1 font-semibold transition-colors hover:text-primary ${isFull ? 'text-danger' : 'text-success'}`}
                     >
                         <Users size={12} />
                         {group.current_members}/{group.max_members}
                         <UserCheck size={11} className="ml-0.5 opacity-60" />
                     </button>
-                    <span>by {group.users?.first_name} {group.users?.last_name}</span>
+                    <span>{t('groups.by', { name: `${group.users?.first_name ?? ''} ${group.users?.last_name ?? ''}`.trim() })}</span>
                 </div>
 
                 {/* action buttons */}
                 {!user ? (
                     <Button to="/login" variant="outline" size="sm" fullWidth>
-                        Sign In to Join
+                        {t('groups.signInToJoin')}
                     </Button>
                 ) : isMember ? (
                     <div className="flex gap-2">
                         <Button to={`/groups/${group.id}/chat`} size="sm" fullWidth>
-                            Open Chat
+                            {t('groups.openChat')}
                         </Button>
                         {!isOwner && (
                             <InlineConfirm
                                 active={confirm.active}
                                 onCancel={confirm.cancel}
                                 onConfirm={() => confirm.run(onLeave)}
-                                confirmLabel="Yes, leave"
+                                confirmLabel={t('groups.confirmLeave')}
                                 trigger={
                                     <button
                                         onClick={confirm.ask}
                                         className="px-3 py-2 rounded-md text-xs border border-border text-fg-secondary transition-colors hover:border-danger hover:text-danger"
                                     >
-                                        Leave
+                                        {t('groups.leave')}
                                     </button>
                                 }
                             />
@@ -381,11 +389,11 @@ function GroupCard({ group, user, joining, onJoin, onLeave, onViewMembers, isOnl
                     </div>
                 ) : isFull ? (
                     <button disabled className="w-full text-xs py-2 rounded-md opacity-50 cursor-not-allowed border border-border">
-                        Group Full
+                        {t('groups.full')}
                     </button>
                 ) : group.pendingRequest ? (
                     <div className="w-full flex items-center justify-center gap-1.5 text-xs py-2 rounded-md font-semibold cursor-not-allowed bg-warning-bg text-warning border border-warning/30">
-                        <Clock size={12} /> Request Pending
+                        <Clock size={12} /> {t('groups.requestPending')}
                     </div>
                 ) : (
                     <Button
@@ -396,9 +404,9 @@ function GroupCard({ group, user, joining, onJoin, onLeave, onViewMembers, isOnl
                         size="sm"
                         fullWidth
                         className="!bg-[image:linear-gradient(135deg,#10b981,#34d399)]"
-                        title={!isOnline ? "You're offline — reconnect to join" : "Join this group"}
+                        title={!isOnline ? t('groups.offlineJoinTitle') : t('groups.joinTitle')}
                     >
-                        {!isOnline ? 'Offline' : joining ? 'Joining…' : 'Join Group'}
+                        {!isOnline ? t('groups.offline') : joining ? t('groups.joining') : t('groups.join')}
                     </Button>
                 )}
             </div>
@@ -408,6 +416,7 @@ function GroupCard({ group, user, joining, onJoin, onLeave, onViewMembers, isOnl
 
 /* ── create group modal ───────────────────────────────────────── */
 function CreateGroupModal({ open, onClose, onCreated }) {
+    const { t } = useTranslation();
     const [form,       setForm]       = useState({ name: '', subject: '', maxMembers: 20, description: '' });
     const [submitting, setSubmitting] = useState(false);
     const firstRef = useRef(null);
@@ -415,7 +424,7 @@ function CreateGroupModal({ open, onClose, onCreated }) {
     const handleSubmit = async e => {
         e.preventDefault();
         if (!form.name || !form.subject || !form.description) {
-            toast.error('Name, subject, and description are required');
+            toast.error(t('groups.requiredFields'));
             return;
         }
         setSubmitting(true);
@@ -423,7 +432,7 @@ function CreateGroupModal({ open, onClose, onCreated }) {
             await api.post('/groups', form);
             onCreated();
         } catch (err) {
-            toast.error(apiError(err, 'Failed to create group'));
+            toast.error(apiError(err, t('groups.createFailed')));
         } finally {
             setSubmitting(false);
         }
@@ -433,30 +442,30 @@ function CreateGroupModal({ open, onClose, onCreated }) {
         <Modal
             open={open}
             onClose={onClose}
-            title="Create Study Group"
+            title={t('groups.modalTitle')}
             size="md"
             initialFocusRef={firstRef}
             footer={
                 <>
-                    <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
+                    <Button variant="ghost" size="sm" onClick={onClose}>{t('common.cancel')}</Button>
                     <Button type="submit" form="create-group-form" size="sm" loading={submitting}>
-                        Create Group
+                        {t('groups.create')}
                     </Button>
                 </>
             }
         >
             <form onSubmit={handleSubmit} id="create-group-form">
-                <Field label="Group Name" required>
-                    <Input ref={firstRef} type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Advanced Python Study Circle" />
+                <Field label={t('groups.nameLabel')} required>
+                    <Input ref={firstRef} type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder={t('groups.namePlaceholder')} />
                 </Field>
-                <Field label="Subject" required>
-                    <Input type="text" value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} placeholder="e.g. Computer Science" />
+                <Field label={t('groups.subjectLabel')} required>
+                    <Input type="text" value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} placeholder={t('groups.subjectPlaceholder')} />
                 </Field>
-                <Field label="Max Members">
+                <Field label={t('groups.maxMembersLabel')}>
                     <Input type="number" min={2} max={100} value={form.maxMembers} onChange={e => setForm(f => ({ ...f, maxMembers: parseInt(e.target.value) || 20 }))} />
                 </Field>
-                <Field label="Description" required className="mb-0">
-                    <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="What will your group study? What's the focus?" rows={3} />
+                <Field label={t('groups.descriptionLabel')} required className="mb-0">
+                    <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder={t('groups.descriptionPlaceholder')} rows={3} />
                 </Field>
             </form>
         </Modal>

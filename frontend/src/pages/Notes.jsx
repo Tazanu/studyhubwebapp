@@ -2,6 +2,11 @@ import { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { Search, Plus, Download, FileText, Image as ImageIcon, File, Lock, WifiOff, Trash2, BookX } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+// Toasts are fired imperatively, never rendered, so they read from the i18n
+// instance instead of the hook's `t` — that keeps `t` out of fetch closures and
+// their dependency arrays honest.
+import i18n from '../i18n';
 import api, { apiError } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
@@ -29,6 +34,7 @@ function getFileIcon(fileType) {
 }
 
 function NoteCard({ note, onDeleted }) {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const [hovered, setHovered] = useState(false);
     const [deleting, setDeleting] = useState(false);
@@ -40,10 +46,10 @@ function NoteCard({ note, onDeleted }) {
         setDeleting(true);
         try {
             await api.delete(`/notes/${note.id}`);
-            toast.success('Note deleted');
+            toast.success(t('notes.deleted'));
             onDeleted(note.id);
         } catch (err) {
-            toast.error(apiError(err, 'Failed to delete note'));
+            toast.error(apiError(err, t('notes.deleteFailed')));
             setDeleting(false);
         }
     };
@@ -66,10 +72,10 @@ function NoteCard({ note, onDeleted }) {
                 </div>
                 <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-sm leading-snug truncate text-fg">{note.title}</h3>
-                    <Badge tone="primary" size="sm" className="mt-1">{note.subject}</Badge>
+                    <Badge tone="primary" size="sm" className="mt-1">{t(`subjectName.${note.subject}`, { defaultValue: note.subject })}</Badge>
                 </div>
                 {canDelete && (
-                    <button onClick={confirm.ask}
+                    <button onClick={confirm.ask} aria-label={t('common.delete')}
                         className="shrink-0 p-1.5 rounded-lg transition-colors text-fg-muted hover:text-danger">
                         <Trash2 size={15} />
                     </button>
@@ -84,7 +90,7 @@ function NoteCard({ note, onDeleted }) {
                 <span className="flex items-center gap-1">
                     <Download size={12} /> {note.downloads || 0}
                 </span>
-                <span>by {note.users?.first_name} {note.users?.last_name}</span>
+                <span>{t('notes.by', { name: `${note.users?.first_name ?? ''} ${note.users?.last_name ?? ''}`.trim() })}</span>
             </div>
 
             {note.is_premium && (
@@ -94,15 +100,15 @@ function NoteCard({ note, onDeleted }) {
             {confirm.active ? (
                 <div className="flex gap-2">
                     <Button onClick={() => confirm.run(handleDelete)} disabled={deleting} loading={deleting} variant="danger" size="sm" fullWidth>
-                        Yes, delete
+                        {t('notes.confirmDelete')}
                     </Button>
                     <Button onClick={confirm.cancel} variant="secondary" size="sm" fullWidth>
-                        Cancel
+                        {t('common.cancel')}
                     </Button>
                 </div>
             ) : (
                 <Button to={`/notes/${note.id}`} size="sm" fullWidth>
-                    View Details
+                    {t('notes.viewDetails')}
                 </Button>
             )}
         </motion.div>
@@ -110,6 +116,7 @@ function NoteCard({ note, onDeleted }) {
 }
 
 export default function Notes() {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const canMarkPremium = user?.role === 'admin' || user?.tutor_status === 'approved';
     const isOnline = useOnlineStatus();
@@ -124,8 +131,8 @@ export default function Notes() {
     const [showUploadModal, setShowUploadModal] = useState(false);
 
     useEffect(() => {
-        const t = setTimeout(() => setDebouncedSearch(search), 280);
-        return () => clearTimeout(t);
+        const timer = setTimeout(() => setDebouncedSearch(search), 280);
+        return () => clearTimeout(timer);
     }, [search]);
 
     const loadNotes = async (silent = false) => {
@@ -134,7 +141,7 @@ export default function Notes() {
             const { data } = await api.get('/notes');
             setNotes(data);
         } catch {
-            if (!silent) toast.error('Failed to load notes');
+            if (!silent) toast.error(i18n.t('notes.loadFailed'));
         } finally {
             if (!silent) setLoading(false);
         }
@@ -144,8 +151,8 @@ export default function Notes() {
 
     // Poll every 15s so other users' uploads appear
     useEffect(() => {
-        const t = setInterval(() => loadNotes(true), 15000);
-        return () => clearInterval(t);
+        const timer = setInterval(() => loadNotes(true), 15000);
+        return () => clearInterval(timer);
     }, []);
 
     const subjects = useMemo(
@@ -181,15 +188,15 @@ export default function Notes() {
 
             {/* HERO */}
             <section className="pt-20 px-6 py-12 text-center border-b border-border bg-primary-subtle">
-                <h1 className="text-3xl md:text-4xl font-bold mb-2 gradient-text" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>Study Notes</h1>
+                <h1 className="text-3xl md:text-4xl font-bold mb-2 gradient-text" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>{t('notes.title')}</h1>
                 <p className="max-w-xl mx-auto mb-8 text-sm text-fg-secondary">
-                    Access shared notes, upload your own, and help your peers succeed.
+                    {t('notes.subtitle')}
                 </p>
                 <div className="flex justify-center gap-12 flex-wrap">
                     {[
-                        [notes.length, 'Total Notes'],
-                        [totalDownloads, 'Downloads'],
-                        [subjects.length, 'Subjects'],
+                        [notes.length, t('notes.totalNotes')],
+                        [totalDownloads, t('notes.downloads')],
+                        [subjects.length, t('notes.subjects')],
                     ].map(([n, l]) => (
                         <div key={l} className="text-center">
                             <div className="text-3xl font-bold tabular-nums text-primary" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>{n}</div>
@@ -206,24 +213,25 @@ export default function Notes() {
                         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
                         <Input
                             type="text"
-                            placeholder="Search notes…"
+                            placeholder={t('notes.searchPlaceholder')}
+                            aria-label={t('notes.searchPlaceholder')}
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                             className="pl-9 h-10"
                         />
                     </div>
                     <Select value={subjectFilter} onChange={e => setSubjectFilter(e.target.value)} className="h-10 min-w-[120px]">
-                        <option value="">All Subjects</option>
-                        {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+                        <option value="">{t('notes.allSubjects')}</option>
+                        {subjects.map(s => <option key={s} value={s}>{t(`subjectName.${s}`, { defaultValue: s })}</option>)}
                     </Select>
                     <Select value={premiumFilter} onChange={e => setPremiumFilter(e.target.value)} className="h-10 min-w-[100px]">
-                        <option value="all">All</option>
-                        <option value="free">Free</option>
-                        <option value="premium">Premium</option>
+                        <option value="all">{t('notes.filterAll')}</option>
+                        <option value="free">{t('notes.filterFree')}</option>
+                        <option value="premium">{t('notes.filterPremium')}</option>
                     </Select>
                     <Select value={sortBy} onChange={e => setSortBy(e.target.value)} className="h-10 min-w-[120px]">
-                        <option value="newest">Newest</option>
-                        <option value="downloads">Most Downloaded</option>
+                        <option value="newest">{t('notes.sortNewest')}</option>
+                        <option value="downloads">{t('notes.sortDownloads')}</option>
                     </Select>
                     {user ? (
                         <Button
@@ -231,13 +239,13 @@ export default function Notes() {
                             disabled={!isOnline}
                             icon={!isOnline ? WifiOff : Plus}
                             className="w-full sm:w-auto"
-                            title={!isOnline ? "You're offline" : "Upload a note"}
+                            title={!isOnline ? t('notes.offlineTitle') : t('notes.uploadTitle')}
                         >
-                            Upload Note
+                            {t('notes.upload')}
                         </Button>
                     ) : (
                         <Button to="/login" variant="outline" className="w-full sm:w-auto">
-                            Sign In to Upload
+                            {t('notes.signInToUpload')}
                         </Button>
                     )}
                 </div>
@@ -259,9 +267,9 @@ export default function Notes() {
                 ) : filtered.length === 0 ? (
                     <EmptyState
                         icon={BookX}
-                        title="No notes found"
-                        description={search || subjectFilter || premiumFilter !== 'all' ? 'Try different filters.' : 'Be the first to upload a note!'}
-                        action={user && <Button onClick={() => setShowUploadModal(true)}>Upload First Note</Button>}
+                        title={t('notes.emptyTitle')}
+                        description={search || subjectFilter || premiumFilter !== 'all' ? t('notes.emptyFiltered') : t('notes.emptyNone')}
+                        action={user && <Button onClick={() => setShowUploadModal(true)}>{t('notes.uploadFirst')}</Button>}
                     />
                 ) : (
                     <motion.div
@@ -278,7 +286,7 @@ export default function Notes() {
             <UploadNoteModal
                 open={showUploadModal}
                 onClose={() => setShowUploadModal(false)}
-                onUploaded={() => { setShowUploadModal(false); loadNotes(false); toast.success('Note uploaded!'); }}
+                onUploaded={() => { setShowUploadModal(false); loadNotes(false); toast.success(t('notes.uploaded')); }}
                 canMarkPremium={canMarkPremium}
             />
         </div>

@@ -1,12 +1,14 @@
 export const MILESTONES = [100, 250, 500, 1000, 2500];
 
+// `id` is the stable identity used for translation lookup; `label` stays as the
+// English fallback so a missing translation degrades to a readable word.
 export const TIERS = [
-    { label: 'Newcomer', color: '#888',    min: 0    },
-    { label: 'Bronze',   color: '#cd7f32', min: 100  },
-    { label: 'Silver',   color: '#94a3b8', min: 250  },
-    { label: 'Gold',     color: '#fbbf24', min: 500  },
-    { label: 'Platinum', color: '#60a5fa', min: 1000 },
-    { label: 'Elite',    color: '#8b5cf6', min: 2500 },
+    { id: 'newcomer', label: 'Newcomer', color: '#888',    min: 0    },
+    { id: 'bronze',   label: 'Bronze',   color: '#cd7f32', min: 100  },
+    { id: 'silver',   label: 'Silver',   color: '#94a3b8', min: 250  },
+    { id: 'gold',     label: 'Gold',     color: '#fbbf24', min: 500  },
+    { id: 'platinum', label: 'Platinum', color: '#60a5fa', min: 1000 },
+    { id: 'elite',    label: 'Elite',    color: '#8b5cf6', min: 2500 },
 ];
 
 export function getRepInfo(rep) {

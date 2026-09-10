@@ -1,8 +1,10 @@
 import { ArrowRight, Play } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import useInView from '../../hooks/useInView';
 import Button from '../ui/Button';
 
 export default function HeroSection() {
+    const { t } = useTranslation();
     const [ref, inView] = useInView({ threshold: 0.08 });
 
     return (
@@ -30,34 +32,34 @@ export default function HeroSection() {
                                 letterSpacing: '-0.03em',
                             }}
                         >
-                            Study smarter.{' '}
-                            <span className="gradient-text">Grow together.</span>
+                            {t('home.heroTitle')}{' '}
+                            <span className="gradient-text">{t('home.heroHighlight')}</span>
                         </h1>
 
                         <p
                             className={`mb-8 max-w-lg mx-auto lg:mx-0 fade-up delay-1 text-fg-secondary ${inView ? 'in-view' : ''}`}
                             style={{ fontSize: 'clamp(1rem, 1.5vw, 1.15rem)', lineHeight: 1.8 }}
                         >
-                            Connect with study groups, get answers to tough questions, discover shared notes, and book peer tutors. All in one place.
+                            {t('home.heroSubtitle')}
                         </p>
 
                         <div className={`flex flex-col sm:flex-row gap-3 justify-center lg:justify-start items-center fade-up delay-2 ${inView ? 'in-view' : ''}`}>
                             <Button to="/register" size="lg" icon={ArrowRight} iconPosition="right" className="hover:-translate-y-0.5 hover:shadow-lg w-full sm:w-auto">
-                                Get started free
+                                {t('home.getStarted')}
                             </Button>
                             <Button
                                 variant="secondary"
                                 size="lg"
                                 icon={Play}
                                 className="w-full sm:w-auto"
-                                aria-label="Watch a 2-minute overview of StudyHub"
+                                aria-label={t('home.watchOverviewAria')}
                             >
-                                Watch overview
+                                {t('home.watchOverview')}
                             </Button>
                         </div>
 
                         <p className={`mt-4 text-xs fade-up delay-3 text-fg-muted ${inView ? 'in-view' : ''}`}>
-                            Free to join · Always
+                            {t('home.freeToJoin')}
                         </p>
                     </div>
 
@@ -109,12 +111,12 @@ export default function HeroSection() {
                                 </div>
                             </div>
                             <div className="p-5">
-                                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-primary-subtle text-primary">Computer Science · UYI</span>
-                                <h3 className="font-semibold mt-2 mb-1 text-fg" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Advanced Algorithms Study Group</h3>
-                                <p className="text-xs mb-3 text-fg-secondary">Fabrice Tchamba · 18 members · Active now</p>
+                                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-primary-subtle text-primary">{t('home.heroCardTag')}</span>
+                                <h3 className="font-semibold mt-2 mb-1 text-fg" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{t('home.heroCardTitle')}</h3>
+                                <p className="text-xs mb-3 text-fg-secondary">{t('home.heroCardMeta')}</p>
                                 <div className="flex items-center justify-between">
-                                    <span className="font-bold text-success">Free</span>
-                                    <Button to="/register" size="sm">Join group</Button>
+                                    <span className="font-bold text-success">{t('common.free')}</span>
+                                    <Button to="/register" size="sm">{t('home.heroCardJoin')}</Button>
                                 </div>
                             </div>
                         </div>
@@ -125,8 +127,8 @@ export default function HeroSection() {
                         >
                             <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-primary-subtle text-primary">FT</div>
                             <div>
-                                <p className="text-xs font-semibold text-fg">Fabrice joined your group</p>
-                                <p className="text-xs text-fg-muted">Advanced Algorithms · just now</p>
+                                <p className="text-xs font-semibold text-fg">{t('home.heroToastTitle')}</p>
+                                <p className="text-xs text-fg-muted">{t('home.heroToastMeta')}</p>
                             </div>
                         </div>
                     </div>

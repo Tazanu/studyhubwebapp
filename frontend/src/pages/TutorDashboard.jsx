@@ -15,7 +15,8 @@ import Input from '../components/ui/Input';
 import Textarea from '../components/ui/Textarea';
 import Select from '../components/ui/Select';
 import EmptyState from '../components/ui/EmptyState';
-import { BOOKING_STATUS_TONE, BOOKING_STATUS_LABEL } from '../lib/bookingStatus';
+import { useTranslation } from 'react-i18next';
+import { BOOKING_STATUS_TONE, bookingStatusKey } from '../lib/bookingStatus';
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
@@ -212,8 +213,9 @@ function StatCard({ icon: Icon, label, value, color, sub }) {
 
 /* ── booking row ──────────────────────────────────────────────── */
 function BookingRow({ booking, onAction }) {
+    const { t } = useTranslation();
     const tone = BOOKING_STATUS_TONE[booking.status] ?? 'warning';
-    const label = BOOKING_STATUS_LABEL[booking.status] ?? 'Pending';
+    const label = t(bookingStatusKey(booking.status));
     const studentName = booking.users
         ? `${booking.users.first_name} ${booking.users.last_name}`
         : 'Student';

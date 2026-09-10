@@ -6,7 +6,12 @@ import {
     CheckCircle, Clock, Volume2, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+// Imperative toast copy comes from the instance, not the hook, so `t` stays out
+// of fetch closures and their dependency arrays.
+import i18n from '../i18n';
 import api from '../api/client';
+import { relativeTime } from '../lib/relativeTime';
 import Sidebar from '../components/Sidebar';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -14,12 +19,13 @@ import Badge from '../components/ui/Badge';
 import EmptyState from '../components/ui/EmptyState';
 import { cn } from '../lib/cn';
 
+// Values are sent to the API, so they stay English; only the label translates.
 const CATEGORIES = ['All', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Computer Science', 'Engineering', 'Medicine', 'Business', 'Other'];
 const SORT_OPTIONS = [
-    { value: 'recent', label: 'Most Recent', icon: Clock },
-    { value: 'votes', label: 'Most Voted', icon: TrendingUp },
-    { value: 'unanswered', label: 'Unanswered', icon: MessageSquare },
-    { value: 'solved', label: 'Solved', icon: CheckCircle }
+    { value: 'recent', labelKey: 'qa.sortRecent', icon: Clock },
+    { value: 'votes', labelKey: 'qa.sortVotes', icon: TrendingUp },
+    { value: 'unanswered', labelKey: 'qa.sortUnanswered', icon: MessageSquare },
+    { value: 'solved', labelKey: 'qa.sortSolved', icon: CheckCircle }
 ];
 
 function Pill({ active, onClick, children, icon: Icon }) {
@@ -38,6 +44,7 @@ function Pill({ active, onClick, children, icon: Icon }) {
 }
 
 export default function QAForum() {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -65,7 +72,7 @@ export default function QAForum() {
             setPagination(data.pagination);
         } catch (error) {
             console.error('Failed to fetch questions:', error);
-            toast.error('Failed to load questions');
+            toast.error(i18n.t('qa.loadFailed'));
         } finally {
             setLoading(false);
         }
@@ -77,8 +84,8 @@ export default function QAForum() {
 
     // Poll every 20s for new questions
     useEffect(() => {
-        const t = setInterval(() => { if (page === 1) fetchQuestions(); }, 20000);
-        return () => clearInterval(t);
+        const timer = setInterval(() => { if (page === 1) fetchQuestions(); }, 20000);
+        return () => clearInterval(timer);
     }, [sort, category]);
 
     const handleSearch = (e) => {
@@ -88,24 +95,12 @@ export default function QAForum() {
     };
 
     const getRelativeTime = (date) => {
-        const seconds = Math.floor((new Date() - new Date(date)) / 1000);
-        const intervals = [
-            { label: 'year', seconds: 31536000 },
-            { label: 'month', seconds: 2592000 },
-            { label: 'week', seconds: 604800 },
-            { label: 'day', seconds: 86400 },
-            { label: 'hour', seconds: 3600 },
-            { label: 'minute', seconds: 60 }
-        ];
-
-        for (const interval of intervals) {
-            const count = Math.floor(seconds / interval.seconds);
-            if (count >= 1) {
-                return `${count} ${interval.label}${count !== 1 ? 's' : ''} ago`;
-            }
-        }
-        return 'just now';
+        const { key, count } = relativeTime(date);
+        return t(key, { count });
     };
+
+    const categoryLabel = cat =>
+        cat === 'All' ? t('qa.categoryAll') : t(`subjectName.${cat}`, { defaultValue: cat });
 
     return (
         <div className="lg:pl-60 min-h-screen bg-bg text-fg">
@@ -116,14 +111,14 @@ export default function QAForum() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                     <div>
                         <h1 className="text-3xl font-bold mb-2" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                            Q&A Forum
+                            {t('qa.title')}
                         </h1>
                         <p className="text-sm text-fg-secondary">
-                            Ask questions, share knowledge, and learn from peers
+                            {t('qa.subtitle')}
                         </p>
                     </div>
                     <Button onClick={() => navigate('/qa/ask')} icon={Plus} size="lg" className="w-full sm:w-auto hover:-translate-y-0.5">
-                        Ask Question
+                        {t('qa.askQuestion')}
                     </Button>
                 </div>
 
@@ -135,7 +130,8 @@ export default function QAForum() {
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search questions..."
+                                placeholder={t('qa.searchPlaceholder')}
+                                aria-label={t('qa.searchPlaceholder')}
                                 className="pl-10 h-12"
                             />
                         </div>
@@ -148,7 +144,7 @@ export default function QAForum() {
                             )}
                         >
                             <Filter size={18} />
-                            Filters
+                            {t('qa.filters')}
                         </button>
                     </form>
 
@@ -160,11 +156,11 @@ export default function QAForum() {
                         >
                             <div className="p-4 rounded-lg border border-border bg-surface mb-4">
                                 <div className="mb-4">
-                                    <label className="text-sm font-semibold mb-2 block text-fg">Category</label>
+                                    <label className="text-sm font-semibold mb-2 block text-fg">{t('qa.category')}</label>
                                     <div className="flex flex-wrap gap-2">
                                         {CATEGORIES.map(cat => (
                                             <Pill key={cat} active={category === cat} onClick={() => { setCategory(cat); setPage(1); }}>
-                                                {cat}
+                                                {categoryLabel(cat)}
                                             </Pill>
                                         ))}
                                     </div>
@@ -176,7 +172,7 @@ export default function QAForum() {
                     <div className="grid grid-cols-2 sm:flex gap-2 sm:overflow-x-auto pb-1">
                         {SORT_OPTIONS.map(option => (
                             <Pill key={option.value} active={sort === option.value} onClick={() => { setSort(option.value); setPage(1); }} icon={option.icon}>
-                                {option.label}
+                                {t(option.labelKey)}
                             </Pill>
                         ))}
                     </div>
@@ -189,9 +185,9 @@ export default function QAForum() {
                 ) : questions.length === 0 ? (
                     <EmptyState
                         icon={MessageSquare}
-                        title="No questions found"
-                        description="Be the first to ask a question!"
-                        action={<Button onClick={() => navigate('/qa/ask')}>Ask Question</Button>}
+                        title={t('qa.emptyTitle')}
+                        description={t('qa.emptyBody')}
+                        action={<Button onClick={() => navigate('/qa/ask')}>{t('qa.askQuestion')}</Button>}
                     />
                 ) : (
                     <div className="space-y-4">
@@ -207,13 +203,13 @@ export default function QAForum() {
                                             <div className={cn('text-lg font-bold', question.votes > 0 ? 'text-success' : 'text-fg')}>
                                                 {question.votes}
                                             </div>
-                                            <div className="text-xs text-fg-muted">votes</div>
+                                            <div className="text-xs text-fg-muted">{t('qa.votes')}</div>
                                         </div>
                                         <div className="text-center">
                                             <div className={cn('text-lg font-bold', question.is_solved ? 'text-primary' : 'text-fg')}>
                                                 {question.answers_count}
                                             </div>
-                                            <div className="text-xs text-fg-muted">answers</div>
+                                            <div className="text-xs text-fg-muted">{t('qa.answers')}</div>
                                         </div>
                                     </div>
 
@@ -240,10 +236,10 @@ export default function QAForum() {
                                             ))}
                                             <span className="flex items-center gap-1">
                                                 <Eye size={14} />
-                                                {question.views} views
+                                                {t('qa.views', { count: question.views ?? 0 })}
                                             </span>
                                             <span>
-                                                asked {getRelativeTime(question.created_at)} by{' '}
+                                                {t('qa.askedBy', { time: getRelativeTime(question.created_at) })}{' '}
                                                 <span className="font-medium text-primary">
                                                     {question.users.first_name} {question.users.last_name}
                                                 </span>
@@ -266,17 +262,17 @@ export default function QAForum() {
                             disabled={page === 1}
                             variant="secondary"
                         >
-                            Previous
+                            {t('qa.previous')}
                         </Button>
                         <span className="px-4 py-2 flex items-center text-fg-secondary">
-                            Page {page} of {pagination.pages}
+                            {t('qa.pageOf', { page, total: pagination.pages })}
                         </span>
                         <Button
                             onClick={() => setPage(p => Math.min(pagination.pages, p + 1))}
                             disabled={page === pagination.pages}
                             variant="secondary"
                         >
-                            Next
+                            {t('qa.next')}
                         </Button>
                     </div>
                 )}

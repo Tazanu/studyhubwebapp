@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, WifiOff, BookOpen, GraduationCap, Plus, X, CheckCircle2 } from 'lucide-react';
+import { useTranslation, Trans } from 'react-i18next';
 import api, { apiError } from '../api/client';
 import HoneypotField, { HONEYPOT_FIELD } from '../components/ui/HoneypotField';
 import { useAuth } from '../context/AuthContext';
@@ -30,6 +31,9 @@ const SUGGESTED_SUBJECTS = [
     'Statistics', 'Literature', 'Philosophy', 'Geography', 'Calculus',
 ];
 
+// These stay English: they are stored and searched, not just displayed. Only
+// the visible label is translated (see `subjectName` / `days` / `times`), so a
+// French signup produces the same data as an English one.
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const TIMES = ['Morning', 'Afternoon', 'Evening'];
 
@@ -63,7 +67,12 @@ function RoleCard({ icon: Icon, title, desc, selected, onClick }) {
 }
 
 function TutorFields({ tutor, setTutor, errors, touched, setTouched, setErrors }) {
+    const { t } = useTranslation();
     const subjectInputRef = useRef();
+
+    // A tutor can type any subject, so fall back to what they typed rather than
+    // rendering a raw key when there is no translation for it.
+    const subjectLabel = s => t(`subjectName.${s}`, { defaultValue: s });
 
     const addSubject = (s) => {
         const val = s.trim();
@@ -90,14 +99,14 @@ function TutorFields({ tutor, setTutor, errors, touched, setTouched, setErrors }
     return (
         <div className="mt-2 mb-6 rounded-xl border border-primary bg-primary-subtle overflow-hidden">
             <div className="px-5 py-3 border-b border-border">
-                <p className="text-sm font-semibold text-primary">Tutor Application Details</p>
-                <p className="text-xs mt-0.5 text-fg-secondary">Reviewed by our team before you appear in search</p>
+                <p className="text-sm font-semibold text-primary">{t('register.tutorSectionTitle')}</p>
+                <p className="text-xs mt-0.5 text-fg-secondary">{t('register.tutorSectionSub')}</p>
             </div>
 
             <div className="p-5 space-y-5">
 
                 {/* subjects */}
-                <Field label="Subjects You Teach" required error={subjectError ? errors.subjects : ''}>
+                <Field label={t('register.subjectsLabel')} required error={subjectError ? errors.subjects : ''}>
                     <div className="flex gap-2 mb-2">
                         <Input
                             ref={subjectInputRef}
@@ -105,13 +114,14 @@ function TutorFields({ tutor, setTutor, errors, touched, setTouched, setErrors }
                             value={tutor.subjectInput}
                             onChange={e => setTutor(t => ({ ...t, subjectInput: e.target.value }))}
                             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSubject(tutor.subjectInput); } }}
-                            placeholder="Type a subject and press Enter"
+                            placeholder={t('register.subjectsPlaceholder')}
                             invalid={!!subjectError}
                             className="flex-1"
                         />
                         <button
                             type="button"
                             onClick={() => addSubject(tutor.subjectInput)}
+                            aria-label={t('register.addSubject')}
                             className="px-3 rounded-sm flex items-center justify-center bg-primary-solid text-white shrink-0"
                             style={{ minWidth: '44px', minHeight: '44px' }}
                         ><Plus size={16} /></button>
@@ -121,8 +131,13 @@ function TutorFields({ tutor, setTutor, errors, touched, setTouched, setErrors }
                         <div className="flex flex-wrap gap-2 mb-2">
                             {tutor.subjects.map(s => (
                                 <span key={s} className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-surface text-primary border border-primary/25">
-                                    {s}
-                                    <button type="button" onClick={() => removeSubject(s)} className="ml-0.5 hover:opacity-70"><X size={11} /></button>
+                                    {subjectLabel(s)}
+                                    <button
+                                        type="button"
+                                        onClick={() => removeSubject(s)}
+                                        aria-label={t('register.removeSubject', { subject: subjectLabel(s) })}
+                                        className="ml-0.5 hover:opacity-70"
+                                    ><X size={11} /></button>
                                 </span>
                             ))}
                         </div>
@@ -132,30 +147,30 @@ function TutorFields({ tutor, setTutor, errors, touched, setTouched, setErrors }
                         {SUGGESTED_SUBJECTS.filter(s => !tutor.subjects.includes(s)).slice(0, 8).map(s => (
                             <button key={s} type="button" onClick={() => addSubject(s)}
                                 className="px-2.5 py-1 rounded-full text-xs border border-border text-fg-secondary transition-colors hover:border-primary">
-                                + {s}
+                                + {subjectLabel(s)}
                             </button>
                         ))}
                     </div>
                 </Field>
 
                 {/* experience */}
-                <Field label="Years of Experience" htmlFor="yearsExp" className="mb-0">
+                <Field label={t('register.yearsLabel')} htmlFor="yearsExp" className="mb-0">
                     <Select
                         id="yearsExp"
                         value={tutor.yearsExperience}
                         onChange={e => setTutor(t => ({ ...t, yearsExperience: e.target.value }))}
                         className="w-[180px]"
                     >
-                        <option value="<1">&lt;1 year</option>
-                        <option value="1-2">1–2 years</option>
-                        <option value="3-5">3–5 years</option>
-                        <option value="5+">5+ years</option>
+                        <option value="<1">{t('register.yearsUnder1')}</option>
+                        <option value="1-2">{t('register.years1to2')}</option>
+                        <option value="3-5">{t('register.years3to5')}</option>
+                        <option value="5+">{t('register.years5plus')}</option>
                     </Select>
                 </Field>
 
                 {/* bio */}
                 <Field
-                    label="Teaching Bio / Approach"
+                    label={t('register.bioLabel')}
                     htmlFor="tutorBio"
                     required
                     error={bioError ? errors.tutorBio : ''}
@@ -170,10 +185,10 @@ function TutorFields({ tutor, setTutor, errors, touched, setTouched, setErrors }
                         }}
                         onBlur={() => {
                             setTouched(t => ({ ...t, tutorBio: true }));
-                            setErrors(e => ({ ...e, tutorBio: tutor.bio.trim().length < 20 ? 'Bio must be at least 20 characters' : '' }));
+                            setErrors(e => ({ ...e, tutorBio: tutor.bio.trim().length < 20 ? t('register.bioTooShort') : '' }));
                         }}
                         rows={3}
-                        placeholder="e.g. I make complex topics simple by building intuition first..."
+                        placeholder={t('register.bioPlaceholder')}
                         invalid={!!bioError}
                         aria-invalid={!!bioError}
                     />
@@ -185,7 +200,7 @@ function TutorFields({ tutor, setTutor, errors, touched, setTouched, setErrors }
                 </Field>
 
                 {/* hourly rate */}
-                <Field label="Hourly Rate (FCFA)" htmlFor="hourlyRate" hint="300–2000" className="mb-0">
+                <Field label={t('register.rateLabel')} htmlFor="hourlyRate" hint="300–2000" className="mb-0">
                     <Input
                         id="hourlyRate"
                         type="number"
@@ -199,23 +214,23 @@ function TutorFields({ tutor, setTutor, errors, touched, setTouched, setErrors }
 
                 {/* availability */}
                 <div>
-                    <label className="block font-semibold text-sm mb-2 text-fg">Availability
-                        <span className="ml-1.5 font-normal text-xs text-fg-muted">optional</span>
+                    <label className="block font-semibold text-sm mb-2 text-fg">{t('register.availabilityLabel')}
+                        <span className="ml-1.5 font-normal text-xs text-fg-muted">{t('common.optional').toLowerCase()}</span>
                     </label>
                     <div className="overflow-x-auto">
                         <table className="text-xs w-full" style={{ borderCollapse: 'separate', borderSpacing: '4px' }}>
                             <thead>
                                 <tr>
                                     <th className="text-left pb-1 font-medium text-fg-secondary"></th>
-                                    {TIMES.map(t => (
-                                        <th key={t} className="pb-1 text-center font-medium text-fg-secondary">{t}</th>
+                                    {TIMES.map(time => (
+                                        <th key={time} className="pb-1 text-center font-medium text-fg-secondary">{t(`times.${time}`)}</th>
                                     ))}
                                 </tr>
                             </thead>
                             <tbody>
                                 {DAYS.map(day => (
                                     <tr key={day}>
-                                        <td className="pr-2 font-medium text-fg">{day}</td>
+                                        <td className="pr-2 font-medium text-fg">{t(`days.${day}`)}</td>
                                         {TIMES.map(time => {
                                             const key = `${day}_${time}`;
                                             const on  = !!tutor.availability[key];
@@ -241,7 +256,7 @@ function TutorFields({ tutor, setTutor, errors, touched, setTouched, setErrors }
                 </div>
 
                 {/* proof document */}
-                <Field label="Proof of Expertise" htmlFor="proofDoc" hint="optional — PDF or image, max 20MB" className="mb-0">
+                <Field label={t('register.proofLabel')} htmlFor="proofDoc" hint={t('register.proofHint')} className="mb-0">
                     <input
                         id="proofDoc"
                         type="file"
@@ -258,6 +273,7 @@ function TutorFields({ tutor, setTutor, errors, touched, setTouched, setErrors }
 }
 
 export default function Register() {
+    const { t } = useTranslation();
     const { login } = useAuth();
     const navigate  = useNavigate();
     const isOnline  = useOnlineStatus();
@@ -283,15 +299,15 @@ export default function Register() {
     /* ── per-field blur validation ──────────────────────────── */
     const validateField = (name, value) => {
         switch (name) {
-            case 'firstName':  return value ? '' : 'First name is required';
-            case 'lastName':   return value ? '' : 'Last name is required';
+            case 'firstName':  return value ? '' : t('auth.firstNameRequired');
+            case 'lastName':   return value ? '' : t('auth.lastNameRequired');
             case 'email':
-                if (!value)                        return 'Email is required';
-                if (!/\S+@\S+\.\S+/.test(value))   return 'Enter a valid email address';
+                if (!value)                        return t('auth.emailRequired');
+                if (!/\S+@\S+\.\S+/.test(value))   return t('auth.emailInvalid');
                 return '';
             case 'password':
-                if (!value)          return 'Password is required';
-                if (value.length < 8) return 'Password must be at least 8 characters';
+                if (!value)          return t('auth.passwordRequired');
+                if (value.length < 8) return t('auth.passwordTooShort');
                 return '';
             default: return '';
         }
@@ -311,10 +327,10 @@ export default function Register() {
             const msg = validateField(f, form[f]);
             if (msg) errs[f] = msg;
         });
-        if (!terms) errs.terms = 'Please agree to the Terms of Service and Privacy Policy';
+        if (!terms) errs.terms = t('register.termsRequired');
         if (role === 'tutor') {
-            if (tutor.subjects.length === 0) errs.subjects = 'Add at least one subject';
-            if (tutor.bio.trim().length < 20) errs.tutorBio = 'Bio must be at least 20 characters';
+            if (tutor.subjects.length === 0) errs.subjects = t('register.subjectsRequired');
+            if (tutor.bio.trim().length < 20) errs.tutorBio = t('register.bioTooShort');
         }
         return errs;
     };
@@ -377,7 +393,7 @@ export default function Register() {
                 navigate('/dashboard');
             }
         } catch (err) {
-            setErrors({ general: apiError(err, 'Registration failed. Please try again.') });
+            setErrors({ general: apiError(err, t('auth.registerFailed')) });
         } finally {
             setLoading(false);
         }
@@ -389,10 +405,10 @@ export default function Register() {
     const barColorClass = !pw ? 'bg-border' : sc < 2 ? 'bg-danger' : sc < 4 ? 'bg-warning' : 'bg-success';
     const barTextClass  = !pw ? 'text-fg-muted' : sc < 2 ? 'text-danger' : sc < 4 ? 'text-warning' : 'text-success';
     const barWidth = !pw ? '0%' : sc < 2 ? '33%' : sc < 4 ? '66%' : '100%';
-    const barLabel = !pw ? 'Use at least 8 characters'
-        : sc < 2 ? 'Weak — add more characters'
-        : sc < 4 ? 'Medium — add uppercase, numbers or symbols'
-        : 'Strong password';
+    const barLabel = !pw ? t('register.pwHint')
+        : sc < 2 ? t('register.pwWeak')
+        : sc < 4 ? t('register.pwMedium')
+        : t('register.pwStrong');
 
     if (confirmed) {
         return (
@@ -401,17 +417,18 @@ export default function Register() {
                     <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5 bg-success-bg">
                         <CheckCircle2 size={36} className="text-success" />
                     </div>
-                    <h1 className="text-2xl font-bold mb-2 text-fg">Application Submitted!</h1>
+                    <h1 className="text-2xl font-bold mb-2 text-fg">{t('register.submittedTitle')}</h1>
                     <p className="mb-1 text-fg-secondary">
-                        Thanks for applying to teach on StudyHub!
+                        {t('register.submittedBody')}
                     </p>
                     <p className="text-sm mb-8 text-fg-secondary">
-                        We'll review your application and notify you within{' '}
-                        <strong className="text-fg">24–48 hours</strong>.
-                        In the meantime, explore StudyHub as a student.
+                        <Trans
+                            i18nKey="register.reviewNotice"
+                            components={{ 1: <strong className="text-fg" /> }}
+                        />
                     </p>
                     <Button onClick={() => navigate('/dashboard')} size="lg" fullWidth>
-                        Continue to Dashboard →
+                        {t('register.continueToDashboard')} →
                     </Button>
                 </div>
             </div>
@@ -420,13 +437,13 @@ export default function Register() {
 
     return (
         <div className="min-h-screen flex items-center justify-center px-4 pt-20 pb-12 bg-bg text-fg">
-            <Seo title="Create Your Free Account" description="Create a free StudyHub account to join study groups, share and download course notes, ask questions and book verified tutors. No card required." path="/register" />
+            <Seo title={t('register.seoTitle')} description={t('register.seoDescription')} path="/register" />
             <div className="form-card w-full max-w-lg rounded-2xl p-6 sm:p-10 border border-border bg-surface shadow-lg">
                 {/* header */}
                 <div className="text-center mb-8">
                     <div className="text-2xl font-bold mb-3 logo-gradient">StudyHub</div>
-                    <h1 className="text-2xl font-bold mb-2 text-fg">Create Account</h1>
-                    <p className="text-fg-secondary">Join StudyHub and start your learning journey</p>
+                    <h1 className="text-2xl font-bold mb-2 text-fg">{t('register.title')}</h1>
+                    <p className="text-fg-secondary">{t('register.subtitle')}</p>
                 </div>
 
                 {/* general server error */}
@@ -445,15 +462,15 @@ export default function Register() {
                     <div className="flex flex-col sm:flex-row gap-3 mb-7">
                         <RoleCard
                             icon={BookOpen}
-                            title="I want to learn"
-                            desc="Access tutors, notes & study groups"
+                            title={t('register.roleLearnTitle')}
+                            desc={t('register.roleLearnDesc')}
                             selected={role === 'student'}
                             onClick={() => setRole('student')}
                         />
                         <RoleCard
                             icon={GraduationCap}
-                            title="I want to teach"
-                            desc="Become a tutor & earn by helping peers"
+                            title={t('register.roleTeachTitle')}
+                            desc={t('register.roleTeachDesc')}
                             selected={role === 'tutor'}
                             onClick={() => setRole('tutor')}
                         />
@@ -462,8 +479,8 @@ export default function Register() {
                     {/* name row */}
                     <div className="flex flex-col sm:flex-row gap-4 mb-5">
                         {[
-                            ['firstName', 'First Name', 'First name'],
-                            ['lastName',  'Last Name',  'Last name' ],
+                            ['firstName', t('auth.firstName'), t('register.firstNamePlaceholder')],
+                            ['lastName',  t('auth.lastName'),  t('register.lastNamePlaceholder') ],
                         ].map(([field, label, ph]) => (
                             <Field key={field} label={label} htmlFor={field} error={touched[field] ? errors[field] : ''} className="flex-1 mb-0">
                                 <Input
@@ -482,14 +499,14 @@ export default function Register() {
                     </div>
 
                     {/* email */}
-                    <Field label="Email Address" htmlFor="email" error={touched.email ? errors.email : ''}>
+                    <Field label={t('auth.email')} htmlFor="email" error={touched.email ? errors.email : ''}>
                         <Input
                             id="email"
                             type="email"
                             value={form.email}
                             onChange={set('email')}
                             onBlur={e => handleBlur('email', e.target.value)}
-                            placeholder="you@university.cm"
+                            placeholder={t('auth.emailPlaceholder')}
                             autoComplete="email"
                             aria-describedby={errors.email ? 'email-error' : undefined}
                             invalid={!!(errors.email && touched.email)}
@@ -497,7 +514,7 @@ export default function Register() {
                     </Field>
 
                     {/* password + strength meter + eye toggle */}
-                    <Field label="Password" htmlFor="password" className="mb-5">
+                    <Field label={t('auth.password')} htmlFor="password" className="mb-5">
                         <div className="relative">
                             <Input
                                 id="password"
@@ -505,7 +522,7 @@ export default function Register() {
                                 value={form.password}
                                 onChange={set('password')}
                                 onBlur={e => handleBlur('password', e.target.value)}
-                                placeholder="Create a password"
+                                placeholder={t('register.passwordPlaceholder')}
                                 autoComplete="new-password"
                                 aria-describedby="pw-strength password-error"
                                 invalid={!!(errors.password && touched.password)}
@@ -515,7 +532,7 @@ export default function Register() {
                                 type="button"
                                 onClick={() => setShowPw(v => !v)}
                                 className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded transition-colors text-fg-muted hover:text-fg"
-                                aria-label={showPw ? 'Hide password' : 'Show password'}
+                                aria-label={showPw ? t('auth.hidePassword') : t('auth.showPassword')}
                                 tabIndex={0}
                             >
                                 {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -532,25 +549,27 @@ export default function Register() {
                     </Field>
 
                     {/* optional fields — clearly labelled as optional */}
-                    <Field label="University / Institution" htmlFor="university" hint="optional">
+                    <Field label={t('register.university')} htmlFor="university" hint={t('common.optional').toLowerCase()}>
                         <Input
                             id="university"
                             type="text"
                             value={form.university}
                             onChange={set('university')}
-                            placeholder="Your university or institution"
+                            placeholder={t('register.universityPlaceholder')}
                             autoComplete="organization"
                         />
                     </Field>
 
-                    <Field label="Field of Study" htmlFor="fieldOfStudy" hint="optional" className="mb-6">
+                    <Field label={t('register.fieldOfStudy')} htmlFor="fieldOfStudy" hint={t('common.optional').toLowerCase()} className="mb-6">
                         <Select
                             id="fieldOfStudy"
                             value={form.fieldOfStudy}
                             onChange={set('fieldOfStudy')}
                         >
-                            <option value="">Select your field (optional)</option>
-                            {FIELDS_OF_STUDY.map(f => <option key={f} value={f}>{f}</option>)}
+                            <option value="">{t('register.fieldOfStudyPlaceholder')}</option>
+                            {FIELDS_OF_STUDY.map(f => (
+                                <option key={f} value={f}>{t(`subjectName.${f}`, { defaultValue: f })}</option>
+                            ))}
                         </Select>
                     </Field>
 
@@ -583,10 +602,10 @@ export default function Register() {
                             aria-describedby={errors.terms ? 'terms-error' : undefined}
                         />
                         <label htmlFor="terms" className="text-sm select-none text-fg-secondary">
-                            I agree to the{' '}
-                            <Link to="/terms"   className="font-semibold text-primary">Terms of Service</Link>
-                            {' '}and{' '}
-                            <Link to="/privacy" className="font-semibold text-primary">Privacy Policy</Link>
+                            {t('register.agreePrefix')}{' '}
+                            <Link to="/terms"   className="font-semibold text-primary">{t('footer.terms')}</Link>
+                            {' '}{t('register.agreeMiddle')}{' '}
+                            <Link to="/privacy" className="font-semibold text-primary">{t('footer.privacy')}</Link>
                         </label>
                     </div>
                     <div aria-live="polite">
@@ -602,17 +621,17 @@ export default function Register() {
                         disabled={!isOnline}
                         icon={!isOnline ? WifiOff : undefined}
                         className="mt-5"
-                        title={!isOnline ? "You're offline — reconnect to create account" : "Create your account"}
+                        title={!isOnline ? t('register.offlineTitle') : t('register.submitTitle')}
                     >
-                        {!isOnline ? "You're Offline" : loading ? 'Creating Account…' : 'Create Account →'}
+                        {!isOnline ? t('register.offlineLabel') : loading ? t('register.creating') : `${t('register.submit')} →`}
                     </Button>
                 </form>
 
                 {/* secondary action */}
                 <div className="text-center mt-6 pt-6 border-t border-border">
                     <p className="text-sm text-fg-secondary">
-                        Already have an account?{' '}
-                        <Link to="/login" className="font-semibold text-primary">Sign in instead</Link>
+                        {t('auth.haveAccount')}{' '}
+                        <Link to="/login" className="font-semibold text-primary">{t('register.signInInstead')}</Link>
                     </p>
                 </div>
             </div>

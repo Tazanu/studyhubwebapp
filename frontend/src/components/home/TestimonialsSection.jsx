@@ -1,10 +1,12 @@
+import { useTranslation } from 'react-i18next';
 import useInView from '../../hooks/useInView';
 import { TESTIMONIALS as ALL_TESTIMONIALS } from '../../data/testimonials';
 
 const FEATURED_IDS = ['aicha', 'fabrice', 'rodrigue'];
-const TESTIMONIALS = FEATURED_IDS.map(id => ALL_TESTIMONIALS.find(t => t.id === id));
+const TESTIMONIALS = FEATURED_IDS.map(id => ALL_TESTIMONIALS.find(x => x.id === id));
 
 export default function TestimonialsSection() {
+    const { t } = useTranslation();
     const [ref, inView] = useInView();
 
     return (
@@ -12,14 +14,14 @@ export default function TestimonialsSection() {
             <div className="max-w-6xl mx-auto">
                 <header className={`text-center mb-14 fade-up ${inView ? 'in-view' : ''}`} ref={ref}>
                     <p className="text-xs font-semibold uppercase tracking-widest mb-3 text-primary">
-                        Student stories
+                        {t('home.testimonialsEyebrow')}
                     </p>
                     <h2
                         id="testimonials-heading"
                         className="font-bold text-fg"
                         style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)', letterSpacing: '-0.02em' }}
                     >
-                        What students are saying
+                        {t('home.testimonialsTitle')}
                     </h2>
                 </header>
 
@@ -29,9 +31,9 @@ export default function TestimonialsSection() {
                             key={name}
                             className={`rounded-2xl border border-border bg-bg p-7 flex flex-col transition-transform hover:-translate-y-1 hover:shadow-lg fade-up delay-${i + 1} ${inView ? 'in-view' : ''}`}
                         >
-                            <div className="flex gap-0.5 mb-4 text-warning" aria-label="5 star rating">
-                                {Array.from({ length: 5 }).map((_, i) => (
-                                    <span key={i} aria-hidden="true">★</span>
+                            <div className="flex gap-0.5 mb-4 text-warning" aria-label={t('home.fiveStars')}>
+                                {Array.from({ length: 5 }).map((_, star) => (
+                                    <span key={star} aria-hidden="true">★</span>
                                 ))}
                             </div>
 

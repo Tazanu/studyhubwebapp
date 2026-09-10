@@ -1,32 +1,45 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import useInView from '../../hooks/useInView';
 import Button from '../ui/Button';
 
 // Every entry must resolve to a real destination. The previous version pointed
 // nine of these at /register as a placeholder, so "Cookie Policy" and "Careers"
 // both landed on the signup form — worse than not listing them at all.
+//
+// Labels are translation keys, resolved at render so the footer follows a
+// language switch without a reload.
 
-const LINKS = {
-    Platform: [
-        { label: 'Study Groups',   to: '/groups'       },
-        { label: 'Q&A Forum',      to: '/qa'           },
-        { label: 'Notes Library',  to: '/notes'        },
-        { label: 'Find Tutors',    to: '/tutors'       },
-        { label: 'Become a Tutor', to: '/become-tutor' },
-    ],
-    Company: [
-        { label: 'About Us',    to: '/about'    },
-        { label: 'Sign Up',     to: '/register' },
-        { label: 'Log In',      to: '/login'    },
-        { label: 'Contact Us',  to: '/contact'  },
-    ],
-    Legal: [
-        { label: 'Privacy Policy',   to: '/privacy' },
-        { label: 'Terms of Service', to: '/terms'   },
-        { label: 'Cookie Policy',    to: '/cookies' },
-    ],
-};
+const LINKS = [
+    {
+        heading: 'platform',
+        items: [
+            { key: 'studyGroups',  to: '/groups'       },
+            { key: 'qaForum',      to: '/qa'           },
+            { key: 'notesLibrary', to: '/notes'        },
+            { key: 'findTutors',   to: '/tutors'       },
+            { key: 'becomeTutor',  to: '/become-tutor' },
+        ],
+    },
+    {
+        heading: 'company',
+        items: [
+            { key: 'aboutUs',   to: '/about'    },
+            { key: 'signUp',    to: '/register' },
+            { key: 'logIn',     to: '/login'    },
+            { key: 'contactUs', to: '/contact'  },
+        ],
+    },
+    {
+        heading: 'legal',
+        items: [
+            { key: 'privacy',      to: '/privacy' },
+            { key: 'terms',        to: '/terms'   },
+            { key: 'cookiePolicy', to: '/cookies' },
+        ],
+    },
+];
 
 const linkClass =
     'text-sm text-fg-secondary transition-colors hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary rounded';
@@ -68,6 +81,7 @@ const SOCIALS = [
 ].filter(s => s.href);
 
 export default function HomeFooter() {
+    const { t } = useTranslation();
     const [ref, inView] = useInView({ threshold: 0.05 });
 
     return (
@@ -77,15 +91,15 @@ export default function HomeFooter() {
 
                     {/* brand + newsletter — spans 2 cols on lg */}
                     <div className="col-span-2 sm:col-span-3 lg:col-span-2">
-                        <Link to="/" className="text-xl font-bold logo-gradient inline-block mb-3" aria-label="StudyHub home"
+                        <Link to="/" className="text-xl font-bold logo-gradient inline-block mb-3" aria-label={t('footer.homeAria')}
                             style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                             StudyHub
                         </Link>
                         <p className="text-sm mb-2 leading-relaxed text-fg-secondary">
-                            Peer-to-peer learning for students. Study groups, notes, Q&A and tutors in one place.
+                            {t('footer.tagline')}
                         </p>
                         <p className="text-xs mb-5 text-fg-muted">
-                            Free to join. No credit card required.
+                            {t('footer.finePrint')}
                         </p>
 
                         {/* Replaces a newsletter form that reported "Subscribed"
@@ -93,23 +107,23 @@ export default function HomeFooter() {
                             mailing-list backend. This points at the same signup
                             the rest of the site drives towards. */}
                         <Button to="/register" size="sm" icon={ArrowRight} iconPosition="right">
-                            Get started free
+                            {t('home.getStarted')}
                         </Button>
                     </div>
 
                     {/* link columns */}
-                    {Object.entries(LINKS).map(([heading, items]) => (
-                        <nav key={heading} aria-label={`${heading} links`}>
+                    {LINKS.map(({ heading, items }) => (
+                        <nav key={heading} aria-label={t('footer.linksLabel', { section: t(`footer.${heading}`) })}>
                             <h3 className="text-xs font-bold uppercase tracking-widest mb-4 text-fg">
-                                {heading}
+                                {t(`footer.${heading}`)}
                             </h3>
                             <ul className="space-y-2.5 list-none p-0 m-0">
-                                {items.map(({ label, to, href }) => (
-                                    <li key={label}>
+                                {items.map(({ key, to, href }) => (
+                                    <li key={key}>
                                         {href ? (
-                                            <a href={href} className={linkClass}>{label}</a>
+                                            <a href={href} className={linkClass}>{t(`footer.${key}`)}</a>
                                         ) : (
-                                            <Link to={to} className={linkClass}>{label}</Link>
+                                            <Link to={to} className={linkClass}>{t(`footer.${key}`)}</Link>
                                         )}
                                     </li>
                                 ))}
@@ -121,7 +135,7 @@ export default function HomeFooter() {
                 {/* bottom bar */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-border">
                     <p className="text-xs text-fg-muted">
-                        © {new Date().getFullYear()} StudyHub · All rights reserved
+                        {t('footer.rights', { year: new Date().getFullYear() })}
                     </p>
 
                     <div className="flex items-center gap-1">

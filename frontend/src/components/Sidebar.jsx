@@ -5,21 +5,25 @@ import {
     LayoutDashboard, Users, FileText, MessageSquare,
     GraduationCap, User, Settings, LogOut, Menu, X, ShieldCheck, Crown, BookOpen,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import StudyHubLogo from './StudyHubLogo';
 import UserAvatar from './ui/UserAvatar';
 
+// `labelKey` rather than a literal, so the sidebar follows a language switch
+// without a reload.
 const BASE_NAV = [
-    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/groups',    icon: Users,           label: 'My Groups' },
-    { to: '/notes',     icon: FileText,        label: 'My Notes'  },
-    { to: '/qa',        icon: MessageSquare,   label: 'Q&A Forum' },
-    { to: '/tutors',    icon: GraduationCap,   label: 'Tutors'    },
-    { to: '/profile',   icon: User,            label: 'Profile'   },
-    { to: '/settings',  icon: Settings,        label: 'Settings'  },
+    { to: '/dashboard', icon: LayoutDashboard, labelKey: 'nav.dashboard' },
+    { to: '/groups',    icon: Users,           labelKey: 'nav.groups'    },
+    { to: '/notes',     icon: FileText,        labelKey: 'nav.notes'     },
+    { to: '/qa',        icon: MessageSquare,   labelKey: 'nav.qa'        },
+    { to: '/tutors',    icon: GraduationCap,   labelKey: 'nav.tutors'    },
+    { to: '/profile',   icon: User,            labelKey: 'nav.profile'   },
+    { to: '/settings',  icon: Settings,        labelKey: 'nav.settings'  },
 ];
 
-function NavItem({ to, icon: Icon, label, onClick }) {
+function NavItem({ to, icon: Icon, labelKey, onClick }) {
+    const { t } = useTranslation();
     const { pathname } = useLocation();
     const active = pathname === to;
     const [hovered, setHovered] = useState(false);
@@ -61,21 +65,22 @@ function NavItem({ to, icon: Icon, label, onClick }) {
             >
                 <Icon size={18} strokeWidth={active ? 2.2 : 1.75} />
             </motion.span>
-            {label}
+            {t(labelKey)}
         </Link>
     );
 }
 
 function SidebarContent({ onClose }) {
+    const { t } = useTranslation();
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [logoutHover, setLogoutHover] = useState(false);
 
     const NAV = [
         ...BASE_NAV,
-        { to: '/premium', icon: Crown, label: 'Premium' },
-        ...(user?.tutor_status ? [{ to: '/tutor-dashboard', icon: BookOpen, label: 'Tutor Dashboard' }] : []),
-        ...(user?.role === 'admin' ? [{ to: '/admin', icon: ShieldCheck, label: 'Admin' }] : []),
+        { to: '/premium', icon: Crown, labelKey: 'nav.premium' },
+        ...(user?.tutor_status ? [{ to: '/tutor-dashboard', icon: BookOpen, labelKey: 'nav.tutorDashboard' }] : []),
+        ...(user?.role === 'admin' ? [{ to: '/admin', icon: ShieldCheck, labelKey: 'nav.admin' }] : []),
     ];
 
     const handleLogout = () => { logout(); navigate('/'); };
@@ -93,6 +98,7 @@ function SidebarContent({ onClose }) {
                         whileHover={{ rotate: 90, scale: 1.1 }}
                         transition={{ type: 'spring', stiffness: 300, damping: 18 }}
                         className="p-1 rounded-lg text-fg-secondary"
+                        aria-label={t('nav.closeMenu')}
                     >
                         <X size={20} />
                     </motion.button>
@@ -146,7 +152,7 @@ function SidebarContent({ onClose }) {
                     >
                         <LogOut size={18} strokeWidth={1.75} />
                     </motion.span>
-                    Log out
+                    {t('nav.logout')}
                 </motion.button>
             </div>
         </div>
@@ -154,6 +160,7 @@ function SidebarContent({ onClose }) {
 }
 
 export default function Sidebar() {
+    const { t } = useTranslation();
     const [open, setOpen] = useState(false);
 
     return (
@@ -164,7 +171,7 @@ export default function Sidebar() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="fixed top-4 left-4 z-50 lg:hidden w-10 h-10 rounded-xl border border-border bg-surface text-fg flex items-center justify-center"
-                aria-label="Open menu"
+                aria-label={t('nav.openMenu')}
             >
                 <Menu size={20} />
             </motion.button>

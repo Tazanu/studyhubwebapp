@@ -1,8 +1,10 @@
 import { ArrowRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import useInView from '../../hooks/useInView';
 import Button from '../ui/Button';
 
 export default function FinalCTA() {
+    const { t } = useTranslation();
     const [ref, inView] = useInView();
 
     return (
@@ -21,10 +23,10 @@ export default function FinalCTA() {
                     className="font-bold mb-4 text-white"
                     style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 'clamp(1.9rem, 4vw, 2.75rem)', letterSpacing: '-0.02em' }}
                 >
-                    Ready to study smarter?
+                    {t('home.ctaTitle')}
                 </h2>
                 <p className={`mb-8 text-base fade-up delay-1 text-white/70`} style={{ lineHeight: 1.8 }}>
-                    Join students already using StudyHub to get better results, together.
+                    {t('home.ctaBody')}
                 </p>
                 <Button
                     to="/register"
@@ -34,10 +36,10 @@ export default function FinalCTA() {
                     iconPosition="right"
                     className={`shadow-xl hover:-translate-y-0.5 hover:shadow-2xl fade-up delay-2 ${inView ? 'in-view' : ''}`}
                 >
-                    Create your free account
+                    {t('home.ctaButton')}
                 </Button>
                 <p className={`mt-4 text-xs fade-up delay-3 text-white/50 ${inView ? 'in-view' : ''}`}>
-                    Free to join · No credit card required
+                    {t('home.ctaFinePrint')}
                 </p>
             </div>
         </section>

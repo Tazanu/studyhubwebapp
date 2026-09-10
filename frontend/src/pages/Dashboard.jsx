@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Users, FileText, Star, MessageSquare, GraduationCap, ArrowRight, Calendar, Clock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
@@ -10,7 +11,8 @@ import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import Skeleton from '../components/ui/Skeleton';
 import { TIERS, getRepInfo } from '../lib/tiers';
-import { BOOKING_STATUS_TONE, BOOKING_STATUS_LABEL } from '../lib/bookingStatus';
+import { BOOKING_STATUS_TONE, bookingStatusKey } from '../lib/bookingStatus';
+import { formatDate, formatNumber } from '../lib/formatDate';
 
 /* ── animation variants ───────────────────────────────────────── */
 const stagger = (s = 0.08, d = 0) => ({
@@ -72,10 +74,11 @@ function buildActivity(groups, notes) {
 
 /* ── chart tooltip ────────────────────────────────────────────── */
 function ChartTooltip({ active, payload, label }) {
+    const { t } = useTranslation();
     if (!active || !payload?.length) return null;
     return (
         <div className="rounded-xl px-3 py-2 text-xs border border-border bg-surface-raised shadow-lg text-fg">
-            <p className="font-semibold mb-1">{label}</p>
+            <p className="font-semibold mb-1">{t(`days.${label}`, { defaultValue: label })}</p>
             {payload.map(p => <p key={p.name} style={{ color: p.fill }}>{p.name}: {p.value}</p>)}
         </div>
     );
@@ -114,6 +117,7 @@ function StatCard({ icon: Icon, label, value, color, sub, reduced }) {
 
 /* ── content card ─────────────────────────────────────────────── */
 function ContentCard({ item, type }) {
+    const { t } = useTranslation();
     const [hovered, setHovered] = useState(false);
     return (
         <motion.div
@@ -141,11 +145,11 @@ function ContentCard({ item, type }) {
                 {item.description}
             </p>
             <div className="flex justify-between text-xs mb-4 text-fg-secondary">
-                {type === 'groups' && <><span>{item.current_members} members</span><span>{item.subject}</span></>}
-                {type === 'notes'  && <><span>{item.downloads} downloads</span><span>{item.subject}</span></>}
+                {type === 'groups' && <><span>{t('dashboard.members', { count: item.current_members ?? 0 })}</span><span>{t(`subjectName.${item.subject}`, { defaultValue: item.subject })}</span></>}
+                {type === 'notes'  && <><span>{t('dashboard.downloads', { count: item.downloads ?? 0 })}</span><span>{t(`subjectName.${item.subject}`, { defaultValue: item.subject })}</span></>}
             </div>
             <Button to={type === 'groups' ? `/groups/${item.id}/chat` : `/notes/${item.id}`} size="sm" fullWidth>
-                {type === 'groups' ? 'Go to Group' : 'View Note'}
+                {type === 'groups' ? t('dashboard.goToGroup') : t('dashboard.viewNote')}
             </Button>
         </motion.div>
     );
@@ -153,13 +157,14 @@ function ContentCard({ item, type }) {
 
 /* ── booking card ─────────────────────────────────────────────── */
 function BookingCard({ booking }) {
+    const { t } = useTranslation();
     const tutor = booking.tutors;
     const tutorName = tutor?.users
         ? `${tutor.users.first_name} ${tutor.users.last_name}`
-        : 'Tutor';
+        : t('dashboard.tutorFallback');
     const tone  = BOOKING_STATUS_TONE[booking.status] ?? 'warning';
-    const label = BOOKING_STATUS_LABEL[booking.status] ?? 'Pending';
-    const date = new Date(booking.session_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    const label = t(bookingStatusKey(booking.status));
+    const date = formatDate(booking.session_date, { weekday: 'short', month: 'short', day: 'numeric' });
     const startTime = new Date(booking.start_time).toTimeString().slice(0, 5);
     const endTime   = new Date(booking.end_time).toTimeString().slice(0, 5);
 
@@ -168,7 +173,7 @@ function BookingCard({ booking }) {
             <div className="flex items-start justify-between gap-2">
                 <div>
                     <p className="font-semibold text-sm text-fg">{tutorName}</p>
-                    <p className="text-xs mt-0.5 text-fg-secondary">{booking.subject}</p>
+                    <p className="text-xs mt-0.5 text-fg-secondary">{t(`subjectName.${booking.subject}`, { defaultValue: booking.subject })}</p>
                 </div>
                 <Badge tone={tone} className="shrink-0">{label}</Badge>
             </div>
@@ -182,9 +187,9 @@ function BookingCard({ booking }) {
             </div>
             <div className="flex items-center justify-between pt-2 border-t border-border">
                 <span className="font-bold text-sm text-primary">
-                    {Number(booking.total_amount).toLocaleString()} FCFA
+                    {formatNumber(booking.total_amount)} FCFA
                 </span>
-                <Button to={`/tutor/${tutor?.id}`} size="sm">View Tutor</Button>
+                <Button to={`/tutor/${tutor?.id}`} size="sm">{t('dashboard.viewTutor')}</Button>
             </div>
         </motion.div>
     );
@@ -192,12 +197,15 @@ function BookingCard({ booking }) {
 
 /* ── empty state ──────────────────────────────────────────────── */
 function EmptyState({ type }) {
+    const { t } = useTranslation();
     const map = {
-        groups:   { msg: "You haven't created any groups yet.",  to: '/groups', cta: 'Browse Groups' },
-        notes:    { msg: "You haven't uploaded any notes yet.",  to: '/notes',  cta: 'Upload Notes'  },
-        bookings: { msg: "You have no upcoming bookings.",       to: '/tutors', cta: 'Find Tutors'   },
+        groups:   { msgKey: 'emptyGroups',   ctaKey: 'emptyGroupsCta',   to: '/groups' },
+        notes:    { msgKey: 'emptyNotes',    ctaKey: 'emptyNotesCta',    to: '/notes'  },
+        bookings: { msgKey: 'emptyBookings', ctaKey: 'emptyBookingsCta', to: '/tutors' },
     };
-    const { msg, to, cta } = map[type];
+    const { msgKey, ctaKey, to } = map[type];
+    const msg = t(`dashboard.${msgKey}`);
+    const cta = t(`dashboard.${ctaKey}`);
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0.97 }}
@@ -215,13 +223,14 @@ function EmptyState({ type }) {
 
 /* ── tabs ─────────────────────────────────────────────────────── */
 const TABS = [
-    { key: 'groups',   label: 'Groups'   },
-    { key: 'notes',    label: 'Notes'    },
-    { key: 'bookings', label: 'Bookings' },
+    { key: 'groups',   labelKey: 'dashboard.tabGroups'   },
+    { key: 'notes',    labelKey: 'dashboard.tabNotes'    },
+    { key: 'bookings', labelKey: 'dashboard.tabBookings' },
 ];
 
 /* ── main ─────────────────────────────────────────────────────── */
 export default function Dashboard() {
+    const { t }     = useTranslation();
     const { user }  = useAuth();
     const reduced   = useReducedMotion();
     const { tier, next, pct } = getRepInfo(user?.reputation ?? 0);
@@ -258,8 +267,8 @@ export default function Dashboard() {
     }, [user.id]);
 
     const switchTab = (key) => {
-        const cur = TABS.findIndex(t => t.key === tab);
-        const nxt = TABS.findIndex(t => t.key === key);
+        const cur = TABS.findIndex(x => x.key === tab);
+        const nxt = TABS.findIndex(x => x.key === key);
         setTabDir(nxt > cur ? 1 : -1);
         setTab(key);
     };
@@ -306,7 +315,7 @@ export default function Dashboard() {
                         className="md:col-span-2 rounded-2xl p-7 border border-border bg-primary-subtle"
                     >
                         <h1 className="text-2xl md:text-3xl font-bold mb-1 gradient-text" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                            Good to see you, {user?.first_name}
+                            {t('dashboard.greeting', { name: user?.first_name })}
                         </h1>
                         <p className="text-sm mb-5 text-fg-secondary">
                             {user?.university} · {user?.field_of_study}
@@ -317,12 +326,12 @@ export default function Dashboard() {
                             initial="hidden" animate="show"
                         >
                             {[
-                                { to: '/groups', icon: Users,         label: 'Groups' },
-                                { to: '/notes',  icon: FileText,      label: 'Notes'  },
-                                { to: '/qa',     icon: MessageSquare, label: 'Q&A'    },
+                                { to: '/groups', icon: Users,         label: t('dashboard.quickGroups') },
+                                { to: '/notes',  icon: FileText,      label: t('dashboard.quickNotes')  },
+                                { to: '/qa',     icon: MessageSquare, label: t('dashboard.quickQa')     },
                                 isTutor
-                                    ? { to: '/tutor-dashboard', icon: GraduationCap, label: 'Tutor Panel'   }
-                                    : { to: '/become-tutor',    icon: GraduationCap, label: 'Become Tutor'  },
+                                    ? { to: '/tutor-dashboard', icon: GraduationCap, label: t('dashboard.tutorPanel')   }
+                                    : { to: '/become-tutor',    icon: GraduationCap, label: t('dashboard.becomeTutor')  },
                             ].map(({ to, icon: Icon, label }) => (
                                 <motion.div key={to} variants={reduced ? {} : cardVariant}
                                     whileHover={{ scale: 1.04, y: -2 }}
@@ -344,7 +353,7 @@ export default function Dashboard() {
                         className="rounded-2xl p-6 border border-border bg-surface flex flex-col justify-between"
                     >
                         <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm font-medium text-fg-secondary">Reputation</span>
+                            <span className="text-sm font-medium text-fg-secondary">{t('dashboard.reputation')}</span>
                             <motion.span
                                 className="text-xs font-bold px-2 py-0.5 rounded-full"
                                 style={{ background: `${tier.color}22`, color: tier.color }}
@@ -352,7 +361,7 @@ export default function Dashboard() {
                                 animate={{ scale: 1, opacity: 1 }}
                                 transition={{ type: 'spring', stiffness: 350, damping: 20, delay: 0.4 }}
                             >
-                                {tier.label}
+                                {t(`tier.${tier.id}`, { defaultValue: tier.label })}
                             </motion.span>
                         </div>
                         <motion.div
@@ -366,8 +375,14 @@ export default function Dashboard() {
                         </motion.div>
                         <p className="text-xs mb-3 text-fg-secondary">
                             {next
-                                ? `${next - (user?.reputation ?? 0)} pts to ${TIERS.find(t => t.min === next)?.label}`
-                                : 'Max tier reached'}
+                                ? t('dashboard.ptsToNext', {
+                                    points: next - (user?.reputation ?? 0),
+                                    tier: (() => {
+                                        const nextTier = TIERS.find(x => x.min === next);
+                                        return nextTier ? t(`tier.${nextTier.id}`, { defaultValue: nextTier.label }) : '';
+                                    })(),
+                                })
+                                : t('dashboard.maxTier')}
                         </p>
                         {next && (
                             <div>
@@ -392,9 +407,9 @@ export default function Dashboard() {
                     variants={reduced ? {} : stagger(0.09, 0.15)}
                     initial="hidden" animate="show"
                 >
-                    <StatCard icon={Users}    label="My Groups"      value={myGroups.length} color="var(--brand-600)"    sub="groups created"       reduced={reduced} />
-                    <StatCard icon={FileText} label="Notes Uploaded" value={myNotes.length}  color="var(--status-success)" sub="shared with peers"    reduced={reduced} />
-                    <StatCard icon={Star}     label="Downloads"      value={downloads}       color="var(--status-warning)" sub="total note downloads" reduced={reduced} />
+                    <StatCard icon={Users}    label={t('dashboard.statGroups')}    value={myGroups.length} color="var(--brand-600)"      sub={t('dashboard.statGroupsSub')}    reduced={reduced} />
+                    <StatCard icon={FileText} label={t('dashboard.statNotes')}     value={myNotes.length}  color="var(--status-success)" sub={t('dashboard.statNotesSub')}     reduced={reduced} />
+                    <StatCard icon={Star}     label={t('dashboard.statDownloads')} value={downloads}       color="var(--status-warning)" sub={t('dashboard.statDownloadsSub')} reduced={reduced} />
                 </motion.div>
 
                 {/* ── ACTIVITY CHART ────────────────────────────── */}
@@ -406,18 +421,24 @@ export default function Dashboard() {
                         transition={{ duration: 0.5, delay: 0.35 }}
                     >
                         <p className="text-sm font-semibold mb-1 text-fg" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                            Activity this week
+                            {t('dashboard.activityTitle')}
                         </p>
                         <p className="text-xs mb-5 text-fg-secondary">
-                            Groups created &amp; notes uploaded
+                            {t('dashboard.activitySub')}
                         </p>
                         <ResponsiveContainer width="100%" height={120}>
                             <BarChart data={activity} barGap={4} barSize={10}>
-                                <XAxis dataKey="day" tick={{ fontSize: 11, fill: 'var(--ink-secondary)' }} axisLine={false} tickLine={false} />
+                                <XAxis
+                                    dataKey="day"
+                                    tickFormatter={d => t(`days.${d}`, { defaultValue: d })}
+                                    tick={{ fontSize: 11, fill: 'var(--ink-secondary)' }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                />
                                 <YAxis hide />
                                 <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(128,128,128,0.06)' }} />
-                                <Bar dataKey="groups" name="Groups" radius={[4,4,0,0]} fill="#3b82f6" isAnimationActive animationBegin={300} animationDuration={900} />
-                                <Bar dataKey="notes"  name="Notes"  radius={[4,4,0,0]} fill="#34d399" isAnimationActive animationBegin={450} animationDuration={900} />
+                                <Bar dataKey="groups" name={t('dashboard.tabGroups')} radius={[4,4,0,0]} fill="#3b82f6" isAnimationActive animationBegin={300} animationDuration={900} />
+                                <Bar dataKey="notes"  name={t('dashboard.tabNotes')}  radius={[4,4,0,0]} fill="#34d399" isAnimationActive animationBegin={450} animationDuration={900} />
                             </BarChart>
                         </ResponsiveContainer>
                     </motion.div>
@@ -427,10 +448,10 @@ export default function Dashboard() {
                 <div>
                     <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
                         <h2 className="text-lg font-bold text-fg" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                            My Content
+                            {t('dashboard.myContent')}
                         </h2>
                         <div className="flex gap-1 p-1 rounded-xl border border-border bg-surface overflow-x-auto max-w-full">
-                            {TABS.map(({ key, label }) => {
+                            {TABS.map(({ key, labelKey }) => {
                                 const count = key === 'groups' ? myGroups.length : key === 'notes' ? myNotes.length : myBookings.length;
                                 const active = tab === key;
                                 return (
@@ -449,7 +470,7 @@ export default function Dashboard() {
                                                 transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                                             />
                                         )}
-                                        {label}
+                                        {t(labelKey)}
                                         {count > 0 && (
                                             <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${active ? 'bg-white/25' : 'bg-surface-hover'}`}>
                                                 {count}
