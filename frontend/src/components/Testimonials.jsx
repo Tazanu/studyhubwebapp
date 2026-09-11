@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Quote } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { TESTIMONIALS as testimonials } from '../data/testimonials';
 
 const LEN = testimonials.length;
 
 export default function Testimonials() {
+    const { t } = useTranslation();
     const [idx, setIdx]       = useState(0);
     const [visible, setVisible] = useState(true);
     const paused = useRef(false);
@@ -23,13 +25,13 @@ export default function Testimonials() {
 
     // auto-advance — no stale closure because go is stable and setIdx uses functional update
     useEffect(() => {
-        const t = setInterval(() => {
+        const timer = setInterval(() => {
             if (!paused.current) go(i => i + 1);
         }, 3000);
-        return () => clearInterval(t);
+        return () => clearInterval(timer);
     }, [go]);
 
-    const t = testimonials[idx];
+    const current = testimonials[idx];
 
     return (
         <section
@@ -42,7 +44,7 @@ export default function Testimonials() {
                 {/* header */}
                 <div className="text-center mb-16">
                     <p className="text-sm font-semibold uppercase tracking-widest mb-3 text-primary">
-                        Student Stories
+                        {t('testimonials.eyebrow')}
                     </p>
                     <h2
                         className="font-bold text-fg"
@@ -52,7 +54,7 @@ export default function Testimonials() {
                             letterSpacing: '-0.02em',
                         }}
                     >
-                        What students are saying
+                        {t('testimonials.title')}
                     </h2>
                 </div>
 
@@ -70,9 +72,9 @@ export default function Testimonials() {
                         {/* photo */}
                         <div className="relative md:w-72 shrink-0" style={{ minHeight: 280 }}>
                             <img
-                                key={t.photo}
-                                src={t.photo}
-                                alt={t.name}
+                                key={current.photo}
+                                src={current.photo}
+                                alt={current.name}
                                 className="w-full h-full object-cover"
                                 style={{ minHeight: 280, display: 'block' }}
                             />
@@ -93,14 +95,14 @@ export default function Testimonials() {
                                     lineHeight: 1.75,
                                 }}
                             >
-                                {t.quote}
+                                {current.quote}
                             </p>
                             <div>
                                 <p className="font-semibold text-base text-primary">
-                                    {t.name}
+                                    {current.name}
                                 </p>
                                 <p className="text-sm mt-0.5 text-fg-secondary">
-                                    {t.role}
+                                    {current.role}
                                 </p>
                             </div>
                         </div>
@@ -112,7 +114,7 @@ export default function Testimonials() {
                     <button
                         onClick={() => go(i => i - 1)}
                         className="w-10 h-10 rounded-full border border-border text-fg-secondary flex items-center justify-center transition-all hover:border-primary hover:text-primary"
-                        aria-label="Previous testimonial"
+                        aria-label={t('testimonials.previous')}
                     >
                         <ChevronLeft size={18} />
                     </button>
@@ -136,7 +138,7 @@ export default function Testimonials() {
                     <button
                         onClick={() => go(i => i + 1)}
                         className="w-10 h-10 rounded-full border border-border text-fg-secondary flex items-center justify-center transition-all hover:border-primary hover:text-primary"
-                        aria-label="Next testimonial"
+                        aria-label={t('testimonials.next')}
                     >
                         <ChevronRight size={18} />
                     </button>

@@ -758,7 +758,7 @@ export default function GroupChat() {
                                                     <button
                                                         onClick={() => handleDelete(msg)}
                                                         className="p-1 rounded text-fg-secondary hover:bg-danger hover:text-white transition-colors"
-                                                        title={isOwn ? 'Delete this message' : 'Delete as group admin'}
+                                                        title={isOwn ? t('chat.deleteMessage') : t('chat.deleteAsAdmin')}
                                                     >
                                                         <Trash2 size={12} />
                                                     </button>
@@ -804,7 +804,7 @@ export default function GroupChat() {
                                 {replyTo.message || t('chat.file')}
                             </div>
                         </div>
-                        <button onClick={() => setReplyTo(null)} className="p-1 rounded hover:bg-danger hover:text-white transition-colors">
+                        <button onClick={() => setReplyTo(null)} aria-label={t('chat.cancelReply')} className="p-1 rounded hover:bg-danger hover:text-white transition-colors">
                             <X size={14} />
                         </button>
                     </div>
@@ -817,7 +817,7 @@ export default function GroupChat() {
                             <Paperclip size={14} />
                             <span>{selectedFile.name}</span>
                         </div>
-                        <button onClick={() => setSelectedFile(null)} className="p-1 rounded hover:bg-danger hover:text-white transition-colors">
+                        <button onClick={() => setSelectedFile(null)} aria-label={t('chat.removeAttachment')} className="p-1 rounded hover:bg-danger hover:text-white transition-colors">
                             <X size={14} />
                         </button>
                     </div>

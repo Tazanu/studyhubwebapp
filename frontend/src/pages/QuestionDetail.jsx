@@ -150,6 +150,7 @@ export default function QuestionDetail() {
                         <div className="flex sm:flex-col flex-row items-center gap-2 shrink-0">
                             <button
                                 onClick={() => handleVote(1)}
+                                aria-label={t('questionDetail.upvote')}
                                 className={cn('p-2 rounded-lg transition-all', question.userVote === 1 ? 'text-success' : 'text-fg-secondary hover:bg-success hover:text-white')}
                             >
                                 <ThumbsUp size={22} />
@@ -159,6 +160,7 @@ export default function QuestionDetail() {
                             </span>
                             <button
                                 onClick={() => handleVote(-1)}
+                                aria-label={t('questionDetail.downvote')}
                                 className={cn('p-2 rounded-lg transition-all', question.userVote === -1 ? 'text-danger' : 'text-fg-secondary hover:bg-danger hover:text-white')}
                             >
                                 <ThumbsDown size={22} />
@@ -240,11 +242,11 @@ export default function QuestionDetail() {
                         <div key={answer.id} className={cn('mb-6 p-4 sm:p-6 rounded-lg border bg-surface', answer.is_accepted ? 'border-success' : 'border-border')}>
                             <div className="flex flex-col sm:flex-row gap-4">
                                 <div className="flex sm:flex-col flex-row items-center gap-2 shrink-0">
-                                    <button onClick={() => handleVote(1, true, answer.id)} className="p-2 rounded-lg transition-all text-fg-secondary hover:bg-success hover:text-white">
+                                    <button onClick={() => handleVote(1, true, answer.id)} aria-label={t('questionDetail.upvote')} className="p-2 rounded-lg transition-all text-fg-secondary hover:bg-success hover:text-white">
                                         <ThumbsUp size={20} />
                                     </button>
                                     <span className="text-xl font-bold">{answer.votes}</span>
-                                    <button onClick={() => handleVote(-1, true, answer.id)} className="p-2 rounded-lg transition-all text-fg-secondary hover:bg-danger hover:text-white">
+                                    <button onClick={() => handleVote(-1, true, answer.id)} aria-label={t('questionDetail.downvote')} className="p-2 rounded-lg transition-all text-fg-secondary hover:bg-danger hover:text-white">
                                         <ThumbsDown size={20} />
                                     </button>
                                     {isAuthor && !question.is_solved && (
