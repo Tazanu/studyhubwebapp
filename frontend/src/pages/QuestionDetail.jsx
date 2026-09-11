@@ -5,6 +5,7 @@ import {
     X, Volume2, Eye, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
@@ -17,6 +18,7 @@ import { mediaUrl } from '../lib/mediaUrl';
 
 
 export default function QuestionDetail() {
+    const { t } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -32,7 +34,7 @@ export default function QuestionDetail() {
             setQuestion(data);
         } catch (error) {
             console.error('Failed to fetch question:', error);
-            toast.error('Failed to load question');
+            toast.error(t('questionDetail.loadFailed'));
             navigate('/qa');
         } finally {
             setLoading(false);
@@ -49,7 +51,7 @@ export default function QuestionDetail() {
             await api.post(endpoint, { voteType: type });
             fetchQuestion();
         } catch (error) {
-            toast.error('Failed to vote');
+            toast.error(t('questionDetail.voteFailed'));
         }
     };
 
@@ -57,9 +59,9 @@ export default function QuestionDetail() {
         try {
             await api.post(`/qa/${id}/bookmark`);
             fetchQuestion();
-            toast.success(question.isBookmarked ? 'Bookmark removed' : 'Bookmarked');
+            toast.success(question.isBookmarked ? t('questionDetail.bookmarkRemoved') : t('questionDetail.bookmarked'));
         } catch (error) {
-            toast.error('Failed to bookmark');
+            toast.error(t('questionDetail.bookmarkFailed'));
         }
     };
 
@@ -67,16 +69,16 @@ export default function QuestionDetail() {
         try {
             await api.post(`/qa/${id}/follow`);
             fetchQuestion();
-            toast.success(question.isFollowing ? 'Unfollowed' : 'Following');
+            toast.success(question.isFollowing ? t('questionDetail.unfollowed') : t('questionDetail.following'));
         } catch (error) {
-            toast.error('Failed to follow');
+            toast.error(t('questionDetail.followFailed'));
         }
     };
 
     const handleSubmitAnswer = async (e) => {
         e.preventDefault();
         if (!answerContent.trim() && !audioBlob) {
-            toast.error('Please provide an answer');
+            toast.error(t('questionDetail.answerRequired'));
             return;
         }
 
@@ -90,12 +92,12 @@ export default function QuestionDetail() {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
-            toast.success('Answer posted!');
+            toast.success(t('questionDetail.answerPosted'));
             setAnswerContent('');
             resetRecording();
             fetchQuestion();
         } catch (error) {
-            toast.error('Failed to post answer');
+            toast.error(t('questionDetail.answerFailed'));
         } finally {
             setSubmitting(false);
         }
@@ -104,10 +106,10 @@ export default function QuestionDetail() {
     const handleAcceptAnswer = async (answerId) => {
         try {
             await api.post(`/qa/${id}/answers/${answerId}/accept`);
-            toast.success('Answer accepted!');
+            toast.success(t('questionDetail.answerAccepted'));
             fetchQuestion();
         } catch (error) {
-            toast.error('Failed to accept answer');
+            toast.error(t('questionDetail.acceptFailed'));
         }
     };
 
@@ -138,7 +140,7 @@ export default function QuestionDetail() {
                     className="flex items-center gap-2 mb-6 text-fg-secondary hover:text-primary transition-colors"
                 >
                     <ArrowLeft size={20} />
-                    Back to Questions
+                    {t('questionDetail.back')}
                 </button>
 
                 {/* Question */}
@@ -176,17 +178,17 @@ export default function QuestionDetail() {
                                     {question.title}
                                 </h1>
                                 {question.is_solved && (
-                                    <Badge tone="success" className="whitespace-nowrap">Solved</Badge>
+                                    <Badge tone="success" className="whitespace-nowrap">{t('questionDetail.solved')}</Badge>
                                 )}
                             </div>
 
                             <div className="flex flex-wrap gap-3 mb-4 text-sm text-fg-muted">
                                 <span className="flex items-center gap-1">
                                     <Eye size={16} />
-                                    {question.views} views
+                                    {t('qa.views', { count: question.views ?? 0 })}
                                 </span>
-                                <span>Asked by <span className="font-semibold text-primary">{question.users.first_name} {question.users.last_name}</span></span>
-                                <span className="text-warning">Reputation: {question.users.reputation}</span>
+                                <span>{t('questionDetail.askedBy')} <span className="font-semibold text-primary">{question.users.first_name} {question.users.last_name}</span></span>
+                                <span className="text-warning">{t('questionDetail.reputation', { n: question.users.reputation })}</span>
                             </div>
 
                             <div className="p-6 rounded-lg border border-border bg-surface mb-4">
@@ -231,7 +233,7 @@ export default function QuestionDetail() {
                 {/* Answers */}
                 <div className="mb-8">
                     <h2 className="text-2xl font-bold mb-4" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                        {question.answers.length} {question.answers.length === 1 ? 'Answer' : 'Answers'}
+                        {t('questionDetail.answersHeading', { count: question.answers.length })}
                     </h2>
 
                     {question.answers.map(answer => (
@@ -249,7 +251,7 @@ export default function QuestionDetail() {
                                         <button
                                             onClick={() => handleAcceptAnswer(answer.id)}
                                             className="p-2 rounded-lg transition-all mt-2 text-fg-secondary hover:bg-success hover:text-white"
-                                            title="Accept as best answer"
+                                            title={t('questionDetail.acceptAnswer')}
                                         >
                                             <Check size={20} />
                                         </button>
@@ -260,7 +262,7 @@ export default function QuestionDetail() {
                                     {answer.is_accepted && (
                                         <div className="flex items-center gap-2 mb-3 text-success font-semibold">
                                             <Check size={20} />
-                                            Accepted Answer
+                                            {t('questionDetail.acceptedAnswer')}
                                         </div>
                                     )}
 
@@ -274,7 +276,7 @@ export default function QuestionDetail() {
                                     )}
 
                                     <div className="text-sm flex items-center gap-3 text-fg-secondary">
-                                        <span>by <span className="font-semibold text-primary">{answer.users.first_name} {answer.users.last_name}</span></span>
+                                        <span>{t('questionDetail.by')} <span className="font-semibold text-primary">{answer.users.first_name} {answer.users.last_name}</span></span>
                                         <span className="text-warning">({answer.users.reputation})</span>
                                     </div>
                                 </div>
@@ -285,12 +287,12 @@ export default function QuestionDetail() {
 
                 {/* Answer Form */}
                 <div className="p-6 rounded-lg border border-border bg-surface">
-                    <h3 className="text-xl font-bold mb-4" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Your Answer</h3>
+                    <h3 className="text-xl font-bold mb-4" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{t('questionDetail.yourAnswer')}</h3>
                     <form onSubmit={handleSubmitAnswer} className="space-y-4">
                         <Textarea
                             value={answerContent}
                             onChange={(e) => setAnswerContent(e.target.value)}
-                            placeholder="Write your answer..."
+                            placeholder={t('questionDetail.answerPlaceholder')}
                             rows={6}
                         />
 
@@ -302,7 +304,7 @@ export default function QuestionDetail() {
                                 variant={recording ? 'danger' : 'primary'}
                                 className={recording ? 'animate-pulse' : ''}
                             >
-                                {recording ? 'Stop Recording' : 'Add Voice Answer'}
+                                {recording ? t('ask.stopRecording') : t('questionDetail.addVoiceAnswer')}
                             </Button>
                         ) : (
                             <div className="flex items-center gap-3">
@@ -314,7 +316,7 @@ export default function QuestionDetail() {
                         )}
 
                         <Button type="submit" disabled={submitting} loading={submitting} size="lg" className="hover:-translate-y-0.5">
-                            {submitting ? 'Posting...' : 'Post Answer'}
+                            {submitting ? t('questionDetail.posting') : t('questionDetail.postAnswer')}
                         </Button>
                     </form>
                 </div>

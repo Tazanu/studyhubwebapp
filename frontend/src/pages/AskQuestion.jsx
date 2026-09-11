@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mic, MicOff, Image as ImageIcon, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import api, { apiError } from '../api/client';
 import Sidebar from '../components/Sidebar';
 import Field from '../components/ui/Field';
@@ -11,9 +12,11 @@ import Select from '../components/ui/Select';
 import Button from '../components/ui/Button';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 
+// Sent to the API as the question's category, so these stay English.
 const CATEGORIES = ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'Computer Science', 'Engineering', 'Medicine', 'Business', 'Other'];
 
 export default function AskQuestion() {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
@@ -29,7 +32,7 @@ export default function AskQuestion() {
     const handleImageSelect = (e) => {
         const files = Array.from(e.target.files);
         if (images.length + files.length > 5) {
-            toast.error('Maximum 5 images allowed');
+            toast.error(t('ask.maxImages'));
             return;
         }
         setImages([...images, ...files]);
@@ -43,7 +46,7 @@ export default function AskQuestion() {
         e.preventDefault();
 
         if (!title.trim() || !content.trim() || !subject) {
-            toast.error('Title, content, and subject are required');
+            toast.error(t('ask.requiredFields'));
             return;
         }
 
@@ -69,11 +72,11 @@ export default function AskQuestion() {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
-            toast.success('Question posted successfully!');
+            toast.success(t('ask.posted'));
             navigate(`/qa/${data.question.id}`);
         } catch (error) {
             console.error('Submit error:', error);
-            toast.error(apiError(error, 'Failed to post question'));
+            toast.error(apiError(error, t('ask.postFailed')));
         } finally {
             setSubmitting(false);
         }
@@ -94,67 +97,67 @@ export default function AskQuestion() {
                     </button>
                     <div>
                         <h1 className="text-3xl font-bold" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                            Ask a Question
+                            {t('qa.askQuestion')}
                         </h1>
                         <p className="text-sm mt-1 text-fg-secondary">
-                            Get help from the community
+                            {t('qa.subtitle')}
                         </p>
                     </div>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
 
-                    <Field label="Title" required>
+                    <Field label={t('ask.titleLabel')} required>
                         <Input
                             type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            placeholder="What's your question? Be specific."
+                            placeholder={t('ask.titlePlaceholder')}
                             required
                         />
                     </Field>
 
-                    <Field label="Description" required>
+                    <Field label={t('ask.descriptionLabel')} required>
                         <Textarea
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
-                            placeholder="Provide all the details someone would need to answer your question..."
+                            placeholder={t('ask.descriptionPlaceholder')}
                             rows={8}
                             required
                         />
                     </Field>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Field label="Subject" required>
+                        <Field label={t('ask.subjectLabel')} required>
                             <Input
                                 type="text"
                                 value={subject}
                                 onChange={(e) => setSubject(e.target.value)}
-                                placeholder="e.g., Calculus"
+                                placeholder={t('ask.subjectPlaceholder')}
                                 required
                             />
                         </Field>
-                        <Field label="Category">
+                        <Field label={t('ask.categoryLabel')}>
                             <Select value={category} onChange={(e) => setCategory(e.target.value)}>
-                                <option value="">Select category</option>
+                                <option value="">{t('ask.selectCategory')}</option>
                                 {CATEGORIES.map(cat => (
-                                    <option key={cat} value={cat}>{cat}</option>
+                                    <option key={cat} value={cat}>{t(`subjectName.${cat}`, { defaultValue: cat })}</option>
                                 ))}
                             </Select>
                         </Field>
                     </div>
 
-                    <Field label="Tags">
+                    <Field label={t('ask.tagsLabel')}>
                         <Input
                             type="text"
                             value={tags}
                             onChange={(e) => setTags(e.target.value)}
-                            placeholder="e.g., derivatives, limits, integration (comma-separated)"
+                            placeholder={t('ask.tagsPlaceholder')}
                         />
                     </Field>
 
                     <div className="p-4 rounded-lg border border-border bg-surface">
-                        <label className="block text-sm font-semibold mb-3 text-fg">Audio Explanation (Optional)</label>
+                        <label className="block text-sm font-semibold mb-3 text-fg">{t('ask.audioLabel')}</label>
                         <div className="flex items-center gap-3">
                             {!audioURL ? (
                                 <Button
@@ -164,7 +167,7 @@ export default function AskQuestion() {
                                     variant={recording ? 'danger' : 'primary'}
                                     className={recording ? 'animate-pulse' : ''}
                                 >
-                                    {recording ? 'Stop Recording' : 'Start Recording'}
+                                    {recording ? t('ask.stopRecording') : t('ask.startRecording')}
                                 </Button>
                             ) : (
                                 <div className="flex items-center gap-3 flex-1">
@@ -172,6 +175,7 @@ export default function AskQuestion() {
                                     <button
                                         type="button"
                                         onClick={resetRecording}
+                                        aria-label={t('ask.removeRecording')}
                                         className="p-2 rounded-lg text-fg-secondary hover:bg-danger hover:text-white transition-colors"
                                     >
                                         <X size={18} />
@@ -182,7 +186,7 @@ export default function AskQuestion() {
                     </div>
 
                     <div className="p-4 rounded-lg border border-border bg-surface">
-                        <label className="block text-sm font-semibold mb-3 text-fg">Images (Optional, max 5)</label>
+                        <label className="block text-sm font-semibold mb-3 text-fg">{t('ask.imagesLabel')}</label>
                         <input
                             ref={imageInputRef}
                             type="file"
@@ -198,7 +202,7 @@ export default function AskQuestion() {
                             variant="secondary"
                             icon={ImageIcon}
                         >
-                            Add Images
+                            {t('ask.addImages')}
                         </Button>
 
                         {images.length > 0 && (
@@ -207,12 +211,13 @@ export default function AskQuestion() {
                                     <div key={index} className="relative group">
                                         <img
                                             src={URL.createObjectURL(image)}
-                                            alt={`Preview ${index + 1}`}
+                                            alt={t('ask.imagePreview', { n: index + 1 })}
                                             className="w-full h-24 object-cover rounded-lg"
                                         />
                                         <button
                                             type="button"
                                             onClick={() => removeImage(index)}
+                                            aria-label={t('ask.removeImage')}
                                             className="absolute top-1 right-1 p-1 rounded-full bg-danger text-white opacity-0 group-hover:opacity-100 transition-opacity"
                                         >
                                             <X size={14} />
@@ -225,10 +230,10 @@ export default function AskQuestion() {
 
                     <div className="flex gap-3">
                         <Button type="submit" disabled={submitting} loading={submitting} size="lg" className="hover:-translate-y-0.5">
-                            {submitting ? 'Posting...' : 'Post Question'}
+                            {submitting ? t('ask.posting') : t('ask.postQuestion')}
                         </Button>
                         <Button type="button" onClick={() => navigate('/qa')} variant="secondary" size="lg">
-                            Cancel
+                            {t('common.cancel')}
                         </Button>
                     </div>
                 </form>

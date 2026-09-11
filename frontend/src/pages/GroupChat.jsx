@@ -3,7 +3,10 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, ArrowLeft, RefreshCw, Loader2, WifiOff, Paperclip, X, Image as ImageIcon, FileText, File, Reply, Edit2, Check, Search, Settings, Trash2, MessageCircle, SmilePlus, Ban } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import api, { apiError } from '../api/client';
+import i18n from '../i18n';
+import { formatDate as localeDate, formatTime as localeTime } from '../lib/formatDate';
 import { useAuth } from '../context/AuthContext';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import JoinRequestsPanel from '../components/JoinRequestsPanel';
@@ -24,7 +27,7 @@ const POLL_MS_SOCKET_CONNECTED = 30000;
 const QUICK_REACTIONS = ['👍', '❤️', '😂', '🎉', '🙏', '😮'];
 
 function formatTime(ts) {
-    return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return localeTime(ts, { hour: '2-digit', minute: '2-digit' });
 }
 
 /** "Today" / "Yesterday" / "12 March 2026" — the WhatsApp-style day divider. */
@@ -34,9 +37,9 @@ function formatDayLabel(ts) {
     const yesterday = new Date();
     yesterday.setDate(today.getDate() - 1);
     const sameDay = (a, b) => a.toDateString() === b.toDateString();
-    if (sameDay(d, today)) return 'Today';
-    if (sameDay(d, yesterday)) return 'Yesterday';
-    return d.toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' });
+    if (sameDay(d, today)) return i18n.t('chat.today');
+    if (sameDay(d, yesterday)) return i18n.t('chat.yesterday');
+    return localeDate(d, { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 const dayKey = ts => new Date(ts).toDateString();
@@ -55,6 +58,7 @@ function groupReactions(reactions, userId) {
 }
 
 export default function GroupChat() {
+    const { t } = useTranslation();
     const { id }    = useParams();
     const { user }  = useAuth();
     const navigate  = useNavigate();
@@ -124,7 +128,7 @@ export default function GroupChat() {
             }
         } catch (err) {
             if (err.response?.status === 403) {
-                toast.error('You are not a member of this group');
+                toast.error(i18n.t('chat.notMember'));
                 navigate('/groups');
             }
         } finally {
@@ -203,28 +207,28 @@ export default function GroupChat() {
     /* ── send (with optional file/reply) ─────────────────────── */
     const handleEditGroup = async (e) => {
         e.preventDefault();
-        if (!editGroupForm.name.trim()) return toast.error('Group name is required');
+        if (!editGroupForm.name.trim()) return toast.error(t('chat.nameRequired'));
         setEditGroupSaving(true);
         try {
             const { data } = await api.patch(`/groups/${id}`, editGroupForm);
             setGroup(prev => ({ ...prev, ...data }));
             setShowEditGroup(false);
-            toast.success('Group updated!');
+            toast.success(t('chat.groupUpdated'));
         } catch (err) {
-            toast.error(apiError(err, 'Failed to update group'));
+            toast.error(apiError(err, t('chat.updateFailed')));
         } finally {
             setEditGroupSaving(false);
         }
     };
 
     const handleDeleteGroup = async () => {
-        if (!window.confirm('Delete this group permanently? This cannot be undone.')) return;
+        if (!window.confirm(t('chat.confirmDeleteGroup'))) return;
         try {
             await api.delete(`/groups/${id}`);
-            toast.success('Group deleted');
+            toast.success(t('chat.groupDeleted'));
             navigate('/groups');
         } catch (err) {
-            toast.error(apiError(err, 'Failed to delete group'));
+            toast.error(apiError(err, t('chat.deleteGroupFailed')));
         }
     };
 
@@ -269,7 +273,7 @@ export default function GroupChat() {
             setMessages(prev => prev.filter(m => m.id !== optimistic.id));
             setInput(text);
             setSelectedFile(null);
-            toast.error(apiError(err, 'Failed to send message'));
+            toast.error(apiError(err, t('chat.sendFailed')));
         } finally {
             setSending(false);
         }
@@ -284,9 +288,9 @@ export default function GroupChat() {
             setMessages(prev => prev.map(m => m.id === msg.id ? data.message : m));
             setEditingMsg(null);
             setEditText('');
-            toast.success('Message edited');
+            toast.success(t('chat.messageEdited'));
         } catch (err) {
-            toast.error(apiError(err, 'Failed to edit message'));
+            toast.error(apiError(err, t('chat.editFailed')));
         }
     };
 
@@ -301,7 +305,7 @@ export default function GroupChat() {
             await api.delete(`/groups/${id}/messages/${msg.id}`);
         } catch (err) {
             setMessages(previous);   // put it back; the delete did not happen
-            toast.error(apiError(err, 'Failed to delete message'));
+            toast.error(apiError(err, t('chat.deleteMessageFailed')));
         }
     };
 
@@ -327,7 +331,7 @@ export default function GroupChat() {
             setMessages(prev => prev.map(m => (m.id === msg.id ? { ...m, reactions: data.reactions } : m)));
         } catch (err) {
             setMessages(previous);
-            toast.error(apiError(err, 'Failed to react'));
+            toast.error(apiError(err, t('chat.reactFailed')));
         }
     };
 
@@ -397,12 +401,12 @@ export default function GroupChat() {
                     <div className="flex items-center gap-3">
                         <Link to="/groups"
                             className="p-2 rounded-lg transition-colors text-fg-secondary hover:bg-primary-solid hover:text-white"
-                            aria-label="Back to groups">
+                            aria-label={t('chat.backToGroups')}>
                             <ArrowLeft size={18} />
                         </Link>
                         <div>
                             <h2 className="font-semibold text-sm leading-tight" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
-                                {group?.name ?? 'Group Chat'}
+                                {group?.name ?? t('chat.groupChat')}
                             </h2>
                             <p className="text-xs text-fg-secondary">
                                 {group?.current_members ?? '…'} members · {group?.subject}
@@ -414,7 +418,7 @@ export default function GroupChat() {
                             <button
                                 onClick={() => setShowEditGroup(v => !v)}
                                 className={`p-2 rounded-lg transition-colors ${showEditGroup ? 'text-primary' : 'text-fg-secondary'}`}
-                                title="Edit group"
+                                title={t('chat.editGroup')}
                             >
                                 <Settings size={16} />
                             </button>
@@ -422,8 +426,8 @@ export default function GroupChat() {
                         <button
                             onClick={() => setSearchOpen(v => !v)}
                             className={`p-2 rounded-lg transition-colors ${searchOpen ? 'text-primary' : 'text-fg-secondary'}`}
-                            aria-label="Search messages"
-                            title="Search messages"
+                            aria-label={t('chat.searchMessages')}
+                            title={t('chat.searchMessages')}
                         >
                             <Search size={16} />
                         </button>
@@ -431,7 +435,7 @@ export default function GroupChat() {
                             onClick={handleRefresh}
                             disabled={refreshing}
                             className="p-2 rounded-lg transition-colors disabled:opacity-50 text-fg-secondary"
-                            aria-label="Refresh messages"
+                            aria-label={t('chat.refreshMessages')}
                         >
                             <motion.span
                                 animate={refreshing ? { rotate: 360 } : { rotate: 0 }}
@@ -455,25 +459,25 @@ export default function GroupChat() {
                             className="border-b border-border bg-surface-hover overflow-hidden"
                         >
                             <form onSubmit={handleEditGroup} className="px-5 py-4 flex flex-col gap-3">
-                                <p className="text-xs font-semibold text-fg-secondary">Edit Group</p>
+                                <p className="text-xs font-semibold text-fg-secondary">{t('chat.editGroupTitle')}</p>
                                 <Input
                                     value={editGroupForm.name}
                                     onChange={e => setEditGroupForm(f => ({ ...f, name: e.target.value }))}
-                                    placeholder="Group name"
+                                    placeholder={t('chat.groupNamePlaceholder')}
                                     className="h-10"
                                 />
                                 <Textarea
                                     value={editGroupForm.description}
                                     onChange={e => setEditGroupForm(f => ({ ...f, description: e.target.value }))}
-                                    placeholder="Description"
+                                    placeholder={t('chat.descriptionPlaceholder')}
                                     rows={2}
                                 />
                                 <div className="flex gap-2">
                                     <Button type="submit" size="sm" loading={editGroupSaving}>
-                                        Save
+                                        {t('common.save')}
                                     </Button>
                                     <Button type="button" onClick={handleDeleteGroup} size="sm" variant="danger" icon={Trash2} className="!bg-danger-bg !text-danger">
-                                        Delete Group
+                                        {t('chat.deleteGroup')}
                                     </Button>
                                 </div>
                             </form>
@@ -500,7 +504,7 @@ export default function GroupChat() {
                                         setSearchQuery(e.target.value);
                                         handleSearch(e.target.value);
                                     }}
-                                    placeholder="Search messages..."
+                                    placeholder={t('chat.searchPlaceholder')}
                                     className="pl-9 pr-9 h-10"
                                     autoFocus
                                 />
@@ -552,9 +556,9 @@ export default function GroupChat() {
                         <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4 bg-surface-hover text-fg-muted">
                             <MessageCircle size={26} strokeWidth={1.5} />
                         </div>
-                        <p className="font-semibold mb-1 text-fg">{searchQuery ? 'No messages found' : 'No messages yet'}</p>
+                        <p className="font-semibold mb-1 text-fg">{searchQuery ? t('chat.noMessagesFound') : t('chat.noMessagesYet')}</p>
                         <p className="text-sm text-fg-secondary">
-                            {searchQuery ? 'Try a different search term' : 'Be the first to say something!'}
+                            {searchQuery ? t('chat.tryDifferentSearch') : t('chat.beFirst')}
                         </p>
                     </div>
                 ) : (
@@ -581,7 +585,7 @@ export default function GroupChat() {
                                             </div>
                                         )}
                                         <div className="px-4 py-2.5 rounded-2xl text-sm italic border border-dashed border-border text-fg-muted flex items-center gap-2">
-                                            <Ban size={13} /> This message was deleted
+                                            <Ban size={13} /> {t('chat.messageDeleted')}
                                         </div>
                                         <span className="text-xs mt-1 px-1 text-fg-muted">{formatTime(msg.created_at)}</span>
                                     </div>
@@ -657,7 +661,7 @@ export default function GroupChat() {
                                                         {isImage ? (
                                                             <img
                                                                 src={mediaUrl(msg.file_url)}
-                                                                alt="attachment"
+                                                                alt={t('chat.attachment')}
                                                                 className="rounded-lg max-w-xs cursor-pointer hover:opacity-90 transition-opacity"
                                                                 onClick={() => setFullImageView(msg.file_url)}
                                                             />
@@ -684,7 +688,7 @@ export default function GroupChat() {
                                                 <button
                                                     key={r.emoji}
                                                     onClick={() => handleReact(msg, r.emoji)}
-                                                    title={r.mine ? 'Remove your reaction' : 'React'}
+                                                    title={r.mine ? t('chat.removeReaction') : t('chat.react')}
                                                     className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border transition-colors ${
                                                         r.mine
                                                             ? 'border-primary bg-primary-subtle text-primary'
@@ -721,21 +725,21 @@ export default function GroupChat() {
                                         <span className="text-xs text-fg-secondary">
                                             {formatTime(msg.created_at)}
                                             {msg._pending && ' · sending…'}
-                                            {msg.is_edited && ' · (edited)'}
+                                            {msg.is_edited && ` · ${t('chat.edited')}`}
                                         </span>
                                         {!msg._pending && !editingMsg && (
                                             <div className="flex gap-1">
                                                 <button
                                                     onClick={() => setReplyTo(msg)}
                                                     className="p-1 rounded text-fg-secondary hover:bg-primary-solid hover:text-white transition-colors"
-                                                    title="Reply to this message"
+                                                    title={t('chat.replyToMessage')}
                                                 >
                                                     <Reply size={12} />
                                                 </button>
                                                 <button
                                                     onClick={() => setReactionPickerFor(v => (v === msg.id ? null : msg.id))}
                                                     className="p-1 rounded text-fg-secondary hover:bg-primary-solid hover:text-white transition-colors"
-                                                    title="React to this message"
+                                                    title={t('chat.reactToMessage')}
                                                 >
                                                     <SmilePlus size={12} />
                                                 </button>
@@ -743,7 +747,7 @@ export default function GroupChat() {
                                                     <button
                                                         onClick={() => startEdit(msg)}
                                                         className="p-1 rounded text-fg-secondary hover:bg-primary-solid hover:text-white transition-colors"
-                                                        title="Edit message (15min window)"
+                                                        title={t('chat.editMessage')}
                                                     >
                                                         <Edit2 size={12} />
                                                     </button>
@@ -794,10 +798,10 @@ export default function GroupChat() {
                     <div className="flex items-center justify-between mb-2 px-3 py-2 rounded-lg bg-bg">
                         <div className="text-xs">
                             <span className="font-semibold text-primary">
-                                Replying to {replyTo.users?.first_name}
+                                {t('chat.replyingTo', { name: replyTo.users?.first_name ?? '' })}
                             </span>
                             <div className="truncate text-fg-secondary">
-                                {replyTo.message || '(file)'}
+                                {replyTo.message || t('chat.file')}
                             </div>
                         </div>
                         <button onClick={() => setReplyTo(null)} className="p-1 rounded hover:bg-danger hover:text-white transition-colors">
@@ -832,7 +836,7 @@ export default function GroupChat() {
                         onClick={() => fileInputRef.current?.click()}
                         disabled={!isOnline}
                         className="p-2.5 rounded-full transition-colors disabled:opacity-50 text-fg-secondary hover:bg-primary-solid hover:text-white"
-                        title="Attach file"
+                        title={t('chat.attachFile')}
                     >
                         <Paperclip size={18} />
                     </button>
@@ -843,7 +847,7 @@ export default function GroupChat() {
                         onChange={handleInputChange}
                         onFocus={() => { inputFocused.current = true; }}
                         onBlur={() => { inputFocused.current = false; }}
-                        placeholder={isOnline ? "Type a message…" : "Offline — reconnect to send messages"}
+                        placeholder={isOnline ? t('chat.messagePlaceholder') : t('chat.offlinePlaceholder')}
                         autoComplete="off"
                         disabled={!isOnline}
                         className="flex-1 px-4 py-2.5 rounded-full text-sm outline-none border-2 bg-bg text-fg border-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:border-primary"
@@ -855,8 +859,8 @@ export default function GroupChat() {
                         whileTap={isOnline ? { scale: 0.93 } : {}}
                         className="w-11 h-11 rounded-full flex items-center justify-center text-white disabled:opacity-50 shrink-0"
                         style={{ background: 'var(--gradient-primary)' }}
-                        aria-label="Send message"
-                        title={!isOnline ? "You're offline — reconnect to send" : "Send message"}
+                        aria-label={t('chat.sendMessage')}
+                        title={!isOnline ? t('chat.offlineSendTitle') : t('chat.sendMessage')}
                     >
                         {!isOnline
                             ? <WifiOff size={16} />
