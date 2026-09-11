@@ -7,6 +7,9 @@ import {
     Crown, Trash2, ToggleLeft, ToggleRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
+import { formatDate, formatNumber } from '../lib/formatDate';
 import api, { apiError } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -71,19 +74,20 @@ function StatCard({ icon: Icon, label, value, color, sub }) {
 
 /* ── overview tab ─────────────────────────────────────────────── */
 function Overview({ stats }) {
+    const { t } = useTranslation();
     if (!stats) return null;
     return (
         <motion.div variants={stagger()} initial="hidden" animate="show">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <StatCard icon={Users}        label="Total Users"       value={stats.users}            color="var(--brand-600)" />
-                <StatCard icon={GraduationCap} label="Approved Tutors"  value={stats.tutors.approved}  color="#34d399" />
-                <StatCard icon={Clock}         label="Pending Tutors"   value={stats.tutors.pending}   color="#fbbf24" sub="need review" />
-                <StatCard icon={XCircle}       label="Rejected Tutors"  value={stats.tutors.rejected}  color="#f87171" />
+                <StatCard icon={Users}        label={t('admin.statUsers')}          value={stats.users}            color="var(--brand-600)" />
+                <StatCard icon={GraduationCap} label={t('admin.statApprovedTutors')} value={stats.tutors.approved}  color="#34d399" />
+                <StatCard icon={Clock}         label={t('admin.statPendingTutors')}  value={stats.tutors.pending}   color="#fbbf24" sub={t('admin.statPendingSub')} />
+                <StatCard icon={XCircle}       label={t('admin.statRejectedTutors')} value={stats.tutors.rejected}  color="#f87171" />
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                <StatCard icon={Users}         label="Study Groups"     value={stats.groups}           color="#8b5cf6" />
-                <StatCard icon={FileText}      label="Notes Shared"     value={stats.notes}            color="#60a5fa" />
-                <StatCard icon={MessageSquare} label="Questions Asked"  value={stats.questions}        color="#34d399" />
+                <StatCard icon={Users}         label={t('admin.statGroups')}        value={stats.groups}           color="#8b5cf6" />
+                <StatCard icon={FileText}      label={t('admin.statNotes')}         value={stats.notes}            color="#60a5fa" />
+                <StatCard icon={MessageSquare} label={t('admin.statQuestions')}     value={stats.questions}        color="#34d399" />
             </div>
         </motion.div>
     );
@@ -91,6 +95,7 @@ function Overview({ stats }) {
 
 /* ── users tab ────────────────────────────────────────────────── */
 function UsersTab() {
+    const { t } = useTranslation();
     const [data,    setData]    = useState([]);
     const [total,   setTotal]   = useState(0);
     const [pages,   setPages]   = useState(1);
@@ -103,7 +108,7 @@ function UsersTab() {
         setLoading(true);
         api.get(`/admin/users?page=${p}&limit=15${q ? `&search=${q}` : ''}`)
             .then(({ data: r }) => { setData(r.data); setTotal(r.total); setPages(r.pages); setPage(p); })
-            .catch(() => toast.error('Failed to load users'))
+            .catch(() => toast.error(i18n.t('admin.usersLoadFailed')))
             .finally(() => setLoading(false));
     };
 
@@ -119,8 +124,8 @@ function UsersTab() {
         try {
             const { data: u } = await api.patch(`/admin/users/${id}/toggle`);
             setData(prev => prev.map(x => x.id === id ? { ...x, is_active: u.is_active } : x));
-            toast.success(u.is_active ? 'User activated' : 'User deactivated');
-        } catch { toast.error('Failed'); }
+            toast.success(u.is_active ? t('admin.userActivated') : t('admin.userDeactivated'));
+        } catch { toast.error(t('admin.actionFailed')); }
     };
 
     const toggleRole = async (id, cur) => {
@@ -128,8 +133,8 @@ function UsersTab() {
         try {
             await api.patch(`/admin/users/${id}/role`, { role });
             setData(prev => prev.map(x => x.id === id ? { ...x, role } : x));
-            toast.success(`Role set to ${role}`);
-        } catch { toast.error('Failed'); }
+            toast.success(t('admin.roleSet', { role }));
+        } catch { toast.error(t('admin.actionFailed')); }
     };
 
     return (
@@ -140,28 +145,28 @@ function UsersTab() {
                     <Input
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        placeholder="Search by name or email…"
+                        placeholder={t('admin.searchPlaceholder')}
                         className="pl-9"
                     />
                 </div>
-                <Button type="submit">Search</Button>
+                <Button type="submit">{t('admin.search')}</Button>
             </form>
 
-            <p className="text-xs mb-3 text-fg-secondary">{total} users total</p>
+            <p className="text-xs mb-3 text-fg-secondary">{t('admin.usersTotal', { n: total })}</p>
 
             <div className="rounded-2xl border border-border overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="bg-surface-hover border-b border-border">
-                                {['Name', 'Email', 'University', 'Role', 'Tutor', 'Status', 'Actions'].map(h => (
-                                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-fg-secondary">{h}</th>
+                                {['colName', 'colEmail', 'colUniversity', 'colRole', 'colTutor', 'colStatus', 'colActions'].map(h => (
+                                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-fg-secondary">{t(`admin.${h}`)}</th>
                                 ))}
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr><td colSpan={7} className="text-center py-10 text-sm text-fg-secondary">Loading…</td></tr>
+                                <tr><td colSpan={7} className="text-center py-10 text-sm text-fg-secondary">{t('admin.loading')}</td></tr>
                             ) : data.map((u, i) => (
                                 <tr key={u.id} className={cn('border-b border-border', i % 2 === 0 ? 'bg-surface' : 'bg-bg')}>
                                     <td className="px-4 py-3 font-medium whitespace-nowrap">{u.first_name} {u.last_name}</td>
@@ -176,18 +181,18 @@ function UsersTab() {
                                         ) : <span className="text-xs text-fg-secondary">—</span>}
                                     </td>
                                     <td className="px-4 py-3">
-                                        <Badge tone={u.is_active ? 'success' : 'danger'}>{u.is_active ? 'Active' : 'Banned'}</Badge>
+                                        <Badge tone={u.is_active ? 'success' : 'danger'}>{u.is_active ? t('admin.active') : t('admin.banned')}</Badge>
                                     </td>
                                     <td className="px-4 py-3">
                                         <div className="flex gap-2">
                                             <button onClick={() => toggleActive(u.id, u.is_active)}
                                                 className={cn('p-1.5 rounded-lg transition-colors', u.is_active ? 'bg-danger-bg' : 'bg-success-bg')}
-                                                title={u.is_active ? 'Ban user' : 'Activate user'}>
+                                                title={u.is_active ? t('admin.banUser') : t('admin.activateUser')}>
                                                 {u.is_active ? <ShieldOff size={14} className="text-danger" /> : <ShieldCheck size={14} className="text-success" />}
                                             </button>
                                             <button onClick={() => toggleRole(u.id, u.role)}
                                                 className="p-1.5 rounded-lg transition-colors bg-primary-subtle"
-                                                title={u.role === 'admin' ? 'Remove admin' : 'Make admin'}>
+                                                title={u.role === 'admin' ? t('admin.removeAdmin') : t('admin.makeAdmin')}>
                                                 <ShieldCheck size={14} className="text-primary" />
                                             </button>
                                         </div>
@@ -206,7 +211,7 @@ function UsersTab() {
                         className="p-2 rounded-lg border border-border disabled:opacity-30">
                         <ChevronLeft size={16} />
                     </button>
-                    <span className="text-sm text-fg-secondary">Page {page} of {pages}</span>
+                    <span className="text-sm text-fg-secondary">{t('admin.pageOf', { page, total: pages })}</span>
                     <button disabled={page === pages} onClick={() => load(page + 1)}
                         className="p-2 rounded-lg border border-border disabled:opacity-30">
                         <ChevronRight size={16} />
@@ -219,6 +224,7 @@ function UsersTab() {
 
 /* ── tutors tab ───────────────────────────────────────────────── */
 function TutorsTab() {
+    const { t } = useTranslation();
     const [tutors,  setTutors]  = useState([]);
     const [filter,  setFilter]  = useState('pending');
     const [loading, setLoading] = useState(true);
@@ -227,7 +233,7 @@ function TutorsTab() {
         setLoading(true);
         api.get(`/admin/tutors?status=${s}`)
             .then(({ data }) => setTutors(data))
-            .catch(() => toast.error('Failed to load tutors'))
+            .catch(() => toast.error(i18n.t('admin.tutorsLoadFailed')))
             .finally(() => setLoading(false));
     };
 
@@ -238,80 +244,86 @@ function TutorsTab() {
     const updateStatus = async (id, status) => {
         try {
             await api.patch(`/admin/tutors/${id}/status`, { status });
-            toast.success(`Tutor ${status}`);
-            setTutors(prev => prev.filter(t => t.id !== id));
-        } catch { toast.error('Failed'); }
+            toast.success(t('admin.tutorStatusSet', { status: t(`admin.${status === 'approved' ? 'approve' : 'reject'}`).toLowerCase() }));
+            setTutors(prev => prev.filter(x => x.id !== id));
+        } catch { toast.error(t('admin.actionFailed')); }
     };
 
     const STATUS_FILTERS = ['pending', 'approved', 'rejected', 'all'];
+    const FILTER_LABELS = {
+        pending:  t('admin.filterPending'),
+        approved: t('admin.filterApproved'),
+        rejected: t('admin.filterRejected'),
+        all:      t('notes.filterAll'),
+    };
 
     return (
         <div>
-            <PillBar items={STATUS_FILTERS} active={filter} onChange={switchFilter} layoutId="tutor-filter" />
+            <PillBar items={STATUS_FILTERS} active={filter} onChange={switchFilter} layoutId="tutor-filter" labels={FILTER_LABELS} />
 
             {loading ? (
-                <div className="text-center py-16 text-sm text-fg-secondary mt-5">Loading…</div>
+                <div className="text-center py-16 text-sm text-fg-secondary mt-5">{t('admin.loading')}</div>
             ) : tutors.length === 0 ? (
-                <EmptyState description={`No ${filter} applications.`} className="mt-5" />
+                <EmptyState description={t('admin.noApplications', { filter: FILTER_LABELS[filter] ?? filter })} className="mt-5" />
             ) : (
                 <motion.div className="flex flex-col gap-4 mt-5" variants={stagger(0.06)} initial="hidden" animate="show">
-                    {tutors.map(t => (
-                        <motion.div key={t.id} variants={fadeUp}
+                    {tutors.map(tu => (
+                        <motion.div key={tu.id} variants={fadeUp}
                             className="rounded-2xl p-6 border border-border bg-surface">
                             <div className="flex flex-wrap items-start justify-between gap-4">
                                 {/* info */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-3 mb-1 flex-wrap">
-                                        <p className="font-semibold">{t.users.first_name} {t.users.last_name}</p>
-                                        <Badge tone={STATUS_TONE[t.status] ?? 'neutral'}>{t.status}</Badge>
+                                        <p className="font-semibold">{tu.users.first_name} {tu.users.last_name}</p>
+                                        <Badge tone={STATUS_TONE[tu.status] ?? 'neutral'}>{t(`admin.${tu.status === 'approved' ? 'approve' : tu.status === 'rejected' ? 'reject' : 'pending'}`)}</Badge>
                                     </div>
-                                    <p className="text-xs mb-1 text-fg-secondary">{t.users.email} · {t.users.university || 'No university'}</p>
+                                    <p className="text-xs mb-1 text-fg-secondary">{tu.users.email} · {tu.users.university || t('admin.noUniversity')}</p>
                                     <p className="text-xs mb-3 text-fg-secondary">
-                                        Applied: {new Date(t.applied_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-                                        {' · '}{Number(t.hourly_rate).toLocaleString()} FCFA/hr
-                                        {t.years_experience ? ` · ${t.years_experience} yrs exp` : ''}
+                                        {t('admin.applied', { date: formatDate(tu.applied_at, { year: 'numeric', month: 'short', day: 'numeric' }) })}
+                                        {' · '}{t('admin.perHour', { amount: formatNumber(tu.hourly_rate) })}
+                                        {tu.years_experience ? ` · ${t('admin.yearsExp', { n: tu.years_experience })}` : ''}
                                     </p>
 
                                     {/* subjects */}
                                     <div className="flex flex-wrap gap-1.5 mb-3">
-                                        {t.subjects.map(s => (
-                                            <Badge key={s} tone="primary" size="sm">{s}</Badge>
+                                        {tu.subjects.map(s => (
+                                            <Badge key={s} tone="primary" size="sm">{t(`subjectName.${s}`, { defaultValue: s })}</Badge>
                                         ))}
                                     </div>
 
                                     {/* bio */}
                                     <p className="text-sm leading-relaxed text-fg-secondary">
-                                        {t.bio}
+                                        {tu.bio}
                                     </p>
 
                                     {/* proof doc */}
-                                    {t.proof_document_url && (
-                                        <a href={t.proof_document_url} target="_blank" rel="noreferrer"
+                                    {tu.proof_document_url && (
+                                        <a href={tu.proof_document_url} target="_blank" rel="noreferrer"
                                             className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-primary">
-                                            <FileText size={13} /> View proof document
+                                            <FileText size={13} /> {t('admin.viewProof')}
                                         </a>
                                     )}
                                 </div>
 
                                 {/* actions */}
-                                {t.status === 'pending' && (
+                                {tu.status === 'pending' && (
                                     <div className="flex flex-col gap-2 shrink-0">
-                                        <Button size="sm" icon={CheckCircle} onClick={() => updateStatus(t.id, 'approved')} className="!bg-[image:none] bg-success">
-                                            Approve
+                                        <Button size="sm" icon={CheckCircle} onClick={() => updateStatus(tu.id, 'approved')} className="!bg-[image:none] bg-success">
+                                            {t('admin.approve')}
                                         </Button>
-                                        <Button size="sm" icon={XCircle} onClick={() => updateStatus(t.id, 'rejected')} variant="danger" className="!bg-danger-bg !text-danger">
-                                            Reject
+                                        <Button size="sm" icon={XCircle} onClick={() => updateStatus(tu.id, 'rejected')} variant="danger" className="!bg-danger-bg !text-danger">
+                                            {t('admin.reject')}
                                         </Button>
                                     </div>
                                 )}
-                                {t.status === 'rejected' && (
-                                    <Button size="sm" icon={CheckCircle} onClick={() => updateStatus(t.id, 'approved')} className="!bg-[image:none] bg-success shrink-0">
-                                        Approve
+                                {tu.status === 'rejected' && (
+                                    <Button size="sm" icon={CheckCircle} onClick={() => updateStatus(tu.id, 'approved')} className="!bg-[image:none] bg-success shrink-0">
+                                        {t('admin.approve')}
                                     </Button>
                                 )}
-                                {t.status === 'approved' && (
-                                    <Button size="sm" icon={XCircle} onClick={() => updateStatus(t.id, 'rejected')} variant="danger" className="!bg-danger-bg !text-danger shrink-0">
-                                        Revoke
+                                {tu.status === 'approved' && (
+                                    <Button size="sm" icon={XCircle} onClick={() => updateStatus(tu.id, 'rejected')} variant="danger" className="!bg-danger-bg !text-danger shrink-0">
+                                        {t('admin.revoke')}
                                     </Button>
                                 )}
                             </div>
@@ -333,6 +345,7 @@ function TutorsTab() {
  * to sell to a student.
  */
 function ReviewTab() {
+    const { t } = useTranslation();
     const [notes, setNotes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [busyId, setBusyId] = useState(null);
@@ -355,7 +368,7 @@ function ReviewTab() {
             // Give the new tab time to take the URL before releasing it.
             setTimeout(() => URL.revokeObjectURL(url), 60000);
         } catch (err) {
-            toast.error(apiError(err, 'Could not open the file'));
+            toast.error(apiError(err, t('admin.openFileFailed')));
         } finally {
             setOpeningId(null);
         }
@@ -367,7 +380,7 @@ function ReviewTab() {
         let cancelled = false;
         api.get('/admin/premium/notes/pending')
             .then(({ data }) => { if (!cancelled) setNotes(data); })
-            .catch(err => { if (!cancelled) toast.error(apiError(err, 'Failed to load the review queue')); })
+            .catch(err => { if (!cancelled) toast.error(apiError(err, i18n.t('admin.queueLoadFailed'))); })
             .finally(() => { if (!cancelled) setLoading(false); });
         return () => { cancelled = true; };
     }, []);
@@ -376,28 +389,27 @@ function ReviewTab() {
         setBusyId(id);
         try {
             await api.patch(`/admin/premium/notes/${id}/review`, { status, note });
-            toast.success(status === 'approved' ? 'Approved and now on sale' : 'Rejected — the author has been told why');
+            toast.success(status === 'approved' ? t('admin.approvedOnSale') : t('admin.rejectedAuthorTold'));
             setNotes(prev => prev.filter(n => n.id !== id));
             setRejectingId(null);
             setReason('');
         } catch (err) {
-            toast.error(apiError(err, 'Failed to record the decision'));
+            toast.error(apiError(err, t('admin.decisionFailed')));
         } finally {
             setBusyId(null);
         }
     };
 
-    if (loading) return <div className="text-center py-16 text-sm text-fg-secondary">Loading…</div>;
+    if (loading) return <div className="text-center py-16 text-sm text-fg-secondary">{t('admin.loading')}</div>;
     if (!notes.length) {
-        return <EmptyState icon={ShieldCheck} title="Nothing waiting"
-            description="Every submitted note has been reviewed." className="mt-5" />;
+        return <EmptyState icon={ShieldCheck} title={t('admin.nothingWaiting')}
+            description={t('admin.allReviewed')} className="mt-5" />;
     }
 
     return (
         <motion.div className="flex flex-col gap-4 mt-5" variants={stagger(0.06)} initial="hidden" animate="show">
             <p className="text-xs text-fg-secondary">
-                {notes.length} note{notes.length === 1 ? '' : 's'} awaiting review. Nothing here is visible to buyers
-                or purchasable until approved.
+                {t('admin.awaitingReview', { count: notes.length })}
             </p>
 
             {notes.map(n => {
@@ -409,26 +421,26 @@ function ReviewTab() {
                             <div className="min-w-0 flex-1">
                                 <p className="font-semibold">{n.title}</p>
                                 <p className="text-xs mt-0.5 text-fg-secondary">
-                                    {n.users?.first_name} {n.users?.last_name} · {n.subject} ·{' '}
-                                    {Number(n.price).toLocaleString()} FCFA ·{' '}
-                                    {new Date(n.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                    {n.users?.first_name} {n.users?.last_name} · {t(`subjectName.${n.subject}`, { defaultValue: n.subject })} ·{' '}
+                                    {formatNumber(n.price)} FCFA ·{' '}
+                                    {formatDate(n.created_at, { day: 'numeric', month: 'short', year: 'numeric' })}
                                 </p>
                             </div>
-                            <Badge tone="warning">pending</Badge>
+                            <Badge tone="warning">{t('admin.pending')}</Badge>
                         </div>
 
                         <p className="text-sm leading-relaxed mb-4 text-fg-secondary">{n.description}</p>
 
                         {/* what the automated checks measured */}
                         <div className="flex flex-wrap gap-1.5 mb-3">
-                            {stats.words != null && <Badge tone="neutral" size="sm">{stats.words} words</Badge>}
-                            {stats.pages ? <Badge tone="neutral" size="sm">{stats.pages} pages</Badge> : null}
+                            {stats.words != null && <Badge tone="neutral" size="sm">{t('admin.words', { n: stats.words })}</Badge>}
+                            {stats.pages ? <Badge tone="neutral" size="sm">{t('admin.pages', { n: stats.pages })}</Badge> : null}
                             {stats.lexicalVariety != null && (
                                 <Badge tone={stats.lexicalVariety < 0.25 ? 'warning' : 'neutral'} size="sm">
-                                    variety {stats.lexicalVariety}
+                                    {t('admin.variety', { n: stats.lexicalVariety })}
                                 </Badge>
                             )}
-                            {stats.bytes != null && <Badge tone="neutral" size="sm">{Math.round(stats.bytes / 1024)} KB</Badge>}
+                            {stats.bytes != null && <Badge tone="neutral" size="sm">{t('admin.kilobytes', { n: Math.round(stats.bytes / 1024) })}</Badge>}
                         </div>
 
                         {q.warnings?.length > 0 && (
@@ -444,29 +456,29 @@ function ReviewTab() {
                         <div className="mb-4">
                             <Button size="sm" variant="secondary" icon={FileText}
                                 loading={openingId === n.id} onClick={() => openFile(n)}>
-                                Open the file and read it before deciding
+                                {t('admin.openFile')}
                             </Button>
                         </div>
 
                         {rejectingId === n.id ? (
                             <div className="pt-3 border-t border-border">
                                 <label htmlFor={`reason-${n.id}`} className="block text-xs font-semibold mb-2 text-fg-secondary">
-                                    Why is this being rejected? The author sees this, so be specific enough to act on.
+                                    {t('admin.rejectReasonLabel')}
                                 </label>
                                 <Input
                                     id={`reason-${n.id}`}
                                     value={reason}
                                     onChange={e => setReason(e.target.value)}
-                                    placeholder="e.g. Section 3 states the derivative of x² as 3x — this is wrong and would mislead students."
+                                    placeholder={t('admin.rejectReasonPlaceholder')}
                                     className="mb-3"
                                 />
                                 <div className="flex gap-2">
                                     <Button size="sm" variant="danger" disabled={!reason.trim() || busyId === n.id}
                                         loading={busyId === n.id} onClick={() => decide(n.id, 'rejected', reason)}>
-                                        Confirm rejection
+                                        {t('admin.confirmRejection')}
                                     </Button>
                                     <Button size="sm" variant="ghost" onClick={() => { setRejectingId(null); setReason(''); }}>
-                                        Cancel
+                                        {t('common.cancel')}
                                     </Button>
                                 </div>
                             </div>
@@ -474,12 +486,12 @@ function ReviewTab() {
                             <div className="flex gap-2 pt-3 border-t border-border">
                                 <Button size="sm" icon={CheckCircle} loading={busyId === n.id}
                                     onClick={() => decide(n.id, 'approved')} className="!bg-[image:none] bg-success">
-                                    Approve
+                                    {t('admin.approve')}
                                 </Button>
                                 <Button size="sm" icon={XCircle} variant="danger"
                                     onClick={() => { setRejectingId(n.id); setReason(''); }}
                                     className="!bg-danger-bg !text-danger">
-                                    Reject
+                                    {t('admin.reject')}
                                 </Button>
                             </div>
                         )}
@@ -492,6 +504,7 @@ function ReviewTab() {
 
 /* ── premium tab ──────────────────────────────────────────────── */
 function PremiumTab() {
+    const { t } = useTranslation();
     const [activeSection, setActiveSection] = useState('notes');
     const [notes, setNotes] = useState([]);
     const [subs, setSubs] = useState([]);
@@ -501,7 +514,7 @@ function PremiumTab() {
         setLoading(true);
         api.get('/admin/premium/notes')
             .then(({ data }) => setNotes(data))
-            .catch(() => toast.error('Failed to load premium notes'))
+            .catch(() => toast.error(i18n.t('admin.premiumLoadFailed')))
             .finally(() => setLoading(false));
     };
 
@@ -509,7 +522,7 @@ function PremiumTab() {
         setLoading(true);
         api.get('/admin/premium/subscriptions')
             .then(({ data }) => setSubs(data))
-            .catch(() => toast.error('Failed to load subscriptions'))
+            .catch(() => toast.error(i18n.t('admin.subsLoadFailed')))
             .finally(() => setLoading(false));
     };
 
@@ -525,17 +538,17 @@ function PremiumTab() {
         try {
             const { data } = await api.patch(`/admin/premium/notes/${id}/toggle`);
             setNotes(prev => prev.map(n => n.id === id ? { ...n, is_active: data.is_active } : n));
-            toast.success(data.is_active ? 'Note activated' : 'Note deactivated');
-        } catch { toast.error('Failed'); }
+            toast.success(data.is_active ? t('admin.noteActivated') : t('admin.noteDeactivated'));
+        } catch { toast.error(t('admin.actionFailed')); }
     };
 
     const deleteNote = async (id) => {
-        if (!window.confirm('Delete this premium note permanently?')) return;
+        if (!window.confirm(t('admin.confirmDeleteNote'))) return;
         try {
             await api.delete(`/admin/premium/notes/${id}`);
             setNotes(prev => prev.filter(n => n.id !== id));
-            toast.success('Note deleted');
-        } catch { toast.error('Failed to delete'); }
+            toast.success(t('admin.noteDeleted'));
+        } catch { toast.error(t('admin.deleteFailed')); }
     };
 
     const totalRevenue = notes.reduce((sum, n) => sum + (Number(n.price) * (n._count?.purchased_notes || 0)), 0);
@@ -544,7 +557,8 @@ function PremiumTab() {
         <div>
             {/* section toggle */}
             <div className="mb-6">
-                <PillBar items={['notes', 'subscriptions']} active={activeSection} onChange={switchSection} layoutId="premium-section" />
+                <PillBar items={['notes', 'subscriptions']} active={activeSection} onChange={switchSection} layoutId="premium-section"
+                    labels={{ notes: t('admin.sectionNotes'), subscriptions: t('admin.sectionSubscriptions') }} />
             </div>
 
             {activeSection === 'notes' && (
@@ -554,15 +568,15 @@ function PremiumTab() {
                         <div className="rounded-2xl p-5 border border-premium/25 bg-surface flex items-center gap-4">
                             <Crown size={22} className="text-premium" />
                             <div>
-                                <p className="text-xs text-fg-secondary">Total Notes</p>
+                                <p className="text-xs text-fg-secondary">{t('admin.totalNotes')}</p>
                                 <p className="text-2xl font-bold text-premium">{notes.length}</p>
                             </div>
                         </div>
                         <div className="rounded-2xl p-5 border border-success/25 bg-surface flex items-center gap-4">
                             <TrendingUp size={22} className="text-success" />
                             <div>
-                                <p className="text-xs text-fg-secondary">Est. Revenue</p>
-                                <p className="text-2xl font-bold text-success">{totalRevenue.toLocaleString()} FCFA</p>
+                                <p className="text-xs text-fg-secondary">{t('admin.estRevenue')}</p>
+                                <p className="text-2xl font-bold text-success">{formatNumber(totalRevenue)} FCFA</p>
                             </div>
                         </div>
                     </div>
@@ -570,15 +584,15 @@ function PremiumTab() {
                     {loading ? (
                         <div className="text-center py-16 text-sm text-fg-secondary">Loading…</div>
                     ) : notes.length === 0 ? (
-                        <EmptyState description="No premium notes yet." />
+                        <EmptyState description={t('admin.noPremiumNotes')} />
                     ) : (
                         <div className="rounded-2xl border border-border overflow-hidden">
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="bg-surface-hover border-b border-border">
-                                            {['Title', 'Subject', 'Price', 'Sales', 'Author', 'Status', 'Actions'].map(h => (
-                                                <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-fg-secondary">{h}</th>
+                                            {['colTitle', 'colSubject', 'colPrice', 'colSales', 'colAuthor', 'colStatus', 'colActions'].map(h => (
+                                                <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-fg-secondary">{t(`admin.${h}`)}</th>
                                             ))}
                                         </tr>
                                     </thead>
@@ -586,23 +600,23 @@ function PremiumTab() {
                                         {notes.map((n, i) => (
                                             <tr key={n.id} className={cn('border-b border-border', i % 2 === 0 ? 'bg-surface' : 'bg-bg')}>
                                                 <td className="px-4 py-3 font-medium max-w-[180px] truncate">{n.title}</td>
-                                                <td className="px-4 py-3 text-xs text-fg-secondary">{n.subject}</td>
-                                                <td className="px-4 py-3 font-semibold text-premium">{Number(n.price).toLocaleString()} FCFA</td>
+                                                <td className="px-4 py-3 text-xs text-fg-secondary">{t(`subjectName.${n.subject}`, { defaultValue: n.subject })}</td>
+                                                <td className="px-4 py-3 font-semibold text-premium">{formatNumber(n.price)} FCFA</td>
                                                 <td className="px-4 py-3 text-xs">{n._count?.purchased_notes || 0}</td>
                                                 <td className="px-4 py-3 text-xs text-fg-secondary">{n.users?.first_name} {n.users?.last_name}</td>
                                                 <td className="px-4 py-3">
-                                                    <Badge tone={n.is_active ? 'success' : 'danger'}>{n.is_active ? 'Active' : 'Hidden'}</Badge>
+                                                    <Badge tone={n.is_active ? 'success' : 'danger'}>{n.is_active ? t('admin.active') : t('admin.hidden')}</Badge>
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <div className="flex gap-2">
                                                         <button onClick={() => toggleNote(n.id, n.is_active)}
                                                             className={cn('p-1.5 rounded-lg', n.is_active ? 'bg-warning-bg' : 'bg-success-bg')}
-                                                            title={n.is_active ? 'Hide note' : 'Show note'}>
+                                                            title={n.is_active ? t('admin.hideNote') : t('admin.showNote')}>
                                                             {n.is_active ? <ToggleRight size={14} className="text-warning" /> : <ToggleLeft size={14} className="text-success" />}
                                                         </button>
                                                         <button onClick={() => deleteNote(n.id)}
                                                             className="p-1.5 rounded-lg bg-danger-bg"
-                                                            title="Delete note">
+                                                            title={t('admin.deleteNote')}>
                                                             <Trash2 size={14} className="text-danger" />
                                                         </button>
                                                     </div>
@@ -621,15 +635,15 @@ function PremiumTab() {
                 loading ? (
                     <div className="text-center py-16 text-sm text-fg-secondary">Loading…</div>
                 ) : subs.length === 0 ? (
-                    <EmptyState description="No subscriptions yet." />
+                    <EmptyState description={t('admin.noSubscriptions')} />
                 ) : (
                     <div className="rounded-2xl border border-border overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="bg-surface-hover border-b border-border">
-                                        {['User', 'Email', 'Status', 'Expires', 'Subscribed'].map(h => (
-                                            <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-fg-secondary">{h}</th>
+                                        {['colUser', 'colEmail', 'colStatus', 'colExpires', 'colSubscribed'].map(h => (
+                                            <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-fg-secondary">{t(`admin.${h}`)}</th>
                                         ))}
                                     </tr>
                                 </thead>
@@ -641,13 +655,13 @@ function PremiumTab() {
                                                 <td className="px-4 py-3 font-medium">{s.users?.first_name} {s.users?.last_name}</td>
                                                 <td className="px-4 py-3 text-xs text-fg-secondary">{s.users?.email}</td>
                                                 <td className="px-4 py-3">
-                                                    <Badge tone={!expired ? 'success' : 'danger'}>{!expired ? 'Active' : 'Expired'}</Badge>
+                                                    <Badge tone={!expired ? 'success' : 'danger'}>{!expired ? t('admin.active') : t('admin.expired')}</Badge>
                                                 </td>
                                                 <td className="px-4 py-3 text-xs text-fg-secondary">
-                                                    {new Date(s.expires_at).toLocaleDateString()}
+                                                    {formatDate(s.expires_at)}
                                                 </td>
                                                 <td className="px-4 py-3 text-xs text-fg-secondary">
-                                                    {new Date(s.created_at).toLocaleDateString()}
+                                                    {formatDate(s.created_at)}
                                                 </td>
                                             </tr>
                                         );
@@ -664,6 +678,7 @@ function PremiumTab() {
 
 /* ── main ─────────────────────────────────────────────────────── */
 export default function AdminDashboard() {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const navigate = useNavigate();
     const [tab,   setTab]   = useState('overview');
@@ -683,12 +698,12 @@ export default function AdminDashboard() {
     if (user?.role !== 'admin') return null;
 
     const TAB_ICONS = { overview: BarChart2, users: Users, tutors: GraduationCap, review: ShieldCheck, premium: Crown };
-    const TAB_LABELS = Object.fromEntries(TABS.map(t => {
-        const Icon = TAB_ICONS[t];
-        return [t, (
-            <span key={t} className="flex items-center gap-2">
-                <Icon size={15} /> {t}
-                {t === 'review' && pendingReviews > 0 && (
+    const TAB_LABELS = Object.fromEntries(TABS.map(key => {
+        const Icon = TAB_ICONS[key];
+        return [key, (
+            <span key={key} className="flex items-center gap-2">
+                <Icon size={15} /> {t(`admin.tab${key.charAt(0).toUpperCase()}${key.slice(1)}`)}
+                {key === 'review' && pendingReviews > 0 && (
                     <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none bg-warning text-white">
                         {pendingReviews}
                     </span>
@@ -705,16 +720,16 @@ export default function AdminDashboard() {
                 <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
                     <div>
                         <h1 className="text-2xl md:text-3xl font-bold gradient-text" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
-                            Admin Dashboard
+                            {t('admin.pageTitle')}
                         </h1>
                         <p className="text-sm mt-1 text-fg-secondary">
-                            Manage users, tutors, and platform activity
+                            {t('admin.pageSubtitle')}
                         </p>
                     </div>
                     {stats?.tutors?.pending > 0 && (
                         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
                             <Badge tone="warning" size="md" icon={Clock}>
-                                {stats.tutors.pending} tutor{stats.tutors.pending > 1 ? 's' : ''} awaiting review
+                                {t('admin.awaitingTutorReview', { count: stats.tutors.pending })}
                             </Badge>
                         </motion.div>
                     )}

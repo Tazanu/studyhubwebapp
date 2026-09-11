@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../../lib/cn';
 import Button from './Button';
 
@@ -22,6 +23,7 @@ export default function Banner({
     position = 'bottom',
     className,
 }) {
+    const { t } = useTranslation();
     return (
         <motion.div
             initial={{ opacity: 0, y: position === 'bottom' ? 24 : -24 }}
@@ -55,7 +57,7 @@ export default function Banner({
                 <button
                     type="button"
                     onClick={onDismiss}
-                    aria-label="Dismiss"
+                    aria-label={t('common.dismiss')}
                     className="p-1 rounded-lg text-fg-muted hover:bg-surface-hover hover:text-fg transition-colors shrink-0 h-fit"
                 >
                     <X size={16} />

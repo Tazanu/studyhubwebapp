@@ -8,6 +8,10 @@
  *
  * The server checks the matching field in middleware/honeypot.js; changing the
  * name here means changing it there too.
+ *
+ * The label stays untranslated on purpose: the wrapper is aria-hidden and the
+ * input is not a tab stop, so no person ever reads it — it exists only as bait,
+ * and bots do not read French.
  */
 export const HONEYPOT_FIELD = 'website';
 

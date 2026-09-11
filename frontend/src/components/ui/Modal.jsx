@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../../lib/cn';
 
 const SIZES = {
@@ -23,6 +24,7 @@ export default function Modal({
     children,
     className,
 }) {
+    const { t } = useTranslation();
     const panelRef = useRef(null);
 
     useEffect(() => {
@@ -73,7 +75,7 @@ export default function Modal({
                             <button
                                 type="button"
                                 onClick={onClose}
-                                aria-label="Close"
+                                aria-label={t('common.close')}
                                 className="p-1.5 rounded-lg text-fg-secondary hover:bg-surface-hover hover:text-fg transition-colors"
                             >
                                 <X size={20} />
