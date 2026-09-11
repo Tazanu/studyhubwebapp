@@ -1,0 +1,1165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>StudyHub — Technical Documentation</title>
+<style>
+    /* ── Page setup ─────────────────────────────────────────────── */
+    @page {
+        size: A4;
+        margin: 18mm 16mm 20mm 16mm;
+    }
+    @page :first { margin: 0; }
+
+    :root {
+        --ink:        #14181f;
+        --ink-soft:   #46505f;
+        --ink-faint:  #79839333;
+        --rule:       #d8dee7;
+        --rule-soft:  #eaeef3;
+        --brand:      #1d4ed8;
+        --brand-soft: #eff4ff;
+        --warn-bg:    #fff8e6;
+        --warn-bd:    #e8c96a;
+        --code-bg:    #f5f7fa;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    body {
+        margin: 0;
+        font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        font-size: 10.2pt;
+        line-height: 1.62;
+        color: var(--ink);
+    }
+
+    /* ── Cover ──────────────────────────────────────────────────── */
+    .cover {
+        height: 297mm;
+        padding: 38mm 22mm 20mm;
+        display: flex;
+        flex-direction: column;
+        page-break-after: always;
+        background: linear-gradient(160deg, #0b1220 0%, #16233d 55%, #1d3a6e 100%);
+        color: #fff;
+    }
+    .cover .mark {
+        font-size: 11pt;
+        letter-spacing: .32em;
+        text-transform: uppercase;
+        color: #93b4f5;
+        margin-bottom: 6mm;
+    }
+    .cover h1 {
+        font-size: 40pt;
+        line-height: 1.04;
+        margin: 0 0 5mm;
+        font-weight: 700;
+        letter-spacing: -.02em;
+    }
+    .cover .sub {
+        font-size: 14pt;
+        color: #c3d4f5;
+        font-weight: 400;
+        margin: 0 0 auto;
+        max-width: 120mm;
+        line-height: 1.5;
+    }
+    .cover .meta {
+        border-top: 1px solid rgba(255,255,255,.22);
+        padding-top: 6mm;
+        font-size: 9.6pt;
+        color: #b9c9e6;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 3mm 8mm;
+    }
+    .cover .meta b { color: #fff; font-weight: 600; display: block; margin-bottom: .6mm; }
+
+    /* ── Headings ───────────────────────────────────────────────── */
+    h2 {
+        font-size: 17pt;
+        margin: 0 0 4mm;
+        padding-bottom: 2.5mm;
+        border-bottom: 2px solid var(--brand);
+        color: var(--ink);
+        letter-spacing: -.01em;
+        page-break-after: avoid;
+    }
+    h2 .num {
+        color: var(--brand);
+        font-variant-numeric: tabular-nums;
+        margin-right: 3mm;
+    }
+    h3 {
+        font-size: 12pt;
+        margin: 7mm 0 2.5mm;
+        color: var(--ink);
+        page-break-after: avoid;
+    }
+    h4 {
+        font-size: 10.4pt;
+        margin: 5mm 0 1.5mm;
+        color: var(--ink-soft);
+        text-transform: uppercase;
+        letter-spacing: .07em;
+        page-break-after: avoid;
+    }
+    section { page-break-before: always; }
+    section.contents { page-break-before: avoid; }
+
+    p { margin: 0 0 3mm; }
+    ul, ol { margin: 0 0 3mm; padding-left: 5.5mm; }
+    li { margin-bottom: 1.4mm; }
+    strong { font-weight: 600; }
+
+    /* ── Tables ─────────────────────────────────────────────────── */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 3mm 0 5mm;
+        font-size: 9.1pt;
+        page-break-inside: auto;
+    }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; }
+    th {
+        text-align: left;
+        background: var(--brand-soft);
+        color: #17357d;
+        font-weight: 600;
+        padding: 2mm 2.4mm;
+        border-bottom: 1.5px solid #c3d5f5;
+        font-size: 8.6pt;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
+    td {
+        padding: 2mm 2.4mm;
+        border-bottom: 1px solid var(--rule-soft);
+        vertical-align: top;
+    }
+    tbody tr:nth-child(even) td { background: #fafbfd; }
+    td.mono, th.mono { font-family: Consolas, "Courier New", monospace; font-size: 8.5pt; white-space: nowrap; }
+
+    /* ── Code ───────────────────────────────────────────────────── */
+    code {
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 8.9pt;
+        background: var(--code-bg);
+        padding: .3mm 1.2mm;
+        border-radius: 2px;
+        color: #1a2b4a;
+    }
+    pre {
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 8.5pt;
+        line-height: 1.5;
+        background: var(--code-bg);
+        border: 1px solid var(--rule);
+        border-left: 3px solid var(--brand);
+        border-radius: 3px;
+        padding: 3mm 3.5mm;
+        margin: 3mm 0 4mm;
+        overflow: hidden;
+        white-space: pre-wrap;
+        page-break-inside: avoid;
+        color: #1a2b4a;
+    }
+    pre code { background: none; padding: 0; font-size: inherit; }
+
+    /* ── Callouts ───────────────────────────────────────────────── */
+    .note, .warn {
+        border-radius: 3px;
+        padding: 3mm 3.5mm;
+        margin: 3mm 0 4mm;
+        font-size: 9.4pt;
+        page-break-inside: avoid;
+    }
+    .note { background: var(--brand-soft); border-left: 3px solid var(--brand); }
+    .warn { background: var(--warn-bg);   border-left: 3px solid var(--warn-bd); }
+    .note .lbl, .warn .lbl {
+        display: block;
+        font-weight: 700;
+        font-size: 8.4pt;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        margin-bottom: 1.2mm;
+    }
+    .note .lbl { color: #17357d; }
+    .warn .lbl { color: #8a6100; }
+    .note p:last-child, .warn p:last-child { margin-bottom: 0; }
+
+    .lead {
+        font-size: 11pt;
+        color: var(--ink-soft);
+        margin-bottom: 5mm;
+        line-height: 1.6;
+    }
+
+    /* ── Contents ───────────────────────────────────────────────── */
+    .toc { list-style: none; padding: 0; margin: 4mm 0 0; column-count: 1; }
+    .toc li {
+        display: flex;
+        align-items: baseline;
+        gap: 2mm;
+        padding: 1.6mm 0;
+        border-bottom: 1px dotted var(--rule);
+        font-size: 10pt;
+    }
+    .toc .n { color: var(--brand); font-weight: 600; min-width: 9mm; font-variant-numeric: tabular-nums; }
+    .toc .t { flex: 1; }
+    .toc .d { color: var(--ink-soft); font-size: 8.8pt; }
+
+    /* ── Architecture diagram ───────────────────────────────────── */
+    .diagram {
+        border: 1px solid var(--rule);
+        border-radius: 4px;
+        padding: 5mm;
+        margin: 4mm 0 5mm;
+        background: #fcfdff;
+        page-break-inside: avoid;
+    }
+    .tier { margin-bottom: 4mm; }
+    .tier:last-child { margin-bottom: 0; }
+    .tier-label {
+        font-size: 8pt;
+        text-transform: uppercase;
+        letter-spacing: .1em;
+        color: var(--ink-soft);
+        margin-bottom: 1.5mm;
+        font-weight: 600;
+    }
+    .boxes { display: flex; gap: 2.5mm; flex-wrap: wrap; }
+    .box {
+        flex: 1;
+        min-width: 32mm;
+        border: 1px solid #c3d5f5;
+        background: var(--brand-soft);
+        border-radius: 3px;
+        padding: 2.5mm;
+        font-size: 8.6pt;
+        line-height: 1.4;
+    }
+    .box b { display: block; color: #17357d; font-size: 9.2pt; margin-bottom: .8mm; }
+    .box.alt { background: #f4f6f9; border-color: var(--rule); }
+    .box.alt b { color: var(--ink); }
+    .arrow {
+        text-align: center;
+        color: var(--brand);
+        font-size: 12pt;
+        line-height: 1;
+        margin: 1.5mm 0;
+    }
+
+    .kv { display: grid; grid-template-columns: 38mm 1fr; gap: 1.2mm 4mm; font-size: 9.4pt; margin: 3mm 0 4mm; }
+    .kv dt { font-weight: 600; color: var(--ink-soft); }
+    .kv dd { margin: 0; }
+
+    .footer-note {
+        margin-top: 8mm;
+        padding-top: 3mm;
+        border-top: 1px solid var(--rule);
+        font-size: 8.6pt;
+        color: var(--ink-soft);
+    }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════ COVER ══════════════════════════ -->
+<div class="cover">
+    <div class="mark">Technical Documentation</div>
+    <h1>StudyHub</h1>
+    <p class="sub">A peer-to-peer learning platform for university students — study groups, shared notes, a Q&amp;A forum, tutor booking and Mobile Money payments.</p>
+    <div class="meta">
+        <div><b>Document type</b>Engineering handover</div>
+        <div><b>Version</b>2.0</div>
+        <div><b>Author</b>Tazanu Stanley</div>
+        <div><b>Repository</b>github.com/Tazanu/studyhubwebapp</div>
+        <div><b>Live site</b>studyhubwebapp.vercel.app</div>
+        <div><b>Generated</b><span id="gen-date"></span></div>
+    </div>
+</div>
+
+<!-- ══════════════════════════ CONTENTS ══════════════════════════ -->
+<section class="contents">
+    <h2><span class="num">—</span>Contents</h2>
+    <p class="lead">This document describes how StudyHub is built: the architecture, every third-party tool and what it does, the data model, the security and payment mechanics, and how to run and deploy the system. It is written for a developer taking the project over.</p>
+    <ol class="toc">
+        <li><span class="n">1</span><span class="t">System overview</span><span class="d">What it is and what it is made of</span></li>
+        <li><span class="n">2</span><span class="t">Architecture</span><span class="d">Tiers, hosting, request flow</span></li>
+        <li><span class="n">3</span><span class="t">Technology stack</span><span class="d">Every dependency and its purpose</span></li>
+        <li><span class="n">4</span><span class="t">Frontend</span><span class="d">Routing, state, design system, PWA</span></li>
+        <li><span class="n">5</span><span class="t">Backend</span><span class="d">Middleware chain, routes, services</span></li>
+        <li><span class="n">6</span><span class="t">Data model</span><span class="d">25 tables, grouped by domain</span></li>
+        <li><span class="n">7</span><span class="t">Authentication &amp; authorisation</span><span class="d">JWT, password handling, roles</span></li>
+        <li><span class="n">8</span><span class="t">File storage &amp; paid-content protection</span><span class="d">Cloudinary, entitlement gate</span></li>
+        <li><span class="n">9</span><span class="t">Payments</span><span class="d">Mobile Money, settlement, receipts</span></li>
+        <li><span class="n">10</span><span class="t">Realtime messaging</span><span class="d">Socket.IO rooms and events</span></li>
+        <li><span class="n">11</span><span class="t">Security posture</span><span class="d">Headers, CORS, rate limits, spam</span></li>
+        <li><span class="n">12</span><span class="t">Internationalisation</span><span class="d">English and French</span></li>
+        <li><span class="n">13</span><span class="t">Deployment</span><span class="d">Vercel, Render, Neon, env vars</span></li>
+        <li><span class="n">14</span><span class="t">Local development</span><span class="d">Setup and runbook</span></li>
+        <li><span class="n">15</span><span class="t">Known limitations</span><span class="d">What is unfinished or fragile</span></li>
+        <li><span class="n">A</span><span class="t">Appendix — API reference</span><span class="d">Every endpoint</span></li>
+    </ol>
+</section>
+
+<!-- ══════════════════════════ 1. OVERVIEW ══════════════════════════ -->
+<section>
+    <h2><span class="num">1</span>System overview</h2>
+
+    <p>StudyHub is a web application that lets university students help each other study. A signed-in student can join subject study groups and chat in them in real time, upload and download course notes, ask and answer questions on a forum, and book a peer tutor for a paid one-to-one session. Tutors apply, are reviewed by an administrator, set their own rate and availability, and are paid through Mobile Money.</p>
+
+    <p>It is a two-tier system: a React single-page application in the browser, and an Express REST API with a PostgreSQL database. They are deployed independently and communicate over HTTPS with JSON, plus a WebSocket connection for chat.</p>
+
+    <h3>Scale</h3>
+    <dl class="kv">
+        <dt>Frontend source</dt><dd>~14,700 lines across 26 pages, 17 shared UI primitives, 6 custom hooks</dd>
+        <dt>Backend source</dt><dd>~6,000 lines across 12 route modules, 7 services, 7 middleware</dd>
+        <dt>Database</dt><dd>25 tables, 7 migrations, 476-line Prisma schema</dd>
+        <dt>API surface</dt><dd>88 REST endpoints</dd>
+        <dt>Languages</dt><dd>English and French, 1,228 translation keys each</dd>
+    </dl>
+
+    <h3>The four product areas</h3>
+    <table>
+        <thead><tr><th style="width:26mm">Area</th><th>What a user can do</th><th style="width:44mm">Key tables</th></tr></thead>
+        <tbody>
+            <tr><td><b>Study groups</b></td><td>Create or join a group (open or approval-gated), chat in real time with file attachments, replies, edits and emoji reactions, manage members as an owner</td><td class="mono">groups, user_groups, group_messages, group_join_requests</td></tr>
+            <tr><td><b>Notes</b></td><td>Upload course notes with tags and a subject, browse and filter, preview PDFs and images in-app, download. Notes may be free or paid</td><td class="mono">notes, premium_notes, purchased_notes</td></tr>
+            <tr><td><b>Q&amp;A forum</b></td><td>Ask a question with optional voice recording and images, answer, vote, accept a best answer, bookmark, follow. Reputation accrues from activity</td><td class="mono">questions, answers, question_votes, answer_votes</td></tr>
+            <tr><td><b>Tutoring</b></td><td>Apply as a tutor, set rate and weekly availability, be approved by an admin; students browse, book a slot and pay by Mobile Money</td><td class="mono">tutors, tutor_availability, bookings, session_credits</td></tr>
+        </tbody>
+    </table>
+
+    <h3>User roles</h3>
+    <table>
+        <thead><tr><th style="width:26mm">Role</th><th>Capabilities</th></tr></thead>
+        <tbody>
+            <tr><td><b>Student</b></td><td>The default on registration. Full access to groups, notes, Q&amp;A; can buy premium notes and book tutors.</td></tr>
+            <tr><td><b>Tutor</b></td><td>A student whose application has been approved. Additionally: appears in the tutor directory, manages availability, accepts or declines bookings, may publish paid notes.</td></tr>
+            <tr><td><b>Admin</b></td><td>Reviews tutor applications and paid-note submissions, manages users (ban, promote), sees platform statistics and payment diagnostics.</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- ══════════════════════════ 2. ARCHITECTURE ══════════════════════════ -->
+<section>
+    <h2><span class="num">2</span>Architecture</h2>
+
+    <p>Three managed services, each free-tier, each doing one job. Nothing is self-hosted.</p>
+
+    <div class="diagram">
+        <div class="tier">
+            <div class="tier-label">Client</div>
+            <div class="boxes">
+                <div class="box"><b>Browser / PWA</b>React 19 SPA. Installable, works partly offline via a service worker.</div>
+            </div>
+        </div>
+        <div class="arrow">▼ &nbsp; HTTPS (JSON + JWT) &nbsp;&nbsp;·&nbsp;&nbsp; WebSocket (chat) &nbsp; ▼</div>
+        <div class="tier">
+            <div class="tier-label">Hosting — static</div>
+            <div class="boxes">
+                <div class="box"><b>Vercel</b>Serves the built SPA from a CDN. SPA rewrite sends all paths to <code>index.html</code>.</div>
+            </div>
+        </div>
+        <div class="tier">
+            <div class="tier-label">Hosting — application</div>
+            <div class="boxes">
+                <div class="box"><b>Render</b>Node web service running the Express API and the Socket.IO server.</div>
+            </div>
+        </div>
+        <div class="arrow">▼</div>
+        <div class="tier">
+            <div class="tier-label">Data &amp; third-party services</div>
+            <div class="boxes">
+                <div class="box alt"><b>Neon</b>Serverless PostgreSQL. Pooled connection for the app, direct connection for migrations.</div>
+                <div class="box alt"><b>Cloudinary</b>Object storage and CDN for every uploaded file.</div>
+                <div class="box alt"><b>MeSomb</b>Mobile Money gateway — MTN MoMo and Orange Money.</div>
+                <div class="box alt"><b>Plausible</b>Cookieless analytics.</div>
+            </div>
+        </div>
+    </div>
+
+    <h3>Why the frontend and backend are hosted separately</h3>
+    <p>The frontend is static files and benefits from a CDN; the backend is a long-lived Node process that must hold WebSocket connections and run a background timer. Those have different runtime needs, so they are deployed to different platforms. The cost is that they sit on different origins, which makes CORS configuration a first-class concern (section 11) and means the API URL must be baked into the frontend at build time (section 13).</p>
+
+    <h3>Request flow — a typical authenticated call</h3>
+    <ol>
+        <li>The browser calls <code>api.get('/notes')</code>. An Axios request interceptor attaches <code>Authorization: Bearer &lt;token&gt;</code> from <code>localStorage</code>.</li>
+        <li>Render's proxy terminates TLS and forwards to Express. <code>trust proxy</code> is set so the real protocol and client IP survive.</li>
+        <li>Express redirects to HTTPS if <code>x-forwarded-proto</code> is not <code>https</code>, then Helmet applies security headers.</li>
+        <li>CORS checks the <code>Origin</code> against an allow-list. A rejected origin is logged by name.</li>
+        <li>The rate limiter for that path runs.</li>
+        <li>The route's <code>authenticate</code> middleware verifies the JWT and sets <code>req.userId</code>.</li>
+        <li>The handler queries PostgreSQL through Prisma and returns JSON.</li>
+        <li>A response interceptor in the browser catches <code>401</code> (clear session, redirect to login) and retries transport failures (section 4).</li>
+    </ol>
+
+    <h3>Directory layout</h3>
+<pre><code>studyhub-v2/
+├── frontend/
+│   ├── src/
+│   │   ├── pages/          26 route components
+│   │   ├── components/
+│   │   │   ├── ui/         17 shared primitives (Button, Modal, Badge…)
+│   │   │   ├── home/       marketing sections
+│   │   │   └── tutor/      tutor-profile sections
+│   │   ├── context/        AuthContext, ThemeContext
+│   │   ├── hooks/          6 custom hooks
+│   │   ├── lib/            formatting, tiers, analytics, helpers
+│   │   ├── i18n/           config + en.json / fr.json
+│   │   └── api/client.js   Axios instance + interceptors
+│   ├── scripts/            check-i18n.mjs
+│   ├── vite.config.js      build, PWA, sitemap/robots generation
+│   └── vercel.json         SPA rewrite + cache headers
+└── backend/
+    ├── prisma/schema.prisma
+    └── src/
+        ├── routes/         12 modules → /api/*
+        ├── services/       7 domain services
+        ├── middleware/     auth, roles, rate limits, uploads, honeypot
+        ├── socket.js       Socket.IO server
+        └── index.js        app assembly and startup</code></pre>
+</section>
+
+<!-- ══════════════════════════ 3. STACK ══════════════════════════ -->
+<section>
+    <h2><span class="num">3</span>Technology stack</h2>
+    <p class="lead">Every third-party dependency, what it does in this project, and why it is there.</p>
+
+    <h3>Frontend — runtime dependencies</h3>
+    <table>
+        <thead><tr><th style="width:34mm">Package</th><th style="width:14mm">Version</th><th>Role in StudyHub</th></tr></thead>
+        <tbody>
+            <tr><td class="mono">react<br>react-dom</td><td class="mono">19.2</td><td>UI framework. React 19 is used specifically for its native <code>&lt;title&gt;</code> hoisting in the SEO component.</td></tr>
+            <tr><td class="mono">react-router-dom</td><td class="mono">7.18</td><td>Client-side routing for 26 routes, including the <code>&lt;Protected&gt;</code> wrapper that gates authenticated pages.</td></tr>
+            <tr><td class="mono">axios</td><td class="mono">1.18</td><td>HTTP client. Configured once in <code>api/client.js</code> with token injection, a 45s timeout and cold-start retry.</td></tr>
+            <tr><td class="mono">tailwindcss<br>@tailwindcss/vite</td><td class="mono">4.3</td><td>Styling. Tailwind v4's <code>@theme inline</code> exposes CSS custom properties as utilities that stay reactive to the runtime light/dark switch.</td></tr>
+            <tr><td class="mono">framer-motion</td><td class="mono">12.40</td><td>Animation — page transitions, the sliding active-tab pill, card hover lifts, list stagger.</td></tr>
+            <tr><td class="mono">lucide-react</td><td class="mono">1.21</td><td>Icon set. Replaced emoji icons throughout so icons inherit colour and scale.</td></tr>
+            <tr><td class="mono">socket.io-client</td><td class="mono">4.7</td><td>WebSocket client for group chat, wrapped in the <code>useGroupSocket</code> hook.</td></tr>
+            <tr><td class="mono">recharts</td><td class="mono">3.8</td><td>The weekly activity bar chart on the dashboard.</td></tr>
+            <tr><td class="mono">react-pdf</td><td class="mono">10.4</td><td>In-app PDF preview so a note can be read without downloading it.</td></tr>
+            <tr><td class="mono">sonner</td><td class="mono">2.0</td><td>Toast notifications for success and error feedback.</td></tr>
+            <tr><td class="mono">react-helmet-async</td><td class="mono">3.0</td><td>Per-page document head on the tutor profile, including JSON-LD structured data.</td></tr>
+            <tr><td class="mono">i18next<br>react-i18next<br>i18next-browser-languagedetector</td><td class="mono">26.4<br>17.0<br>8.2</td><td>Internationalisation: translation lookup, React bindings, and browser-language detection with a persisted override (section 12).</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Frontend — build and tooling</h3>
+    <table>
+        <thead><tr><th style="width:34mm">Package</th><th style="width:14mm">Version</th><th>Role in StudyHub</th></tr></thead>
+        <tbody>
+            <tr><td class="mono">vite</td><td class="mono">8.0</td><td>Dev server and production bundler. Also the place where <code>VITE_*</code> variables are inlined at build time.</td></tr>
+            <tr><td class="mono">@vitejs/plugin-react</td><td class="mono">6.0</td><td>JSX transform and Fast Refresh.</td></tr>
+            <tr><td class="mono">vite-plugin-pwa</td><td class="mono">1.3</td><td>Generates the web app manifest and a Workbox service worker with per-route caching strategies (section 4).</td></tr>
+            <tr><td class="mono">eslint + react-hooks + react-refresh</td><td class="mono">10.3</td><td>Static analysis. Caught two real bugs during the i18n work: a variable shadowing the translation function, and <code>t</code> used outside its component.</td></tr>
+            <tr><td class="mono">sharp</td><td class="mono">0.35</td><td>Build-time image compression for the social preview card and PWA icons.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Backend — runtime dependencies</h3>
+    <table>
+        <thead><tr><th style="width:34mm">Package</th><th style="width:14mm">Version</th><th>Role in StudyHub</th></tr></thead>
+        <tbody>
+            <tr><td class="mono">express</td><td class="mono">5.2</td><td>HTTP framework. Express 5 propagates async handler rejections to the error middleware automatically.</td></tr>
+            <tr><td class="mono">prisma<br>@prisma/client</td><td class="mono">5.22</td><td>ORM and migration tool. The schema is the single source of truth for all 25 tables; the generated client gives type-aware queries.</td></tr>
+            <tr><td class="mono">pg</td><td class="mono">8.22</td><td>PostgreSQL driver used underneath Prisma.</td></tr>
+            <tr><td class="mono">jsonwebtoken</td><td class="mono">9.0</td><td>Signs and verifies the stateless session token.</td></tr>
+            <tr><td class="mono">bcryptjs</td><td class="mono">3.0</td><td>Password hashing at 12 rounds.</td></tr>
+            <tr><td class="mono">helmet</td><td class="mono">8.3</td><td>Security response headers including a Content-Security-Policy and HSTS.</td></tr>
+            <tr><td class="mono">cors</td><td class="mono">2.8</td><td>Cross-origin access control with an explicit allow-list — required because the SPA is on a different origin.</td></tr>
+            <tr><td class="mono">express-rate-limit</td><td class="mono">8.5</td><td>Five separate limiters: general API, auth, login, payment initiation, payment polling.</td></tr>
+            <tr><td class="mono">multer<br>multer-storage-cloudinary</td><td class="mono">2.2<br>4.0</td><td>Multipart upload parsing, streaming straight to Cloudinary rather than to local disk.</td></tr>
+            <tr><td class="mono">cloudinary</td><td class="mono">1.41</td><td>Storage SDK. Also used to build signed, expiring URLs for paid files.</td></tr>
+            <tr><td class="mono">socket.io</td><td class="mono">4.7</td><td>WebSocket server with JWT handshake authentication and per-group rooms.</td></tr>
+            <tr><td class="mono">@hachther/mesomb</td><td class="mono">2.0</td><td>Mobile Money SDK for MTN MoMo and Orange Money in Cameroon.</td></tr>
+            <tr><td class="mono">axios</td><td class="mono">1.18</td><td>Server-side HTTP, used for direct provider calls where the SDK is insufficient.</td></tr>
+            <tr><td class="mono">dotenv</td><td class="mono">17.4</td><td>Loads <code>.env</code> in local development.</td></tr>
+            <tr><td class="mono">nodemon</td><td class="mono">3.1</td><td>Dev-only auto-restart.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Infrastructure and external services</h3>
+    <table>
+        <thead><tr><th style="width:28mm">Service</th><th style="width:24mm">Used for</th><th>Notes</th></tr></thead>
+        <tbody>
+            <tr><td><b>Vercel</b></td><td>Frontend hosting</td><td>Global CDN, automatic deploys from the <code>master</code> branch, SPA rewrite so client routes resolve.</td></tr>
+            <tr><td><b>Render</b></td><td>Backend hosting</td><td>Node web service. On the free tier it sleeps after ~15 minutes idle — the frontend compensates (section 4).</td></tr>
+            <tr><td><b>Neon</b></td><td>PostgreSQL</td><td>Serverless Postgres. Requires two URLs: a pooled one for the app and a direct one for migrations (section 6).</td></tr>
+            <tr><td><b>Cloudinary</b></td><td>File storage + CDN</td><td>Every avatar, note, chat attachment, voice recording and proof document.</td></tr>
+            <tr><td><b>MeSomb</b></td><td>Payments</td><td>Cameroonian Mobile Money aggregator. Asynchronous collect with polling.</td></tr>
+            <tr><td><b>Plausible</b></td><td>Analytics</td><td>Chosen because it is cookieless — no consent banner is legally required, and none is shown as a gate.</td></tr>
+            <tr><td><b>GitHub</b></td><td>Source control</td><td>Single repository holding both apps; both hosts deploy from it.</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- ══════════════════════════ 4. FRONTEND ══════════════════════════ -->
+<section>
+    <h2><span class="num">4</span>Frontend</h2>
+
+    <h3>Routing</h3>
+    <p>All 26 routes are declared in <code>App.jsx</code>. Authenticated routes are wrapped in <code>&lt;Protected&gt;</code>, which redirects to <code>/login</code> when no valid session exists. A catch-all <code>*</code> route renders the custom 404 page.</p>
+    <table>
+        <thead><tr><th style="width:30mm">Access</th><th>Routes</th></tr></thead>
+        <tbody>
+            <tr><td><b>Public</b></td><td class="mono" style="white-space:normal">/ &nbsp; /about &nbsp; /login &nbsp; /register &nbsp; /contact &nbsp; /terms &nbsp; /privacy &nbsp; /cookies</td></tr>
+            <tr><td><b>Authenticated</b></td><td class="mono" style="white-space:normal">/dashboard &nbsp; /profile &nbsp; /profile/:id &nbsp; /groups &nbsp; /groups/:id/chat &nbsp; /notes &nbsp; /notes/:id &nbsp; /qa &nbsp; /qa/ask &nbsp; /qa/:id &nbsp; /settings &nbsp; /premium &nbsp; /tutors &nbsp; /tutor/:id &nbsp; /become-tutor &nbsp; /tutor-dashboard</td></tr>
+            <tr><td><b>Admin only</b></td><td class="mono">/admin</td></tr>
+        </tbody>
+    </table>
+
+    <h3>State management</h3>
+    <p>There is no Redux or equivalent. State is deliberately kept local, with two React contexts for the genuinely global concerns:</p>
+    <ul>
+        <li><code>AuthContext</code> — the current user, the token, and <code>login</code> / <code>logout</code> / <code>refreshUser</code>. Persisted to <code>localStorage</code> so a reload does not sign the user out.</li>
+        <li><code>ThemeContext</code> — light or dark, applied as a <code>data-theme</code> attribute on the document root.</li>
+    </ul>
+    <p>Everything else is component state plus data fetched on mount. Several list pages poll on an interval (notes and groups every 15s, the Q&amp;A forum every 20s) so other users' activity appears without a manual refresh.</p>
+
+    <h3>Design system</h3>
+    <p>The interface is built on a token-based design system rather than ad hoc styling. <code>index.css</code> defines a brand scale, neutral surfaces, semantic status colours, a shadow scale and radii as CSS custom properties; Tailwind v4's <code>@theme inline</code> exposes them as utility classes that stay bound to <code>var()</code> rather than being compiled to fixed values. That is what allows the light/dark toggle to work instantly with no rebuild.</p>
+    <p>Seventeen shared primitives in <code>components/ui/</code> — <code>Button</code>, <code>Card</code>, <code>Modal</code>, <code>Badge</code>, <code>Field</code>, <code>Input</code>, <code>Select</code>, <code>Textarea</code>, <code>EmptyState</code>, <code>Skeleton</code>, <code>StarRating</code>, <code>Stepper</code>, <code>Banner</code>, <code>ConfirmDialog</code>, <code>InlineConfirm</code>, <code>UserAvatar</code>, <code>HoneypotField</code> — replaced what had been the same visual component hand-rolled separately on each page.</p>
+    <div class="note">
+        <span class="lbl">Design note</span>
+        <p><code>Badge</code> maps its <code>tone</code> prop to full literal class names rather than building them by string interpolation. Tailwind's scanner is static: a class assembled at runtime is never emitted into the stylesheet, so the interpolated version would have produced unstyled badges in production while looking fine in development.</p>
+    </div>
+
+    <h3>Cold-start handling</h3>
+    <p>Render's free tier sleeps the backend after roughly fifteen minutes of inactivity, and the first request that reaches a sleeping container is usually dropped while it boots. Without handling, a visitor arriving from a shared link sees a failure on a perfectly healthy service.</p>
+    <p>The Axios layer therefore retries — but narrowly. Only requests that never received a response at all are retried (up to twice, four seconds apart). Anything the server actually answered, including a 500, is left alone, because repeating a POST the server did process could duplicate it. While a retry is in flight the client emits an event that renders a "waking the server" banner, so the wait is explained rather than silent.</p>
+
+    <h3>Progressive Web App</h3>
+    <p>The app installs to a phone home screen and keeps working partly offline. The service worker is generated by <code>vite-plugin-pwa</code> with deliberately different strategies per route:</p>
+    <table>
+        <thead><tr><th style="width:34mm">API path</th><th style="width:34mm">Strategy</th><th>Reason</th></tr></thead>
+        <tbody>
+            <tr><td class="mono">/api/stats</td><td>StaleWhileRevalidate</td><td>Landing-page counters; stale for five minutes is harmless.</td></tr>
+            <tr><td class="mono">/api/groups<br>/api/notes<br>/api/questions</td><td>NetworkFirst (5s)</td><td>Fresh when online, readable offline. 24-hour cache.</td></tr>
+            <tr><td class="mono">/api/tutors</td><td>NetworkOnly</td><td>Rates and availability must never be served stale.</td></tr>
+            <tr><td class="mono">/api/auth<br>/api/payments<br>*/messages<br>notes/*/download</td><td>NetworkOnly</td><td>Authentication, money, live chat and download counters must not be cached.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>SEO artefacts generated at build</h3>
+    <p>A custom Vite plugin emits <code>sitemap.xml</code> and <code>robots.txt</code> during the build, using the real deployed origin from <code>VITE_SITE_URL</code>. Sitemap URLs must be absolute — a relative one is silently ignored by crawlers — so generating them at build time avoids hardcoding a guess. Authenticated route prefixes are disallowed in robots.txt, since a crawler following them only ever reaches the login redirect.</p>
+</section>
+
+<!-- ══════════════════════════ 5. BACKEND ══════════════════════════ -->
+<section>
+    <h2><span class="num">5</span>Backend</h2>
+
+    <h3>Middleware chain</h3>
+    <p>Order matters and is fixed in <code>src/index.js</code>:</p>
+    <table>
+        <thead><tr><th style="width:8mm">#</th><th style="width:38mm">Middleware</th><th>Purpose</th></tr></thead>
+        <tbody>
+            <tr><td>1</td><td><code>trust proxy</code></td><td>Makes the real client IP and protocol visible behind Render's reverse proxy. Rate limiting and the HTTPS redirect both depend on it.</td></tr>
+            <tr><td>2</td><td>HTTPS redirect</td><td>In production only. Redirects with <b>308</b> rather than 301 so the method and body of a non-GET request survive.</td></tr>
+            <tr><td>3</td><td><code>helmet</code></td><td>CSP, HSTS, nosniff, frame-ancestors none, and related headers.</td></tr>
+            <tr><td>4</td><td><code>cors</code></td><td>Explicit origin allow-list with credentials enabled. A wildcard is not permitted alongside credentials.</td></tr>
+            <tr><td>5</td><td><code>express.json</code></td><td>Body parsing, capped at 1 MB.</td></tr>
+            <tr><td>6</td><td>Static <code>/uploads</code></td><td>Serves legacy local files, but refuses anything under <code>protected/</code> with a 403.</td></tr>
+            <tr><td>7</td><td>Rate limiters</td><td>Path-scoped. Polling limiter is registered before the strict payment limiter so it takes precedence on status routes.</td></tr>
+            <tr><td>8</td><td>Routes</td><td>Twelve modules mounted under <code>/api/*</code>.</td></tr>
+            <tr><td>9</td><td><code>/api</code> 404</td><td>Unknown API paths return a clear 404 instead of falling through to a confusing 500.</td></tr>
+            <tr><td>10</td><td>Error handler</td><td>Logs fully server-side; returns a generic message. Never leaks a stack trace.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Route modules</h3>
+    <table>
+        <thead><tr><th style="width:32mm">Mount</th><th style="width:12mm">Routes</th><th>Responsibility</th></tr></thead>
+        <tbody>
+            <tr><td class="mono">/api/auth</td><td>4</td><td>Registration, login, current user, password change.</td></tr>
+            <tr><td class="mono">/api/groups</td><td>21</td><td>Group CRUD, membership, join requests, messages, reactions, typing, read state.</td></tr>
+            <tr><td class="mono">/api/notes</td><td>6</td><td>Note listing, upload, download counting, gated file access, deletion.</td></tr>
+            <tr><td class="mono">/api/qa</td><td>14</td><td>Questions, answers, votes, accepted answers, bookmarks, follows, comments.</td></tr>
+            <tr><td class="mono">/api/tutors</td><td>13</td><td>Directory, applications, availability, bookings, session credits.</td></tr>
+            <tr><td class="mono">/api/premium</td><td>10</td><td>Paid notes, purchase flow, cancellation, receipts, entitlement checks.</td></tr>
+            <tr><td class="mono">/api/payments</td><td>3</td><td>Generic payment initiation, status polling, transaction history.</td></tr>
+            <tr><td class="mono">/api/admin</td><td>14</td><td>Statistics, user management, tutor review, paid-note review queue, payment diagnostics.</td></tr>
+            <tr><td class="mono">/api/users</td><td>5</td><td>Public profiles, statistics, leaderboard, profile updates.</td></tr>
+            <tr><td class="mono">/api/notifications</td><td>3</td><td>In-app notification list and read state.</td></tr>
+            <tr><td class="mono">/api/contact</td><td>3</td><td>Public contact form plus admin inbox.</td></tr>
+            <tr><td class="mono">/api/stats</td><td>1</td><td>Public platform counters for the landing page.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Services</h3>
+    <p>Domain logic lives in <code>src/services/</code> so routes stay thin and concerns are not duplicated across endpoints.</p>
+    <table>
+        <thead><tr><th style="width:34mm">Service</th><th>What it owns</th></tr></thead>
+        <tbody>
+            <tr><td class="mono">entitlements.js</td><td>Order pricing and granting. Two invariants: prices are <b>always</b> resolved server-side from the database — the client never sends an amount — and granting is idempotent, so concurrent status polls race on a conditional update and exactly one caller performs the grant.</td></tr>
+            <tr><td class="mono">mobileMoney.js</td><td>The only module that talks to the MeSomb SDK. Phone normalisation, operator detection, asynchronous collect requests, and provider error translation.</td></tr>
+            <tr><td class="mono">reconciler.js</td><td>A background sweep that settles payments the browser stopped watching — closed tab, lost signal, late PIN entry. This is what guarantees a successful charge eventually grants access.</td></tr>
+            <tr><td class="mono">paymentHealth.js</td><td>Verifies payment credentials at startup, read-only. Turns "payments mysteriously fail at checkout" into one obvious line in the deploy log.</td></tr>
+            <tr><td class="mono">fileAccess.js</td><td>Controlled access to note files across two storage backends, and CDN redirects for free content.</td></tr>
+            <tr><td class="mono">contentQuality.js</td><td>Automated quality gate on paid uploads — extracts PDF text and measures length, page count, byte size and lexical variety.</td></tr>
+            <tr><td class="mono">uploaderTrust.js</td><td>Decides whether an uploader has earned the right to publish paid notes without review. Trust is <b>computed</b> from review history, never stored as a flag.</td></tr>
+        </tbody>
+    </table>
+    <div class="note">
+        <span class="lbl">Why trust is computed, not stored</span>
+        <p>A stored trust flag has to be revoked by something remembering to revoke it. A computed one drops away by itself the moment a note is rejected, because the window that produced it no longer qualifies. There is no state that can drift out of step with reality. The current rule: at least 3 approvals and zero rejections in the last 10 reviewed uploads.</p>
+    </div>
+</section>
+
+<!-- ══════════════════════════ 6. DATA MODEL ══════════════════════════ -->
+<section>
+    <h2><span class="num">6</span>Data model</h2>
+
+    <p>PostgreSQL, defined entirely in <code>backend/prisma/schema.prisma</code> (476 lines, 25 tables, 7 migrations). Prisma generates the query client from this file, so the schema is the single source of truth — the database is never altered by hand.</p>
+
+    <h3>Tables by domain</h3>
+    <table>
+        <thead><tr><th style="width:26mm">Domain</th><th style="width:52mm">Tables</th><th>Notes</th></tr></thead>
+        <tbody>
+            <tr><td><b>Identity</b></td><td class="mono">users</td><td>Name, email, hashed password, university, field of study, bio, avatar, role, reputation, active flag.</td></tr>
+            <tr><td><b>Groups</b></td><td class="mono">groups, user_groups, group_join_requests, group_read_status</td><td><code>user_groups</code> is the membership join table carrying the member's role. <code>group_read_status</code> drives unread badges.</td></tr>
+            <tr><td><b>Messaging</b></td><td class="mono">group_messages, group_message_reactions</td><td>Messages carry an optional attachment, an optional <code>reply_to</code> self-reference, and edit/delete flags. Deletes are soft, so the bubble becomes "This message was deleted" rather than vanishing mid-conversation.</td></tr>
+            <tr><td><b>Notes</b></td><td class="mono">notes</td><td>Title, description, subject, tags, file URL and type, download count, premium flag and price.</td></tr>
+            <tr><td><b>Q&amp;A</b></td><td class="mono">questions, answers, question_votes, answer_votes, question_bookmarks, question_followers, answer_comments</td><td>Votes are separate tables rather than counters so a user cannot vote twice. Questions and answers both support audio and images.</td></tr>
+            <tr><td><b>Tutoring</b></td><td class="mono">tutors, tutor_availability, bookings, session_credits</td><td><code>tutors</code> holds the application and its status. <code>session_credits</code> tracks prepaid session packs.</td></tr>
+            <tr><td><b>Commerce</b></td><td class="mono">transactions, premium_notes, purchased_notes, premium_subscriptions</td><td><code>transactions</code> is the payment ledger. <code>purchased_notes</code> is the entitlement record checked before any paid file is served.</td></tr>
+            <tr><td><b>Platform</b></td><td class="mono">notifications, contact_messages</td><td>In-app notifications and the contact-form inbox.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>The two connection URLs</h3>
+    <p>The datasource block declares both <code>url</code> and <code>directUrl</code>, and both are required:</p>
+<pre><code>datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")   // pooled — the running app
+  directUrl = env("DIRECT_URL")     // direct  — migrations only
+}</code></pre>
+    <div class="warn">
+        <span class="lbl">Operational trap</span>
+        <p>Neon's pooled endpoint runs PgBouncer in transaction mode, which cannot carry session-level operations. Prisma migrations use advisory locks and <code>CREATE TYPE</code>, both of which are session-scoped. Running a migration through the pooled URL fails in a way that is not obviously about pooling. The pooled URL contains <code>-pooler</code> in the hostname; the direct one does not.</p>
+    </div>
+
+    <h3>Working with the schema</h3>
+<pre><code># after editing schema.prisma
+npx prisma migrate dev --name describe_the_change   # local: migrate + regenerate
+npx prisma generate                                 # regenerate client only
+npx prisma migrate deploy                           # production: apply, never create
+npx prisma studio                                   # browse data in a GUI</code></pre>
+    <p>On Windows, <code>prisma generate</code> fails with an <code>EPERM</code> error if the dev server is running, because it holds the query-engine DLL open. Stop the backend first.</p>
+</section>
+
+<!-- ══════════════════════════ 7. AUTH ══════════════════════════ -->
+<section>
+    <h2><span class="num">7</span>Authentication &amp; authorisation</h2>
+
+    <h3>Passwords</h3>
+    <p>Hashed with bcrypt at 12 rounds (<code>BCRYPT_ROUNDS</code>, default 12). The plaintext is never stored or logged.</p>
+    <p>Login runs a bcrypt comparison even when the email does not exist, comparing against a dummy hash and discarding the result. Without this, a missing account returns measurably faster than a wrong password, which lets an attacker enumerate valid email addresses by timing alone.</p>
+
+    <h3>Sessions</h3>
+    <p>Stateless JWT signed with <code>JWT_SECRET</code>, expiring after <code>JWT_EXPIRES_IN</code> (default 24h). The token is stored in <code>localStorage</code> and attached by the Axios request interceptor. There is no server-side session store, so there is nothing to invalidate on logout beyond clearing the client — a consequence worth knowing (section 15).</p>
+
+    <h3>Authorisation middleware</h3>
+    <table>
+        <thead><tr><th style="width:34mm">Middleware</th><th>Behaviour</th></tr></thead>
+        <tbody>
+            <tr><td class="mono">authenticate</td><td>Requires a valid token; sets <code>req.userId</code>. Rejects with 401 otherwise.</td></tr>
+            <tr><td class="mono">optionalAuth</td><td>Sets <code>req.userId</code> when a valid token is present but never rejects. Used where a page is public yet renders differently for a signed-in user — for instance showing whether they already own a premium note.</td></tr>
+            <tr><td class="mono">requireRole(...roles)</td><td>Factory that re-reads the role from the database and enforces it. Must run after <code>authenticate</code>. Reading from the database rather than trusting the token's claim means a demotion takes effect immediately rather than at token expiry.</td></tr>
+            <tr><td class="mono">admin</td><td>Convenience wrapper for <code>requireRole('admin')</code>.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Socket authentication</h3>
+    <p>The WebSocket handshake carries the same JWT. It is verified before the connection is accepted, and the resulting user id determines which group rooms the socket may join — membership is checked against the database, not taken from the client.</p>
+</section>
+
+<!-- ══════════════════════════ 8. FILES ══════════════════════════ -->
+<section>
+    <h2><span class="num">8</span>File storage &amp; paid-content protection</h2>
+
+    <h3>Upload pipeline</h3>
+    <p>Multer parses the multipart request and streams directly to Cloudinary via <code>multer-storage-cloudinary</code> — nothing is written to the application's disk, which matters because Render's filesystem is ephemeral and would lose uploads on every redeploy.</p>
+    <dl class="kv">
+        <dt>Size limit</dt><dd>20 MB per file</dd>
+        <dt>Folder</dt><dd><code>studyhub/</code></dd>
+        <dt>Resource type</dt><dd>Chosen per file: <code>image</code> for images and PDFs, <code>video</code> for audio (Cloudinary treats audio as video), <code>raw</code> for everything else</dd>
+        <dt>Type check</dt><dd>MIME allow-list; anything else is rejected with a clear error</dd>
+    </dl>
+
+    <h3>Free content — CDN redirect</h3>
+    <p>Free notes are not proxied through the API. The server responds with a redirect to the Cloudinary URL, so the file is delivered by the CDN rather than streamed through a free-tier Node process. Before this change a 3.19 MB PDF could take the full 300-second timeout; afterwards it served in about 31 seconds on the same connection.</p>
+
+    <h3>Paid content — entitlement gate</h3>
+    <p>Premium files must never be reachable by URL alone. Two storage backends are in play and both are closed:</p>
+    <ul>
+        <li><b>Local (legacy).</b> Premium files were moved into <code>uploads/protected/</code>. The static mount explicitly refuses that directory with a 403, so the only way in is a route that checks entitlement first.</li>
+        <li><b>Cloudinary (current).</b> Paid files are uploaded as <code>authenticated</code> delivery type, which cannot be fetched from a plain URL. The server issues a short-lived signed URL only after confirming a <code>purchased_notes</code> row exists for that user and note.</li>
+    </ul>
+    <p>Admins bypass the purchase check by role, which is how the review queue can open a submitted file before deciding on it.</p>
+</section>
+
+<!-- ══════════════════════════ 9. PAYMENTS ══════════════════════════ -->
+<section>
+    <h2><span class="num">9</span>Payments</h2>
+
+    <p>Payments are Mobile Money only — MTN MoMo and Orange Money — through MeSomb, a Cameroonian aggregator. There is no card processing.</p>
+
+    <h3>The flow</h3>
+    <ol>
+        <li>The student enters a 9-digit local number. The client detects the operator from the prefix and selects it automatically; a mismatch between the number and the chosen service is rejected before anything is sent.</li>
+        <li><code>POST /api/premium/pay/initiate</code> — the server resolves the price <b>from the database</b>, creates a <code>transactions</code> row in <code>pending</code>, and issues an <b>asynchronous</b> collect request so the HTTP call returns immediately rather than blocking for the length of the USSD interaction.</li>
+        <li>The provider pushes a USSD prompt to the payer's handset. The UI shows "Check your phone" and begins polling status every 3 seconds, for up to 3 minutes.</li>
+        <li>On success the server grants the entitlement — idempotently — and the client receives the receipt.</li>
+        <li>If the poll window closes without a verdict, the UI says the charge may still land and tells the user not to pay again. Settlement is left to the reconciler.</li>
+    </ol>
+
+    <h3>Cancellation</h3>
+    <p><code>POST /api/premium/pay/cancel/:txId</code> does not simply mark the transaction cancelled. It asks the provider first, because a payment may have succeeded in the moment between the user deciding to cancel and the request arriving:</p>
+    <table>
+        <thead><tr><th style="width:34mm">Provider says</th><th>Server does</th></tr></thead>
+        <tbody>
+            <tr><td>SUCCESS</td><td>Completes the order and grants access. Nobody pays and walks away empty-handed.</td></tr>
+            <tr><td>FAILED</td><td>Marks the transaction failed.</td></tr>
+            <tr><td>No reference yet</td><td>Cancels — nothing was ever charged.</td></tr>
+            <tr><td>PENDING</td><td>Leaves it pending and hands it to the reconciler, telling the user it is still being confirmed.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>The reconciler</h3>
+    <p>The browser poll is a convenience, not the source of truth. A payer can close the tab, lose signal, or approve the prompt after the page gave up. A background sweep re-checks pending transactions against the provider, completes the ones that succeeded, and abandons the ones that never will. Its intervals are tunable through <code>RECONCILE_INTERVAL_MS</code>, <code>RECONCILE_LOOKBACK_MS</code> and <code>RECONCILE_ABANDON_MS</code>.</p>
+
+    <div class="warn">
+        <span class="lbl">Hard-won detail: non-ASCII breaks the signature</span>
+        <p>MeSomb signs each request with an HMAC computed over the JSON body. Any character above U+007F in that body causes the provider to reject the request with "Bad signature" — an error that points at the credentials rather than at the payload. A note title containing a typographic em dash was enough to break every purchase of that note while leaving others working.</p>
+        <p>The fix lives in <code>mobileMoney.js</code>: a <code>toAsciiSafe()</code> helper folds smart quotes, dashes and ellipses to their ASCII equivalents, strips anything remaining above U+007F, collapses whitespace and truncates to 120 characters. Any new field sent to the provider must pass through it.</p>
+    </div>
+
+    <h3>Receipts</h3>
+    <p>A receipt is available as JSON for the in-app modal and as a server-rendered HTML document at <code>GET /api/premium/pay/receipt/:txId?format=html</code>. The document is fetched with the auth header and handed to the browser as a blob, because building it in a popup and calling <code>print()</code> is blocked or mangled by most mobile browsers. If the popup is blocked, it falls back to a direct download so the receipt is never silently lost.</p>
+</section>
+
+<!-- ══════════════════════════ 10. REALTIME ══════════════════════════ -->
+<section>
+    <h2><span class="num">10</span>Realtime messaging</h2>
+
+    <p>Group chat uses Socket.IO. The JWT is verified during the handshake, and each group is a room named <code>group:&lt;id&gt;</code>. Membership is checked server-side before a socket is allowed to join a room.</p>
+
+    <table>
+        <thead><tr><th style="width:38mm">Event</th><th style="width:18mm">Direction</th><th>Meaning</th></tr></thead>
+        <tbody>
+            <tr><td class="mono">group:join</td><td>client → server</td><td>Request to join a group room; membership is verified first.</td></tr>
+            <tr><td class="mono">group:leave</td><td>client → server</td><td>Leave the room.</td></tr>
+            <tr><td class="mono">typing:start<br>typing:stop</td><td>client → server</td><td>Typing indicator.</td></tr>
+            <tr><td class="mono">group:joined</td><td>server → client</td><td>Join confirmed.</td></tr>
+            <tr><td class="mono">message:new</td><td>server → room</td><td>A message was posted.</td></tr>
+            <tr><td class="mono">message:edit</td><td>server → room</td><td>A message was edited (15-minute window).</td></tr>
+            <tr><td class="mono">message:delete</td><td>server → room</td><td>A message was soft-deleted.</td></tr>
+            <tr><td class="mono">message:reaction</td><td>server → room</td><td>Reactions on a message changed.</td></tr>
+            <tr><td class="mono">typing:update</td><td>server → room</td><td>Current list of typing users.</td></tr>
+            <tr><td class="mono">user:joined<br>user:left</td><td>server → room</td><td>Presence changes.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Polling as a fallback, not a driver</h3>
+    <p>The client also polls for messages, but at a much slower cadence when the socket is connected — 30 seconds, against 4 seconds when it is not. The poll exists to heal events missed during a brief disconnect, not to drive the chat.</p>
+    <p>Sends are optimistic: the message appears immediately with a pending marker and is replaced by the server's copy when it arrives. The socket echo is suppressed for a message the client already inserted, otherwise the sender would see their own message twice.</p>
+</section>
+
+<!-- ══════════════════════════ 11. SECURITY ══════════════════════════ -->
+<section>
+    <h2><span class="num">11</span>Security posture</h2>
+
+    <h3>Transport</h3>
+    <p>HTTPS is enforced in production by a 308 redirect, and Helmet's HSTS header stops the browser making the insecure request a second time. Because Render terminates TLS at its proxy, <code>req.secure</code> is false even on an HTTPS request — <code>x-forwarded-proto</code> is the real signal, and it is trustworthy only because <code>trust proxy</code> is set.</p>
+
+    <h3>Headers</h3>
+    <p>Helmet applies a Content-Security-Policy restricting scripts to <code>'self'</code>, objects to <code>'none'</code> and frame ancestors to <code>'none'</code>, plus <code>nosniff</code> and a same-site cross-origin resource policy.</p>
+
+    <h3>CORS</h3>
+    <p>Origins come from <code>ALLOWED_ORIGINS</code> (comma-separated) with <code>FRONTEND_URL</code> as a fallback. Credentials are enabled, which means a wildcard is not permitted. Two deliberate diagnostics exist here, because CORS failures are otherwise very hard to trace:</p>
+    <ul>
+        <li>A rejected origin is logged <b>by name</b>, alongside the allow-list. A trailing slash or an <code>http</code>/<code>https</code> mismatch is invisible otherwise.</li>
+        <li>If a production server boots with only localhost in its allow-list, it prints a loud startup error. Left unnoticed, that configuration rejects every browser request with an opaque 403 that reads like a frontend bug.</li>
+    </ul>
+
+    <h3>Rate limiting</h3>
+    <table>
+        <thead><tr><th style="width:38mm">Scope</th><th style="width:20mm">Window</th><th style="width:16mm">Max</th><th>Rationale</th></tr></thead>
+        <tbody>
+            <tr><td>All <code>/api/</code></td><td>15 min</td><td>500</td><td>General abuse ceiling.</td></tr>
+            <tr><td>Register, change password</td><td>15 min</td><td>20</td><td>Account-creation spam.</td></tr>
+            <tr><td>Login</td><td>15 min</td><td>10</td><td>Credential stuffing.</td></tr>
+            <tr><td>Payment initiation</td><td>1 hour</td><td>20</td><td>Money-moving endpoints.</td></tr>
+            <tr><td>Payment status polling</td><td>1 hour</td><td>600</td><td>Polling is high-frequency by design and must not be caught by the strict limit above.</td></tr>
+        </tbody>
+    </table>
+    <p>All five are overridable by environment variable, so limits can be tightened in production without a code change.</p>
+
+    <h3>Input and abuse handling</h3>
+    <ul>
+        <li><b>Honeypot</b> on public forms — an off-screen field that a human never reaches. Hidden by clip rather than <code>display:none</code>, because many bots skip fields the browser would not render.</li>
+        <li><b>Upload allow-list</b> by MIME type, with a 20 MB ceiling.</li>
+        <li><b>Server-side pricing.</b> The client never sends an amount; every price is read from the database at charge time.</li>
+        <li><b>Generic error responses.</b> Stack traces are logged, never returned.</li>
+    </ul>
+</section>
+
+<!-- ══════════════════════════ 12. I18N ══════════════════════════ -->
+<section>
+    <h2><span class="num">12</span>Internationalisation</h2>
+
+    <p>The interface is available in English and French, 1,228 keys each, covering every page including the legal documents.</p>
+
+    <h3>Language selection</h3>
+    <p>Detection order is <code>localStorage → navigator → htmlTag</code>. A stored choice deliberately beats the browser: someone who has explicitly picked a language should not have it overridden on their next visit. <code>nonExplicitSupportedLngs</code> maps <code>fr-CM</code> and <code>fr-FR</code> onto <code>fr</code> — Cameroonian browsers commonly report a region, and without it those visitors would silently get English. The document's <code>lang</code> attribute follows the choice, for screen readers and search engines.</p>
+    <p>The toggle appears in the navbar and again in Settings, since someone who has landed in the wrong language looks in Settings first.</p>
+
+    <h3>What is translated and what is not</h3>
+    <div class="note">
+        <span class="lbl">The central rule</span>
+        <p>Values that are <b>stored or searched</b> stay English; only their labels are translated. Subjects, fields of study, availability days, Q&amp;A categories and booking statuses are all written to the database. Translating the stored value would mean a French tutor's "Mathématiques" never matching an English student's "Mathematics", and the two would quietly stop finding each other.</p>
+        <p>The pattern is <code>t(`subjectName.${s}`, { defaultValue: s })</code> — translate for display, fall back to the raw value for anything a user typed freely.</p>
+    </div>
+
+    <p>Other decisions worth knowing:</p>
+    <ul>
+        <li><b>Plurals</b> go through i18next's <code>_one</code>/<code>_other</code> forms, not an appended "s". French says "il y a 1 mois" and "il y a 3 mois" identically, which string concatenation cannot express.</li>
+        <li><b>Dates and numbers</b> format in the reader's locale via <code>lib/formatDate.js</code>, which reads the active language at call time.</li>
+        <li><b>The delete-account confirmation</b> compares typed input against the translated word. Translating only the visible word would have left French users typing SUPPRIMER at a permanently disabled button.</li>
+        <li><b>Toast copy</b> reads from the i18n instance rather than the <code>t</code> hook, which keeps <code>t</code> out of fetch closures and their dependency arrays.</li>
+        <li><b>The honeypot label</b> stays English on purpose: it is <code>aria-hidden</code> and not a tab stop, so no person ever reads it.</li>
+        <li><b>Legal pages</b> carry a line stating the English version prevails in case of discrepancy.</li>
+    </ul>
+
+    <h3>Guarding against drift</h3>
+    <p><code>npm run check:i18n</code> compares the two locale files and fails on four things: a key present in one language but not the other, placeholder sets that differ between languages, a plural family missing its <code>_one</code> or <code>_other</code>, and a key referenced in code but defined nowhere. It also reports keys identical in both languages and keys nothing references, without failing.</p>
+    <p>It has already earned its place — it found that Login's submit button and NotFound's suggestion cards were still hardcoded English after those pages were believed finished.</p>
+</section>
+
+<!-- ══════════════════════════ 13. DEPLOYMENT ══════════════════════════ -->
+<section>
+    <h2><span class="num">13</span>Deployment</h2>
+
+    <h3>Frontend — Vercel</h3>
+    <dl class="kv">
+        <dt>Root directory</dt><dd><code>frontend</code></dd>
+        <dt>Build command</dt><dd><code>npm run build</code></dd>
+        <dt>Output</dt><dd><code>dist</code></dd>
+        <dt>Rewrite</dt><dd>All paths → <code>/index.html</code>, so client-side routes resolve on a hard refresh</dd>
+        <dt>Cache headers</dt><dd><code>index.html</code> and <code>sw.js</code> set to <code>must-revalidate</code> so a deploy is picked up immediately</dd>
+    </dl>
+
+    <div class="warn">
+        <span class="lbl">Build-time, not runtime</span>
+        <p>Vite inlines <code>VITE_*</code> variables into the bundle at <b>build</b> time. Changing one in the Vercel dashboard has no effect until the project is redeployed. A missing or wrong <code>VITE_API_URL</code> produces a frontend that loads perfectly and then fails every request — which looks like a backend outage and is not.</p>
+        <p><code>vercel.json</code> is also validated against a strict schema. Comment-style keys such as <code>"//"</code> are rejected outright and block the deployment.</p>
+    </div>
+
+    <h4>Frontend environment variables</h4>
+    <table>
+        <thead><tr><th style="width:44mm">Variable</th><th style="width:18mm">Required</th><th>Purpose</th></tr></thead>
+        <tbody>
+            <tr><td class="mono">VITE_API_URL</td><td>Yes</td><td>Backend base URL including <code>/api</code>. Baked in at build time.</td></tr>
+            <tr><td class="mono">VITE_SITE_URL</td><td>Recommended</td><td>Public origin. Used to generate absolute sitemap URLs and canonical tags.</td></tr>
+            <tr><td class="mono">VITE_PLAUSIBLE_DOMAIN</td><td>Optional</td><td>Enables analytics. Omitting it disables tracking cleanly.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Backend — Render</h3>
+    <dl class="kv">
+        <dt>Root directory</dt><dd><code>backend</code></dd>
+        <dt>Build command</dt><dd><code>npm install &amp;&amp; npx prisma generate</code></dd>
+        <dt>Start command</dt><dd><code>npm start</code></dd>
+        <dt>Health check</dt><dd><code>GET /health</code></dd>
+    </dl>
+
+    <h4>Backend environment variables</h4>
+    <table>
+        <thead><tr><th style="width:46mm">Variable</th><th style="width:18mm">Required</th><th>Purpose</th></tr></thead>
+        <tbody>
+            <tr><td class="mono">DATABASE_URL</td><td>Yes</td><td>Neon <b>pooled</b> connection string (hostname contains <code>-pooler</code>).</td></tr>
+            <tr><td class="mono">DIRECT_URL</td><td>Yes</td><td>Neon <b>direct</b> connection string. Migrations only.</td></tr>
+            <tr><td class="mono">JWT_SECRET</td><td>Yes</td><td>Signing secret. A long random value; rotating it invalidates every session.</td></tr>
+            <tr><td class="mono">JWT_EXPIRES_IN</td><td>No</td><td>Token lifetime. Default <code>24h</code>.</td></tr>
+            <tr><td class="mono">BCRYPT_ROUNDS</td><td>No</td><td>Password hashing cost. Default <code>12</code>.</td></tr>
+            <tr><td class="mono">ALLOWED_ORIGINS</td><td>Yes</td><td>Comma-separated frontend origins. Scheme included, no trailing slash.</td></tr>
+            <tr><td class="mono">FRONTEND_URL</td><td>Fallback</td><td>Used when <code>ALLOWED_ORIGINS</code> is unset.</td></tr>
+            <tr><td class="mono">CLOUDINARY_CLOUD_NAME<br>CLOUDINARY_API_KEY<br>CLOUDINARY_API_SECRET</td><td>Yes</td><td>File storage credentials. Without them every upload fails with a specific, named error rather than a blank 500.</td></tr>
+            <tr><td class="mono">MESOMB_APPLICATION_KEY<br>MESOMB_ACCESS_KEY<br>MESOMB_SECRET_KEY</td><td>Yes</td><td>Mobile Money credentials. Verified read-only at startup.</td></tr>
+            <tr><td class="mono">NODE_ENV</td><td>Yes</td><td>Must be <code>production</code> on the deployed server — it gates the HTTPS redirect.</td></tr>
+            <tr><td class="mono">PORT</td><td>No</td><td>Supplied by Render. Defaults to 5000 locally.</td></tr>
+            <tr><td class="mono">RATE_*</td><td>No</td><td>Five window/max pairs overriding the rate limits in section 11.</td></tr>
+            <tr><td class="mono">RECONCILE_INTERVAL_MS<br>RECONCILE_LOOKBACK_MS<br>RECONCILE_ABANDON_MS</td><td>No</td><td>Payment reconciler timing.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Database — Neon</h3>
+    <p>Neon's console shows a connection string with a "pooled connection" toggle. Both forms are needed: the pooled one (toggle on, hostname contains <code>-pooler</code>) for <code>DATABASE_URL</code>, the direct one (toggle off) for <code>DIRECT_URL</code>. Choose a region close to the backend host — a database in a different continent from the API adds latency to every query.</p>
+
+    <h3>Deploying a change</h3>
+<pre><code>git push origin master        # both hosts build automatically
+
+# if the schema changed, apply migrations against production:
+cd backend
+DATABASE_URL=&lt;direct-url&gt; npx prisma migrate deploy</code></pre>
+</section>
+
+<!-- ══════════════════════════ 14. LOCAL DEV ══════════════════════════ -->
+<section>
+    <h2><span class="num">14</span>Local development</h2>
+
+    <h3>Prerequisites</h3>
+    <p>Node 18 or newer, npm, and access to a PostgreSQL database (a Neon branch works well and avoids installing Postgres locally).</p>
+
+    <h3>First-time setup</h3>
+<pre><code>git clone https://github.com/Tazanu/studyhubwebapp.git
+cd studyhubwebapp
+
+# ── backend ──────────────────────────────────────────────
+cd backend
+npm install
+cp .env.example .env          # then fill in the values from section 13
+npx prisma migrate dev        # create the schema
+npm run dev                   # http://localhost:5000
+
+# ── frontend (new terminal) ──────────────────────────────
+cd ../frontend
+npm install
+echo "VITE_API_URL=http://localhost:5000/api" > .env
+npm run dev                   # http://localhost:5173</code></pre>
+
+    <h3>Everyday commands</h3>
+    <table>
+        <thead><tr><th style="width:52mm">Command</th><th>Effect</th></tr></thead>
+        <tbody>
+            <tr><td class="mono">npm run dev</td><td>Start with hot reload (frontend) or auto-restart (backend).</td></tr>
+            <tr><td class="mono">npm run build</td><td>Production bundle. <b>Treat this as the real gate</b> — a mistyped Tailwind theme token fails silently in dev but breaks the build.</td></tr>
+            <tr><td class="mono">npm run preview</td><td>Serve the production build locally. Use this rather than the dev server when testing route-level behaviour.</td></tr>
+            <tr><td class="mono">npm run lint</td><td>ESLint. The baseline is 42 errors / 13 warnings, all pre-existing — a change should not increase either number.</td></tr>
+            <tr><td class="mono">npm run check:i18n</td><td>Locale parity check. Must pass before shipping a string change.</td></tr>
+            <tr><td class="mono">npx prisma studio</td><td>Browse and edit database rows in a GUI.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Common local problems</h3>
+    <table>
+        <thead><tr><th style="width:46mm">Symptom</th><th>Cause and fix</th></tr></thead>
+        <tbody>
+            <tr><td><code>EADDRINUSE</code> on port 5000</td><td>A previous backend is still running. Kill the Node process and restart.</td></tr>
+            <tr><td><code>EPERM</code> during <code>prisma generate</code></td><td>The dev server holds the query-engine DLL open on Windows. Stop the backend first.</td></tr>
+            <tr><td>Every request fails with 403</td><td>CORS. Check <code>ALLOWED_ORIGINS</code> includes <code>http://localhost:5173</code> exactly — scheme included, no trailing slash. The server logs the rejected origin by name.</td></tr>
+            <tr><td>Uploads fail with a 500</td><td><code>CLOUDINARY_*</code> is unset. The error handler returns a specific message naming the missing configuration.</td></tr>
+            <tr><td>Payments return "Bad signature"</td><td>Either the MeSomb keys are wrong, or a non-ASCII character reached the request body — see section 9.</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- ══════════════════════════ 15. LIMITATIONS ══════════════════════════ -->
+<section>
+    <h2><span class="num">15</span>Known limitations</h2>
+    <p class="lead">Recorded honestly, because a handover that omits them just transfers the surprises.</p>
+
+    <h3>Functional gaps</h3>
+    <table>
+        <thead><tr><th style="width:44mm">Area</th><th>Current state</th></tr></thead>
+        <tbody>
+            <tr><td><b>Tutor messaging</b></td><td>The "Message tutor" modal writes to <code>localStorage</code> only. Nothing is sent and the tutor never receives it. It needs a real endpoint and table.</td></tr>
+            <tr><td><b>Session resources</b></td><td>The downloads on the tutor profile are simulated with a timer — they produce toasts but no file.</td></tr>
+            <tr><td><b>Email notifications</b></td><td>Not implemented. Notifications are in-app only; the Settings page says so.</td></tr>
+            <tr><td><b>Notification preferences</b></td><td>The toggles in Settings are component state and are not persisted.</td></tr>
+            <tr><td><b>Backend copy is English-only</b></td><td>Notification bodies, some payment messages and the HTML receipt are composed server-side and are not translated. Full French coverage needs backend work.</td></tr>
+            <tr><td><b>Landing-page statistics</b></td><td>"5,000+ active students" and "500+ peer tutors" are hardcoded placeholders, not real figures. They should be wired to <code>/api/stats</code> or removed.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Technical debt</h3>
+    <ul>
+        <li><b>No automated tests.</b> There is no test runner. Verification is currently lint, a successful production build, the i18n checker, and manual click-through. This is the largest single gap.</li>
+        <li><b>Lint baseline of 42 errors.</b> Mostly <code>react-hooks/set-state-in-effect</code> and unused variables. They are pre-existing and tracked rather than fixed; the working rule is that a change must not increase the count.</li>
+        <li><b>No token revocation.</b> Sessions are stateless JWTs, so a token remains valid until it expires even after logout or a ban. A short expiry limits the window; a deny-list would close it.</li>
+        <li><b>Polling alongside sockets.</b> Several pages poll on a timer. It is a reasonable fallback but it costs requests on a free tier.</li>
+        <li><b>Two reputation ladders.</b> The dashboard widget and the profile page use different tier names and thresholds, deliberately but confusingly.</li>
+    </ul>
+
+    <h3>Operational constraints</h3>
+    <ul>
+        <li><b>Free-tier sleep.</b> The backend sleeps after ~15 minutes idle; the first visitor after a quiet spell waits roughly 30–50 seconds. Mitigated but not eliminated.</li>
+        <li><b>Free-tier database expiry.</b> Render's free PostgreSQL expired once and took the application down with it, which is why the database now lives on Neon. Whatever the host, the expiry policy is worth knowing before it matters.</li>
+        <li><b>Single region.</b> One backend instance in one region. Latency outside it is unimproved.</li>
+    </ul>
+</section>
+
+<!-- ══════════════════════════ APPENDIX ══════════════════════════ -->
+<section>
+    <h2><span class="num">A</span>Appendix — API reference</h2>
+    <p class="lead">All 88 endpoints. Every path is prefixed with <code>/api</code>. Unless noted, endpoints require a valid bearer token.</p>
+
+    <h3>Authentication — <code>/auth</code></h3>
+    <table>
+        <thead><tr><th style="width:16mm">Method</th><th style="width:46mm">Path</th><th>Purpose</th></tr></thead>
+        <tbody>
+            <tr><td class="mono">POST</td><td class="mono">/register</td><td>Create an account. Public. Optionally submits a tutor application in the same request.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/login</td><td>Exchange credentials for a token. Public.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/me</td><td>Current user.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/change-password</td><td>Change password, verifying the current one.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Groups — <code>/groups</code></h3>
+    <table>
+        <thead><tr><th style="width:16mm">Method</th><th style="width:52mm">Path</th><th>Purpose</th></tr></thead>
+        <tbody>
+            <tr><td class="mono">GET</td><td class="mono">/</td><td>List groups with membership and unread counts.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/:id</td><td>Group detail including members.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/</td><td>Create a group.</td></tr>
+            <tr><td class="mono">PATCH</td><td class="mono">/:id</td><td>Update name or description. Owner or admin.</td></tr>
+            <tr><td class="mono">DELETE</td><td class="mono">/:id</td><td>Delete a group. Owner or admin.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/:id/join</td><td>Join, or raise a join request if the group is gated.</td></tr>
+            <tr><td class="mono">DELETE</td><td class="mono">/:id/leave</td><td>Leave a group.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/:id/messages</td><td>Message history; accepts a <code>search</code> query.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/:id/messages</td><td>Post a message, optionally with an attachment or a reply reference.</td></tr>
+            <tr><td class="mono">PATCH</td><td class="mono">/:id/messages/:messageId</td><td>Edit, within 15 minutes.</td></tr>
+            <tr><td class="mono">DELETE</td><td class="mono">/:id/messages/:messageId</td><td>Soft-delete. Author, or group admin as moderator.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/:id/messages/:messageId/reactions</td><td>Toggle an emoji reaction.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/:id/read</td><td>Mark the group read.</td></tr>
+            <tr><td class="mono">POST / GET</td><td class="mono">/:id/typing</td><td>Typing indicator fallback for when the socket is down.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/:id/members</td><td>Member list with roles.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/:id/requests</td><td>Pending join requests. Group admin.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/:id/requests/:requestId/approve</td><td>Approve a request.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/:id/requests/:requestId/deny</td><td>Deny a request.</td></tr>
+            <tr><td class="mono">DELETE</td><td class="mono">/:id/members/:userId</td><td>Remove a member.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/:id/activity</td><td>Recent group activity.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Notes — <code>/notes</code></h3>
+    <table>
+        <thead><tr><th style="width:16mm">Method</th><th style="width:40mm">Path</th><th>Purpose</th></tr></thead>
+        <tbody>
+            <tr><td class="mono">GET</td><td class="mono">/</td><td>List notes. Filterable by subject and uploader.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/:id</td><td>Note detail, including whether the caller owns it.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/</td><td>Upload a note (multipart).</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/:id/download</td><td>Increment the download counter.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/:id/file</td><td>Fetch the file. Redirects to the CDN for free notes; entitlement-checked for paid ones.</td></tr>
+            <tr><td class="mono">DELETE</td><td class="mono">/:id</td><td>Delete. Uploader or admin.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Q&amp;A — <code>/qa</code></h3>
+    <table>
+        <thead><tr><th style="width:16mm">Method</th><th style="width:52mm">Path</th><th>Purpose</th></tr></thead>
+        <tbody>
+            <tr><td class="mono">GET</td><td class="mono">/</td><td>List questions. Sort, search, category, pagination.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/:id</td><td>Question with answers; increments the view count.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/</td><td>Ask a question, optionally with audio and images.</td></tr>
+            <tr><td class="mono">PATCH / DELETE</td><td class="mono">/:id</td><td>Edit or delete. Author or admin.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/:id/vote</td><td>Up- or down-vote a question.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/:id/bookmark</td><td>Toggle bookmark.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/:id/follow</td><td>Toggle follow.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/:id/answers</td><td>Post an answer.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/:id/answers/:answerId/accept</td><td>Accept a best answer. Question author only.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/:questionId/answers/:answerId/vote</td><td>Vote on an answer.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/:questionId/answers/:answerId/comments</td><td>Comment on an answer.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/user/bookmarks</td><td>The caller's bookmarks.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/meta/categories</td><td>Available categories.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Tutors — <code>/tutors</code></h3>
+    <table>
+        <thead><tr><th style="width:16mm">Method</th><th style="width:42mm">Path</th><th>Purpose</th></tr></thead>
+        <tbody>
+            <tr><td class="mono">GET</td><td class="mono">/</td><td>Approved tutor directory. Public.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/:id</td><td>Tutor profile with subjects, rate and availability.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/</td><td>Submit a tutor application.</td></tr>
+            <tr><td class="mono">PATCH</td><td class="mono">/me</td><td>Update own tutor profile.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/status/me</td><td>Caller's application status.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/availability/me</td><td>Own availability slots.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/:id/availability</td><td>Add a slot.</td></tr>
+            <tr><td class="mono">DELETE</td><td class="mono">/availability/:slotId</td><td>Remove a slot.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/:id/bookings</td><td>Book a session. Consumes a prepaid credit when one exists.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/bookings/mine</td><td>Bookings made by the caller.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/bookings/tutor</td><td>Bookings received, as a tutor.</td></tr>
+            <tr><td class="mono">PATCH</td><td class="mono">/bookings/:id/status</td><td>Confirm, complete or cancel.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/:id/credits</td><td>Remaining prepaid session credits.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Premium &amp; payments — <code>/premium</code>, <code>/payments</code></h3>
+    <table>
+        <thead><tr><th style="width:16mm">Method</th><th style="width:42mm">Path</th><th>Purpose</th></tr></thead>
+        <tbody>
+            <tr><td class="mono">GET</td><td class="mono">/premium/notes</td><td>Paid-note catalogue, marking what the caller owns.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/premium/notes</td><td>Publish a paid note. Runs the quality gate; auto-publishes for trusted uploaders.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/premium/notes/publishing-status</td><td>Whether the caller may publish without review.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/premium/notes/:id/access</td><td>Entitlement check.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/premium/notes/:id/file</td><td>Signed download, after the entitlement check.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/premium/pay/initiate</td><td>Start a purchase. Price resolved server-side.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/premium/pay/status/:txId</td><td>Poll the outcome.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/premium/pay/cancel/:txId</td><td>Stop waiting; asks the provider first.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/premium/pay/receipt/:txId</td><td>Receipt as JSON, or HTML with <code>?format=html</code>.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/premium/subscription/status</td><td>Publisher subscription state.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/payments/initiate</td><td>Generic payment initiation (tutor bookings).</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/payments/status/:txId</td><td>Poll a generic payment.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/payments/transactions</td><td>Caller's transaction history.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Admin — <code>/admin</code> <span style="font-weight:400;font-size:9pt;color:#46505f">(all require the admin role)</span></h3>
+    <table>
+        <thead><tr><th style="width:16mm">Method</th><th style="width:42mm">Path</th><th>Purpose</th></tr></thead>
+        <tbody>
+            <tr><td class="mono">GET</td><td class="mono">/stats</td><td>Platform-wide counters.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/users</td><td>Paginated user list with search.</td></tr>
+            <tr><td class="mono">PATCH</td><td class="mono">/users/:id/toggle</td><td>Ban or reactivate.</td></tr>
+            <tr><td class="mono">PATCH</td><td class="mono">/users/:id/role</td><td>Grant or remove admin.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/tutors</td><td>Applications, filterable by status.</td></tr>
+            <tr><td class="mono">PATCH</td><td class="mono">/tutors/:id/status</td><td>Approve, reject or revoke.</td></tr>
+            <tr><td class="mono">PATCH</td><td class="mono">/tutors/:id/trust</td><td>Adjust publishing trust.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/premium/notes</td><td>All paid notes.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/premium/notes/pending</td><td>The review queue, with quality reports.</td></tr>
+            <tr><td class="mono">PATCH</td><td class="mono">/premium/notes/:id/review</td><td>Approve or reject, with a reason the author sees.</td></tr>
+            <tr><td class="mono">PATCH</td><td class="mono">/premium/notes/:id/toggle</td><td>Hide or show a note.</td></tr>
+            <tr><td class="mono">DELETE</td><td class="mono">/premium/notes/:id</td><td>Delete a note permanently.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/premium/subscriptions</td><td>Publisher subscriptions.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/payments/diagnostics</td><td>Payment credential health without exposing secret values.</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Users, notifications, contact, stats</h3>
+    <table>
+        <thead><tr><th style="width:16mm">Method</th><th style="width:42mm">Path</th><th>Purpose</th></tr></thead>
+        <tbody>
+            <tr><td class="mono">GET</td><td class="mono">/users/:id</td><td>Public profile.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/users/:id/stats</td><td>Contribution counts.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/users/:id/answers</td><td>Answers written by a user.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/users/leaderboard/top</td><td>Top contributors by reputation.</td></tr>
+            <tr><td class="mono">PATCH</td><td class="mono">/users/profile</td><td>Update own profile, including avatar upload.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/notifications/mine</td><td>Notifications with unread count.</td></tr>
+            <tr><td class="mono">PATCH</td><td class="mono">/notifications/:id/read</td><td>Mark one read.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/notifications/mark-all-read</td><td>Mark all read.</td></tr>
+            <tr><td class="mono">POST</td><td class="mono">/contact</td><td>Submit the contact form. Public, honeypot-protected.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/contact/messages</td><td>Contact inbox. Admin.</td></tr>
+            <tr><td class="mono">PATCH</td><td class="mono">/contact/messages/:id/read</td><td>Mark a message read. Admin.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/stats</td><td>Public landing-page counters.</td></tr>
+            <tr><td class="mono">GET</td><td class="mono">/health</td><td>Health check. No <code>/api</code> prefix, no rate limit.</td></tr>
+        </tbody>
+    </table>
+
+    <p class="footer-note">StudyHub technical documentation · generated from the repository at commit <span id="gen-commit">05f5465</span>. Environment variable <em>names</em> are listed throughout; no secret values appear in this document.</p>
+</section>
+
+<script>
+    document.getElementById('gen-date').textContent =
+        new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+</script>
+</body>
+</html>
