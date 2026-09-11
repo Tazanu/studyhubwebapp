@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { Users, Clock, Globe, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api, { apiError } from '../../api/client';
+import { formatNumber } from '../../lib/formatDate';
 import { useAuth } from '../../context/AuthContext';
 import PaymentModal from './PaymentModal';
 import Modal from '../ui/Modal';
@@ -11,12 +13,14 @@ import { calcSessionPrice } from '../../data/normalizeTutor';
 import { cn } from '../../lib/cn';
 
 const sessionTypes = [
-  { id: '1on1', label: '1-on-1', icon: Users },
-  { id: 'group', label: 'Group', icon: Users },
-  { id: 'trial', label: 'Free Trial', icon: Clock }
+  { id: '1on1', labelKey: 'booking.type1on1', icon: Users },
+  { id: 'group', labelKey: 'booking.typeGroup', icon: Users },
+  { id: 'trial', labelKey: 'booking.typeTrial', icon: Clock }
 ];
 
 const durations = [1, 2, 3, 4, 5, 6, 7, 8]; // hours per day
+// Full English names: these index the tutor's schedule, so they stay English.
+// Only the label shown is translated, via `dayFull` / `days`.
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 function Pill({ active, onClick, children }) {
@@ -34,6 +38,7 @@ function Pill({ active, onClick, children }) {
 }
 
 export default function BookingWidget({ tutor }) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [selectedDay, setSelectedDay] = useState('Monday');
   const [selectedTime, setSelectedTime] = useState(null);
@@ -58,14 +63,18 @@ export default function BookingWidget({ tutor }) {
 
   const calculatePrice = () => calcSessionPrice(duration, sessionType);
 
+  const sessionTypeLabel = t(
+    sessionTypes.find(s => s.id === sessionType)?.labelKey ?? 'booking.type1on1',
+  ).toLowerCase();
+
   const handleBook = () => {
     if (!user) {
-      toast.error('Please log in to book a session');
+      toast.error(t('booking.loginToBook'));
       navigate('/login');
       return;
     }
     if (!selectedTime) {
-      toast.error('Please select a time slot');
+      toast.error(t('booking.selectSlot'));
       return;
     }
 
@@ -100,6 +109,7 @@ export default function BookingWidget({ tutor }) {
       const endTime = `${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
 
       const { data } = await api.post(`/tutors/${tutor.id}/bookings`, {
+        // Canonical English, because it is stored and searched.
         subject: tutor.subjects?.[0]?.name || 'General',
         sessionDate: sessionDate.toISOString().split('T')[0],
         startTime: bookingData.time,
@@ -114,27 +124,25 @@ export default function BookingWidget({ tutor }) {
       // A prepaid pack covers the session, so there is nothing left to pay.
       if (data.paidWithCredit) {
         setCredits(data.creditsRemaining ?? 0);
-        toast.success(
-          `Session booked with a prepaid credit. ${data.creditsRemaining} session${data.creditsRemaining === 1 ? '' : 's'} left.`
-        );
+        toast.success(t('booking.bookedWithCredit', { count: data.creditsRemaining ?? 0 }));
         setSelectedTime(null);
         return;
       }
 
       if (bookingData.price === 0) {
-        toast.success('Free trial session booked!');
+        toast.success(t('booking.trialBooked'));
         setSelectedTime(null);
         return;
       }
       setShowPayment(true);
     } catch (err) {
-      const msg = apiError(err, 'Failed to create booking. Please try again.');
+      const msg = apiError(err, t('booking.createFailed'));
       toast.error(msg);
     }
   };
 
   const handlePaymentSuccess = () => {
-    toast.success('Payment confirmed! Session booked. Check your dashboard.');
+    toast.success(t('booking.paymentConfirmed'));
     setShowPayment(false);
     setSelectedTime(null);
     setSelectedDay('Monday');
@@ -149,27 +157,27 @@ export default function BookingWidget({ tutor }) {
   return (
     <section className="px-4 sm:px-6 py-12 border-t border-border bg-surface">
       <div className="max-w-5xl mx-auto">
-        <h2 className="text-2xl font-bold mb-6" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Book a Session</h2>
+        <h2 className="text-2xl font-bold mb-6" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{t('booking.title')}</h2>
 
         <div className="grid lg:grid-cols-2 gap-8">
           <div className="space-y-4">
             <div>
-              <label className="block font-medium mb-2">Session Type</label>
+              <label className="block font-medium mb-2">{t('booking.sessionType')}</label>
               <div className="grid grid-cols-3 gap-2">
                 {sessionTypes.map(type => (
                   <Pill key={type.id} active={sessionType === type.id} onClick={() => setSessionType(type.id)}>
-                    {type.label}
+                    {t(type.labelKey)}
                   </Pill>
                 ))}
               </div>
             </div>
 
             <div>
-              <label className="block font-medium mb-2">Duration</label>
+              <label className="block font-medium mb-2">{t('booking.duration')}</label>
               <div className="flex flex-wrap gap-2">
                 {durations.map(d => (
                   <Pill key={d} active={duration === d} onClick={() => setDuration(d)}>
-                    {d}h
+                    {t('booking.hoursShort', { n: d })}
                   </Pill>
                 ))}
               </div>
@@ -178,31 +186,31 @@ export default function BookingWidget({ tutor }) {
             <div>
               <label className="flex items-center gap-2 font-medium mb-2">
                 <Globe className="w-4 h-4" />
-                Timezone: {tutor.availability.timezone}
+                {t('booking.timezone', { zone: tutor.availability.timezone })}
               </label>
             </div>
 
             <div className="p-4 rounded-xl bg-primary-subtle">
               <div className="flex items-baseline gap-2">
-                <span className="font-semibold text-2xl">{calculatePrice().toLocaleString()}</span>
+                <span className="font-semibold text-2xl">{formatNumber(calculatePrice())}</span>
                 <span className="text-sm text-fg-secondary">FCFA</span>
               </div>
               <div className="text-sm text-fg-secondary">
-                per {duration} hour{duration > 1 ? 's' : ''} {sessionType === '1on1' ? '1-on-1' : sessionType} session
+                {t('booking.perSession', { count: duration, type: sessionTypeLabel })}
               </div>
               {sessionType === 'trial' && (
-                <div className="mt-2 text-xs font-medium text-success">🎉 First trial session is FREE!</div>
+                <div className="mt-2 text-xs font-medium text-success">{t('booking.trialFree')}</div>
               )}
             </div>
           </div>
 
           <div>
-            <label className="block font-medium mb-2">Select Day & Time</label>
+            <label className="block font-medium mb-2">{t('booking.selectDayTime')}</label>
             <div className="mb-4 overflow-x-auto">
               <div className="flex gap-2">
                 {days.map(day => (
                   <Pill key={day} active={selectedDay === day} onClick={() => setSelectedDay(day)}>
-                    {day.slice(0, 3)}
+                    {t(`days.${day.slice(0, 3)}`, { defaultValue: day.slice(0, 3) })}
                   </Pill>
                 ))}
               </div>
@@ -220,63 +228,65 @@ export default function BookingWidget({ tutor }) {
                 >
                   {time}
                 </button>
-              )) || <p className="col-span-3 text-center py-4 text-fg-secondary">No available slots</p>}
+              )) || <p className="col-span-3 text-center py-4 text-fg-secondary">{t('booking.noSlots')}</p>}
             </div>
 
             <Button onClick={handleBook} disabled={!selectedTime} fullWidth size="lg" className="hover:scale-[1.02]">
-              Book Now
+              {t('booking.bookNow')}
             </Button>
           </div>
         </div>
       </div>
 
-      <Modal open={showModal && !!bookingData} onClose={closeModal} title="Confirm Booking" size="sm">
+      <Modal open={showModal && !!bookingData} onClose={closeModal} title={t('booking.confirmTitle')} size="sm">
         {bookingData && (
           <>
             <div className="space-y-3 mb-6">
               <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-fg-secondary">Tutor</span>
+                <span className="text-fg-secondary">{t('booking.tutor')}</span>
                 <span className="font-medium">{bookingData.tutor}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-fg-secondary">Date</span>
-                <span className="font-medium">{bookingData.day}</span>
+                <span className="text-fg-secondary">{t('booking.date')}</span>
+                <span className="font-medium">{t(`dayFull.${bookingData.day}`, { defaultValue: bookingData.day })}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-fg-secondary">Time</span>
+                <span className="text-fg-secondary">{t('booking.time')}</span>
                 <span className="font-medium">{bookingData.time}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-fg-secondary">Duration</span>
-                <span className="font-medium">{bookingData.duration} hour{bookingData.duration > 1 ? 's' : ''}</span>
+                <span className="text-fg-secondary">{t('booking.duration')}</span>
+                <span className="font-medium">{t('booking.durationHours', { count: bookingData.duration })}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-fg-secondary">Session Type</span>
-                <span className="font-medium capitalize">{bookingData.sessionType === '1on1' ? '1-on-1' : bookingData.sessionType}</span>
+                <span className="text-fg-secondary">{t('booking.sessionType')}</span>
+                <span className="font-medium">
+                  {t(sessionTypes.find(s => s.id === bookingData.sessionType)?.labelKey ?? 'booking.type1on1')}
+                </span>
               </div>
               <div className="flex justify-between py-2">
-                <span className="font-semibold">Total Price</span>
+                <span className="font-semibold">{t('booking.totalPrice')}</span>
                 <span className="font-bold text-xl text-primary">
                   {credits > 0
-                    ? 'Prepaid'
+                    ? t('booking.prepaid')
                     : bookingData.price === 0
-                      ? 'FREE'
-                      : `${bookingData.price.toLocaleString()} FCFA`}
+                      ? t('booking.free')
+                      : `${formatNumber(bookingData.price)} FCFA`}
                 </span>
               </div>
               {credits > 0 && (
                 <p className="text-sm text-fg-secondary pt-1">
-                  Covered by your session pack — {credits} session{credits === 1 ? '' : 's'} remaining.
+                  {t('booking.coveredByPack', { count: credits })}
                 </p>
               )}
             </div>
 
             <div className="flex gap-3">
               <Button onClick={closeModal} variant="secondary" fullWidth>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button onClick={confirmBooking} icon={Check} fullWidth className="hover:scale-[1.02]">
-                Confirm
+                {t('booking.confirm')}
               </Button>
             </div>
           </>
@@ -289,7 +299,7 @@ export default function BookingWidget({ tutor }) {
         onClose={() => setShowPayment(false)}
         onSuccess={handlePaymentSuccess}
         amount={bookingData?.price ?? 0}
-        description={`Session with ${tutor.name} · ${bookingData?.duration} min`}
+        description={t('booking.paymentDescription', { name: tutor.name, duration: bookingData?.duration })}
         order={{ type: 'tutor_booking', bookingId: pendingBookingId }}
       />
     </section>

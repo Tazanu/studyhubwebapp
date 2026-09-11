@@ -2,6 +2,7 @@ import { Check, Zap, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import PaymentModal from './PaymentModal';
 import Button from '../ui/Button';
@@ -9,20 +10,21 @@ import Badge from '../ui/Badge';
 import { cn } from '../../lib/cn';
 
 export default function PricingCards({ pricing, tutorId, scrollToBooking }) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [paymentPlan, setPaymentPlan] = useState(null);
 
   const handleChoosePlan = (plan) => {
-    if (!user) { toast.error('Please log in to choose a plan'); navigate('/login'); return; }
+    if (!user) { toast.error(t('tutorProfile.loginForPlan')); navigate('/login'); return; }
     setPaymentPlan(plan);
   };
 
   const handlePaymentSuccess = (result) => {
     setSelectedPlan(paymentPlan.key);
     const sessions = result?.sessions ?? paymentPlan.sessions;
-    toast.success(`${paymentPlan.name} activated — ${sessions} session${sessions === 1 ? '' : 's'} ready to book.`);
+    toast.success(t('tutorProfile.planActivated', { plan: paymentPlan.name, count: sessions }));
     setPaymentPlan(null);
     if (scrollToBooking) setTimeout(() => scrollToBooking(), 500);
   };
@@ -37,8 +39,8 @@ export default function PricingCards({ pricing, tutorId, scrollToBooking }) {
     <section className="px-4 sm:px-6 py-12 border-t border-border">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-10">
-          <h2 className="text-2xl font-bold mb-2" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Pricing Plans</h2>
-          <p className="text-fg-secondary">Choose the plan that works best for you</p>
+          <h2 className="text-2xl font-bold mb-2" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{t('tutorProfile.pricingTitle')}</h2>
+          <p className="text-fg-secondary">{t('tutorProfile.pricingSubtitle')}</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">

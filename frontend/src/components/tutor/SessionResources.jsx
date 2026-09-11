@@ -1,39 +1,42 @@
 import { Lock, FileText, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import Button from '../ui/Button';
 
 export default function SessionResources({ resources, tutorName }) {
+  const { t } = useTranslation();
+
   const handleDownloadResource = (resource) => {
     if (resource.locked) {
-      toast.error('This resource is locked. Book a session to unlock!');
+      toast.error(t('tutorProfile.resourceLocked'));
       return;
     }
-    toast.success(`Downloading ${resource.name}...`);
+    toast.success(t('tutorProfile.downloading', { name: resource.name }));
     // Simulate download
     setTimeout(() => {
-      toast.info('Download complete!');
+      toast.info(t('tutorProfile.downloadComplete'));
     }, 1500);
   };
 
   const handleDownloadReport = () => {
-    toast.info('Generating progress report...');
+    toast.info(t('tutorProfile.generatingReport'));
     setTimeout(() => {
-      toast.success('Progress report downloaded!');
+      toast.success(t('tutorProfile.reportDownloaded'));
       // In real app, trigger actual PDF download
     }, 2000);
   };
 
-  const handleRecordingClick = (recordingNum) => {
-    toast.info('Session recordings are available after booking your first session.');
+  const handleRecordingClick = () => {
+    toast.info(t('tutorProfile.recordingsAfterFirst'));
   };
   return (
     <section className="px-6 py-12 border-t border-border">
       <div className="max-w-5xl mx-auto">
-        <h2 className="text-2xl font-bold mb-6" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Session Resources</h2>
+        <h2 className="text-2xl font-bold mb-6" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{t('tutorProfile.resourcesTitle')}</h2>
 
         <div className="grid md:grid-cols-2 gap-6">
           <div>
-            <h3 className="font-semibold mb-4">Past Session Recordings</h3>
+            <h3 className="font-semibold mb-4">{t('tutorProfile.pastRecordings')}</h3>
             <div className="space-y-3">
               {[1, 2, 3].map(i => (
                 <div
@@ -45,7 +48,7 @@ export default function SessionResources({ resources, tutorName }) {
                     <Lock className="w-5 h-5 text-fg-secondary" />
                     <div>
                       <p className="font-medium">Session Recording #{i}</p>
-                      <p className="text-xs text-fg-secondary">Available after enrollment</p>
+                      <p className="text-xs text-fg-secondary">{t('tutorProfile.availableAfterEnrollment')}</p>
                     </div>
                   </div>
                 </div>
@@ -54,7 +57,7 @@ export default function SessionResources({ resources, tutorName }) {
           </div>
 
           <div>
-            <h3 className="font-semibold mb-4">Shared Materials</h3>
+            <h3 className="font-semibold mb-4">{t('tutorProfile.sharedMaterials')}</h3>
             <div className="space-y-3">
               {resources.map((resource, i) => (
                 <div

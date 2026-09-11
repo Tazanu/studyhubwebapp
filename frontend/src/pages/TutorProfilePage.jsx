@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Send, UserX, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import TutorHero from '../components/tutor/TutorHero';
 import TutorAbout from '../components/tutor/TutorAbout';
@@ -22,6 +23,7 @@ import Button from '../components/ui/Button';
 import Skeleton from '../components/ui/Skeleton';
 
 export default function TutorProfilePage() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -64,7 +66,7 @@ export default function TutorProfilePage() {
   };
 
   const openMessageModal = () => {
-    if (!user) { toast.error('Please log in to message a tutor'); navigate('/login'); return; }
+    if (!user) { toast.error(t('booking.loginToMessage')); navigate('/login'); return; }
     setShowMessageModal(true);
   };
 
@@ -75,7 +77,7 @@ export default function TutorProfilePage() {
 
   const handleSendMessage = () => {
     if (!message.trim()) {
-      toast.error('Please enter a message');
+      toast.error(t('tutorPage.enterMessage'));
       return;
     }
 
@@ -89,7 +91,7 @@ export default function TutorProfilePage() {
     });
     localStorage.setItem('tutorMessages', JSON.stringify(messages));
 
-    toast.success('Message sent! The tutor will respond within 24 hours.');
+    toast.success(t('tutorPage.messageSent'));
     closeMessageModal();
   };
 
@@ -137,12 +139,12 @@ export default function TutorProfilePage() {
               <UserX size={26} strokeWidth={1.5} />
             </div>
             <h1 className="text-xl font-bold mb-2" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-              Tutor not found
+              {t('tutors.notFoundTitle')}
             </h1>
             <p className="text-sm mb-7 text-fg-secondary">
-              This profile does not exist, or the tutor is no longer accepting bookings.
+              {t('tutors.notFoundBody')}
             </p>
-            <Button to="/tutors" icon={ArrowLeft}>Back to tutors</Button>
+            <Button to="/tutors" icon={ArrowLeft}>{t('tutors.backToTutors')}</Button>
           </div>
         </main>
         <HomeFooter />
@@ -185,22 +187,22 @@ export default function TutorProfilePage() {
         <SessionResources resources={tutor.resources} tutorName={tutor.name} />
         <SimilarTutorsCarousel excludeId={tutor.id} />
 
-        <Modal open={showMessageModal} onClose={closeMessageModal} title={`Message ${tutor.name}`} size="lg">
-          <p className="text-sm -mt-3 mb-4 text-fg-secondary">Response time: ~2 hours</p>
+        <Modal open={showMessageModal} onClose={closeMessageModal} title={t('tutorPage.messageTitle', { name: tutor.name })} size="lg">
+          <p className="text-sm -mt-3 mb-4 text-fg-secondary">{t('tutorPage.responseTime')}</p>
 
           <Textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Hi! I'm interested in learning more about your tutoring services..."
+            placeholder={t('tutorPage.messagePlaceholder')}
             rows={5}
           />
 
           <div className="flex gap-3 mt-4">
             <Button onClick={closeMessageModal} variant="secondary" fullWidth>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleSendMessage} icon={Send} fullWidth className="hover:scale-[1.02]">
-              Send Message
+              {t('tutorPage.sendMessage')}
             </Button>
           </div>
         </Modal>

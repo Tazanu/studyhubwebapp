@@ -17,10 +17,13 @@ import Select from '../components/ui/Select';
 import EmptyState from '../components/ui/EmptyState';
 import { useTranslation } from 'react-i18next';
 import { BOOKING_STATUS_TONE, bookingStatusKey } from '../lib/bookingStatus';
+import { formatDate, formatTime, formatNumber } from '../lib/formatDate';
 
+// Stored and sent to the API, so these stay English; `dayFull` supplies labels.
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
 function AvailabilityManager({ tutorId }) {
+    const { t } = useTranslation();
     const [slots, setSlots] = useState([]);
     const [form, setForm] = useState({ dayOfWeek: 'Monday', startTime: '09:00', endTime: '11:00' });
     const [adding, setAdding] = useState(false);
@@ -32,16 +35,16 @@ function AvailabilityManager({ tutorId }) {
 
     const addSlot = async e => {
         e.preventDefault();
-        if (form.startTime >= form.endTime) { toast.error('End time must be after start time'); return; }
+        if (form.startTime >= form.endTime) { toast.error(t('tutorDashboard.endAfterStart')); return; }
         setAdding(true);
         try {
             await api.post(`/tutors/${tutorId}/availability`, form);
             const r = await api.get('/tutors/availability/me');
             setSlots(r.data);
             setShowForm(false);
-            toast.success('Availability added!');
+            toast.success(t('tutorDashboard.slotAdded'));
         } catch (err) {
-            toast.error(apiError(err, 'Failed to add slot'));
+            toast.error(apiError(err, t('tutorDashboard.addSlotFailed')));
         } finally { setAdding(false); }
     };
 
@@ -49,18 +52,18 @@ function AvailabilityManager({ tutorId }) {
         try {
             await api.delete(`/tutors/availability/${id}`);
             setSlots(prev => prev.filter(s => s.id !== id));
-            toast.success('Slot removed');
-        } catch { toast.error('Failed to remove slot'); }
+            toast.success(t('tutorDashboard.slotRemoved'));
+        } catch { toast.error(t('tutorDashboard.removeSlotFailed')); }
     };
 
-    const fmtSlotTime = t => new Date(`1970-01-01T${t}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const fmtSlotTime = value => formatTime(`1970-01-01T${value}`, { hour: '2-digit', minute: '2-digit' });
 
     return (
         <div className="rounded-2xl border border-border bg-surface p-6">
             <div className="flex items-center justify-between mb-5">
-                <h2 className="text-lg font-bold" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>Availability</h2>
+                <h2 className="text-lg font-bold" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>{t('tutorDashboard.availability')}</h2>
                 <Button size="sm" icon={Plus} onClick={() => setShowForm(v => !v)}>
-                    Add Slot
+                    {t('tutorDashboard.addSlot')}
                 </Button>
             </div>
 
@@ -71,24 +74,24 @@ function AvailabilityManager({ tutorId }) {
                         exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }}
                         className="overflow-hidden mb-5">
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-xl border border-border bg-surface-hover">
-                            <Field label="Day" className="mb-0">
+                            <Field label={t('tutorDashboard.day')} className="mb-0">
                                 <Select value={form.dayOfWeek} onChange={e => setForm(f => ({ ...f, dayOfWeek: e.target.value }))}>
-                                    {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
+                                    {DAYS.map(d => <option key={d} value={d}>{t(`dayFull.${d}`, { defaultValue: d })}</option>)}
                                 </Select>
                             </Field>
-                            <Field label="Start Time" className="mb-0">
+                            <Field label={t('tutorDashboard.startTime')} className="mb-0">
                                 <Input type="time" value={form.startTime} onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))} />
                             </Field>
-                            <Field label="End Time" className="mb-0">
+                            <Field label={t('tutorDashboard.endTime')} className="mb-0">
                                 <Input type="time" value={form.endTime} onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))} />
                             </Field>
                         </div>
                         <div className="flex gap-2 mt-2">
                             <Button type="submit" disabled={adding} loading={adding} size="sm" icon={adding ? undefined : Save} className="!bg-[image:none] bg-success">
-                                {adding ? 'Saving…' : 'Save Slot'}
+                                {adding ? t('tutorDashboard.savingSlot') : t('tutorDashboard.saveSlot')}
                             </Button>
                             <Button type="button" onClick={() => setShowForm(false)} variant="secondary" size="sm">
-                                Cancel
+                                {t('common.cancel')}
                             </Button>
                         </div>
                     </motion.form>
@@ -96,18 +99,19 @@ function AvailabilityManager({ tutorId }) {
             </AnimatePresence>
 
             {slots.length === 0 ? (
-                <p className="text-sm text-center py-6 text-fg-secondary">No availability set. Add slots so students can book you.</p>
+                <p className="text-sm text-center py-6 text-fg-secondary">{t('tutorDashboard.noAvailability')}</p>
             ) : (
                 <div className="flex flex-col gap-2">
                     {slots.map(slot => (
                         <div key={slot.id} className="flex items-center justify-between px-4 py-3 rounded-xl border border-border bg-surface-hover">
                             <div className="flex items-center gap-3">
-                                <span className="text-sm font-semibold w-24">{slot.day_of_week}</span>
+                                <span className="text-sm font-semibold w-24">{t(`dayFull.${slot.day_of_week}`, { defaultValue: slot.day_of_week })}</span>
                                 <span className="text-sm text-fg-secondary">
                                     {fmtSlotTime(slot.start_time.slice(11,16))} – {fmtSlotTime(slot.end_time.slice(11,16))}
                                 </span>
                             </div>
                             <button onClick={() => deleteSlot(slot.id)}
+                                aria-label={t('tutorDashboard.removeSlot')}
                                 className="p-1.5 rounded-lg transition-colors text-fg-secondary hover:bg-danger hover:text-white">
                                 <Trash2 size={14} />
                             </button>
@@ -120,6 +124,7 @@ function AvailabilityManager({ tutorId }) {
 }
 
 function ProfileEditor({ tutor, onSaved }) {
+    const { t } = useTranslation();
     const [form, setForm] = useState({
         bio: tutor?.bio || '',
         hourlyRate: tutor?.hourly_rate || '',
@@ -137,41 +142,41 @@ function ProfileEditor({ tutor, onSaved }) {
                 hourlyRate: Number(form.hourlyRate),
                 subjects: form.subjects.split(',').map(s => s.trim()).filter(Boolean),
             });
-            toast.success('Profile updated!');
+            toast.success(t('tutorDashboard.profileUpdated'));
             onSaved();
             setOpen(false);
         } catch (err) {
-            toast.error(apiError(err, 'Failed to save'));
+            toast.error(apiError(err, t('tutorDashboard.saveFailed')));
         } finally { setSaving(false); }
     };
 
     return (
         <div className="rounded-2xl border border-border bg-surface p-6">
             <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>Tutor Profile</h2>
+                <h2 className="text-lg font-bold" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>{t('tutorDashboard.profile')}</h2>
                 <Button variant="secondary" size="sm" icon={Edit3} onClick={() => setOpen(v => !v)}>
-                    {open ? 'Cancel' : 'Edit'}
+                    {open ? t('common.cancel') : t('common.edit')}
                 </Button>
             </div>
             {!open ? (
                 <div className="space-y-2 text-sm text-fg-secondary">
-                    <p><span className="font-semibold text-fg">Rate:</span> {Number(tutor?.hourly_rate).toLocaleString()} FCFA/hr</p>
-                    <p><span className="font-semibold text-fg">Subjects:</span> {tutor?.subjects?.join(', ')}</p>
-                    <p><span className="font-semibold text-fg">Bio:</span> {tutor?.bio}</p>
+                    <p><span className="font-semibold text-fg">{t('tutorDashboard.rate')}</span> {t('tutorDashboard.perHour', { amount: formatNumber(tutor?.hourly_rate) })}</p>
+                    <p><span className="font-semibold text-fg">{t('tutorDashboard.subjects')}</span> {tutor?.subjects?.map(s => t(`subjectName.${s}`, { defaultValue: s })).join(', ')}</p>
+                    <p><span className="font-semibold text-fg">{t('tutorDashboard.bio')}</span> {tutor?.bio}</p>
                 </div>
             ) : (
                 <form onSubmit={save} className="space-y-4">
-                    <Field label="Hourly Rate (FCFA)" className="mb-0">
+                    <Field label={t('tutorDashboard.rateLabel')} className="mb-0">
                         <Input type="number" value={form.hourlyRate} onChange={e => setForm(f => ({ ...f, hourlyRate: e.target.value }))} />
                     </Field>
-                    <Field label="Subjects (comma-separated)" className="mb-0">
+                    <Field label={t('tutorDashboard.subjectsLabel')} className="mb-0">
                         <Input type="text" value={form.subjects} onChange={e => setForm(f => ({ ...f, subjects: e.target.value }))} />
                     </Field>
-                    <Field label="Bio" className="mb-0">
+                    <Field label={t('tutorDashboard.bioLabel')} className="mb-0">
                         <Textarea value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} rows={3} />
                     </Field>
                     <Button type="submit" disabled={saving} loading={saving} icon={saving ? undefined : Save} size="sm">
-                        {saving ? 'Saving…' : 'Save Changes'}
+                        {saving ? t('profile.saving') : t('profile.saveChanges')}
                     </Button>
                 </form>
             )}
@@ -187,9 +192,9 @@ const fadeUp = {
 const stagger = (s = 0.08) => ({ hidden: {}, show: { transition: { staggerChildren: s } } });
 
 function fmt(dateStr) {
-    return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    return formatDate(dateStr, { weekday: 'short', month: 'short', day: 'numeric' });
 }
-function fmtTime(t) { return new Date(t).toTimeString().slice(0, 5); }
+function fmtTime(value) { return new Date(value).toTimeString().slice(0, 5); }
 
 /* ── stat card ────────────────────────────────────────────────── */
 function StatCard({ icon: Icon, label, value, color, sub }) {
@@ -218,17 +223,17 @@ function BookingRow({ booking, onAction }) {
     const label = t(bookingStatusKey(booking.status));
     const studentName = booking.users
         ? `${booking.users.first_name} ${booking.users.last_name}`
-        : 'Student';
+        : t('tutorDashboard.student');
     const [acting, setActing] = useState(false);
 
     async function handle(action) {
         setActing(true);
         try {
             await api.patch(`/tutors/bookings/${booking.id}/status`, { status: action });
-            toast.success(`Booking ${action}`);
+            toast.success(t('tutorDashboard.bookingAction', { action: t(`bookingStatus.${action}`, { defaultValue: action }) }));
             onAction(booking.id, action);
         } catch {
-            toast.error('Action failed');
+            toast.error(t('tutorDashboard.actionFailed'));
         } finally {
             setActing(false);
         }
@@ -243,7 +248,7 @@ function BookingRow({ booking, onAction }) {
             {/* student + subject */}
             <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate">{studentName}</p>
-                <p className="text-xs mt-0.5 truncate text-fg-secondary">{booking.subject}</p>
+                <p className="text-xs mt-0.5 truncate text-fg-secondary">{t(`subjectName.${booking.subject}`, { defaultValue: booking.subject })}</p>
                 <div className="flex flex-wrap gap-3 mt-2 text-xs text-fg-secondary">
                     <span className="flex items-center gap-1"><Calendar size={12} />{fmt(booking.session_date)}</span>
                     <span className="flex items-center gap-1"><Clock size={12} />{fmtTime(booking.start_time)} – {fmtTime(booking.end_time)}</span>
@@ -278,6 +283,7 @@ const TABS = ['pending', 'confirmed', 'completed', 'cancelled'];
 
 /* ── main ─────────────────────────────────────────────────────── */
 export default function TutorDashboard() {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const [tutor,    setTutor]    = useState(null);
     const [bookings, setBookings] = useState([]);
@@ -328,9 +334,9 @@ export default function TutorDashboard() {
         <div className="lg:pl-60 flex flex-col items-center justify-center min-h-screen gap-5 px-4 bg-bg">
             <BookOpen size={40} className="text-fg-secondary" />
             <p className="text-lg font-semibold" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
-                You're not a tutor yet
+                {t('tutorDashboard.notTutorYet')}
             </p>
-            <Button to="/become-tutor" size="lg">Become a Tutor</Button>
+            <Button to="/become-tutor" size="lg">{t('tutorDashboard.becomeTutor')}</Button>
         </div>
     );
 
@@ -344,14 +350,15 @@ export default function TutorDashboard() {
                     <motion.div variants={fadeUp} className="flex items-start justify-between flex-wrap gap-4">
                         <div>
                             <h1 className="text-2xl md:text-3xl font-bold gradient-text" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
-                                Tutor Dashboard
+                                {t('tutorDashboard.pageTitle')}
                             </h1>
                             <p className="text-sm mt-1 text-fg-secondary">
-                                {tutor?.subjects?.join(', ') || 'Your subjects'} · {tutor?.hourly_rate} FCFA/hr
+                                {tutor?.subjects?.map(s => t(`subjectName.${s}`, { defaultValue: s })).join(', ') || t('tutorDashboard.yourSubjects')}
+                                {' · '}{t('tutorDashboard.perHour', { amount: formatNumber(tutor?.hourly_rate) })}
                             </p>
                         </div>
                         <Button to={`/tutor/${tutor?.id}`} variant="secondary" icon={ChevronRight} iconPosition="right">
-                            View Profile
+                            {t('tutorDashboard.viewProfile')}
                         </Button>
                     </motion.div>
                 </motion.div>
@@ -369,15 +376,17 @@ export default function TutorDashboard() {
                                 <Calendar size={20} className="text-primary" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold">Next session</p>
+                                <p className="text-sm font-semibold">{t('tutorDashboard.nextSession')}</p>
                                 <p className="text-xs mt-0.5 text-fg-secondary">
                                     {nextSession.users
                                         ? `${nextSession.users.first_name} ${nextSession.users.last_name}`
-                                        : 'Student'} · {nextSession.subject} · {fmt(nextSession.session_date)} at {fmtTime(nextSession.start_time)}
+                                        : t('tutorDashboard.student')}
+                                    {' · '}{t(`subjectName.${nextSession.subject}`, { defaultValue: nextSession.subject })}
+                                    {' · '}{fmt(nextSession.session_date)} {t('tutorDashboard.at')} {fmtTime(nextSession.start_time)}
                                 </p>
                             </div>
                             <span className="text-sm font-bold text-primary">
-                                {Number(nextSession.total_amount).toLocaleString()} FCFA
+                                {formatNumber(nextSession.total_amount)} FCFA
                             </span>
                         </motion.div>
                     )}
@@ -389,10 +398,10 @@ export default function TutorDashboard() {
                     variants={stagger(0.07)}
                     initial="hidden" animate="show"
                 >
-                    <StatCard icon={DollarSign}  label="Total Earned"      value={`${totalEarnings.toLocaleString()} FCFA`} color="#34d399" />
-                    <StatCard icon={AlertCircle} label="Pending Requests"  value={pendingCount}   color="#fbbf24" sub="need action" />
-                    <StatCard icon={TrendingUp}  label="Upcoming Sessions" value={confirmedCount} color="var(--brand-600)" />
-                    <StatCard icon={Star}        label="Completed"         value={completedCount} color="#8b5cf6" sub="sessions" />
+                    <StatCard icon={DollarSign}  label={t('tutorDashboard.statEarned')}   value={`${formatNumber(totalEarnings)} FCFA`} color="#34d399" />
+                    <StatCard icon={AlertCircle} label={t('tutorDashboard.statPending')}  value={pendingCount}   color="#fbbf24" sub={t('tutorDashboard.statPendingSub')} />
+                    <StatCard icon={TrendingUp}  label={t('tutorDashboard.statUpcoming')} value={confirmedCount} color="var(--brand-600)" />
+                    <StatCard icon={Star}        label={t('tutorDashboard.statCompleted')} value={completedCount} color="#8b5cf6" sub={t('tutorDashboard.statCompletedSub')} />
                 </motion.div>
 
                 {/* ── profile + availability ── */}
@@ -412,19 +421,19 @@ export default function TutorDashboard() {
                 <div>
                     <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
                         <h2 className="text-lg font-bold" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
-                            Bookings
+                            {t('tutorDashboard.bookings')}
                         </h2>
                         {/* tab pills */}
                         <div className="flex gap-1 p-1 rounded-xl border border-border bg-surface overflow-x-auto">
-                            {TABS.map(t => {
-                                const count = bookings.filter(b => b.status === t).length;
-                                const active = tab === t;
+                            {TABS.map(status => {
+                                const count = bookings.filter(b => b.status === status).length;
+                                const active = tab === status;
                                 return (
                                     <motion.button
-                                        key={t}
-                                        onClick={() => setTab(t)}
+                                        key={status}
+                                        onClick={() => setTab(status)}
                                         whileTap={{ scale: 0.96 }}
-                                        className={`relative px-4 py-1.5 rounded-lg text-sm font-medium capitalize ${active ? 'text-white' : 'text-fg-secondary'}`}
+                                        className={`relative px-4 py-1.5 rounded-lg text-sm font-medium ${active ? 'text-white' : 'text-fg-secondary'}`}
                                         style={{ zIndex: 1 }}
                                     >
                                         {active && (
@@ -434,7 +443,7 @@ export default function TutorDashboard() {
                                                 transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                                             />
                                         )}
-                                        {t}
+                                        {t(`bookingStatus.${status}`, { defaultValue: status })}
                                         {count > 0 && (
                                             <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${active ? 'bg-white/25' : 'bg-surface-hover'}`}>
                                                 {count}
@@ -455,7 +464,7 @@ export default function TutorDashboard() {
                             transition={{ duration: 0.25 }}
                         >
                             {filtered.length === 0
-                                ? <EmptyState icon={AlertCircle} description={`No ${tab} bookings.`} />
+                                ? <EmptyState icon={AlertCircle} description={t('tutorDashboard.noBookings', { status: t(`bookingStatus.${tab}`, { defaultValue: tab }).toLowerCase() })} />
                                 : (
                                     <motion.div className="flex flex-col gap-3"
                                         variants={stagger(0.06)} initial="hidden" animate="show">

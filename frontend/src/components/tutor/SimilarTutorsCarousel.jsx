@@ -1,6 +1,7 @@
 import { ChevronRight } from 'lucide-react';
 import { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../../api/client';
 import { normalizeTutorList } from '../../data/normalizeTutor';
 import Badge from '../ui/Badge';
@@ -8,6 +9,7 @@ import Button from '../ui/Button';
 import StarRating from '../ui/StarRating';
 
 export default function SimilarTutorsCarousel({ tutors: propTutors, excludeId }) {
+  const { t } = useTranslation();
   const scrollRef = useRef(null);
   const [tutors, setTutors] = useState(propTutors ?? []);
 
@@ -40,7 +42,7 @@ export default function SimilarTutorsCarousel({ tutors: propTutors, excludeId })
     <section className="px-6 py-12 border-t border-border bg-surface">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Similar Tutors</h2>
+          <h2 className="text-2xl font-bold" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{t('tutorProfile.similarTutors')}</h2>
           <div className="flex gap-2">
             <button
               onClick={() => scroll('left')}

@@ -1,4 +1,5 @@
 import { BookOpen } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Badge from '../ui/Badge';
 
 const LEVEL_TONE = {
@@ -9,10 +10,11 @@ const LEVEL_TONE = {
 };
 
 export default function SubjectTags({ tutor }) {
+  const { t } = useTranslation();
   return (
     <section className="px-6 py-12 border-t border-border">
       <div className="max-w-5xl mx-auto">
-        <h2 className="text-2xl font-bold mb-6" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Subjects & Expertise</h2>
+        <h2 className="text-2xl font-bold mb-6" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{t('tutorProfile.subjectsTitle')}</h2>
 
         <div className="grid md:grid-cols-2 gap-4 mb-6">
           {tutor.subjects.map((subject, i) => (
@@ -20,9 +22,9 @@ export default function SubjectTags({ tutor }) {
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <BookOpen className="w-5 h-5 text-primary" />
-                  <h3 className="font-semibold text-lg">{subject.name}</h3>
+                  <h3 className="font-semibold text-lg">{t(`subjectName.${subject.name}`, { defaultValue: subject.name })}</h3>
                 </div>
-                <Badge tone={LEVEL_TONE[subject.level] ?? 'neutral'} size="sm">{subject.level}</Badge>
+                <Badge tone={LEVEL_TONE[subject.level] ?? 'neutral'} size="sm">{t(`level.${subject.level}`, { defaultValue: subject.level })}</Badge>
               </div>
               <p className="text-sm text-fg-secondary">{subject.grades}</p>
             </div>
@@ -30,7 +32,7 @@ export default function SubjectTags({ tutor }) {
         </div>
 
         <div>
-          <h3 className="font-semibold mb-3">Specializations</h3>
+          <h3 className="font-semibold mb-3">{t('tutorProfile.specializations')}</h3>
           <div className="flex flex-wrap gap-2">
             {tutor.specializations.map((spec, i) => (
               <Badge key={i} tone="success" size="md">{spec}</Badge>

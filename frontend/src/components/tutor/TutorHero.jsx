@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { MessageSquare, Users, CheckCircle, Clock, TrendingUp, Globe, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import TutorAvatar from './TutorAvatar';
 import Button from '../ui/Button';
@@ -9,17 +10,18 @@ import Badge from '../ui/Badge';
 import StarRating from '../ui/StarRating';
 
 export default function TutorHero({ tutor, scrollToBooking, openMessageModal }) {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const navigate = useNavigate();
 
     const handleFreeTrial = () => {
-        if (!user) { toast.error('Please log in to book a session'); navigate('/login'); return; }
+        if (!user) { toast.error(t('booking.loginToBook')); navigate('/login'); return; }
         scrollToBooking?.();
-        toast.info('Select your preferred time slot below');
+        toast.info(t('booking.selectSlotBelow'));
     };
 
     const handleMessage = () => {
-        if (!user) { toast.error('Please log in to message a tutor'); navigate('/login'); return; }
+        if (!user) { toast.error(t('booking.loginToMessage')); navigate('/login'); return; }
         openMessageModal?.();
     };
 
@@ -36,7 +38,7 @@ export default function TutorHero({ tutor, scrollToBooking, openMessageModal }) 
                     onClick={() => navigate('/tutors')}
                     className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-white transition-all hover:bg-white/20"
                 >
-                    <ArrowLeft size={16} /> Back to Tutors
+                    <ArrowLeft size={16} /> {t('tutorProfile.backToTutors')}
                 </button>
             </div>
 
@@ -62,7 +64,7 @@ export default function TutorHero({ tutor, scrollToBooking, openMessageModal }) 
                         {tutor.isOnline && (
                             <span className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold text-white bg-success">
                                 <span className="w-1.5 h-1.5 rounded-full bg-white inline-block" />
-                                Online
+                                {t('tutorProfile.online')}
                             </span>
                         )}
                     </motion.div>
@@ -75,7 +77,7 @@ export default function TutorHero({ tutor, scrollToBooking, openMessageModal }) 
                         <p className="text-sm md:text-base mt-1 text-fg-secondary">{tutor.title}</p>
                         <div className="flex items-center gap-3 mt-2 flex-wrap">
                             <StarRating value={tutor.rating} size={14} showValue />
-                            <span className="text-xs text-fg-secondary">({tutor.totalReviews} reviews)</span>
+                            <span className="text-xs text-fg-secondary">{t('tutorProfile.reviews', { count: tutor.totalReviews ?? 0 })}</span>
                             <span className="flex items-center gap-1 text-xs text-fg-secondary">
                                 <Globe size={12} /> {tutor.availability?.timezone}
                             </span>
@@ -87,10 +89,10 @@ export default function TutorHero({ tutor, scrollToBooking, openMessageModal }) 
                         className="flex gap-3 flex-wrap shrink-0"
                     >
                         <Button onClick={handleFreeTrial} className="hover:scale-105">
-                            Book a Session
+                            {t('tutorProfile.bookSession')}
                         </Button>
                         <Button onClick={handleMessage} variant="secondary" icon={MessageSquare}>
-                            Message
+                            {t('tutorProfile.message')}
                         </Button>
                     </motion.div>
                 </div>
@@ -103,7 +105,7 @@ export default function TutorHero({ tutor, scrollToBooking, openMessageModal }) 
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: 0.1 + i * 0.05 }}
                         >
-                            <Badge tone="primary" size="md">{s.name}</Badge>
+                            <Badge tone="primary" size="md">{t(`subjectName.${s.name}`, { defaultValue: s.name })}</Badge>
                         </motion.span>
                     ))}
                 </div>
@@ -114,10 +116,10 @@ export default function TutorHero({ tutor, scrollToBooking, openMessageModal }) 
                     initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
                 >
                     {[
-                        { icon: Users, value: tutor.stats.totalStudents, label: 'Students' },
-                        { icon: CheckCircle, value: tutor.stats.sessionsCompleted, label: 'Sessions' },
-                        { icon: TrendingUp, value: `${tutor.stats.responseRate}%`, label: 'Response Rate' },
-                        { icon: Clock, value: `${tutor.stats.yearsExperience} yrs`, label: 'Experience' },
+                        { icon: Users, value: tutor.stats.totalStudents, label: t('tutorProfile.statStudents') },
+                        { icon: CheckCircle, value: tutor.stats.sessionsCompleted, label: t('tutorProfile.statSessions') },
+                        { icon: TrendingUp, value: `${tutor.stats.responseRate}%`, label: t('tutorProfile.statResponseRate') },
+                        { icon: Clock, value: t('tutorProfile.years', { n: tutor.stats.yearsExperience }), label: t('tutorProfile.statExperience') },
                     ].map(({ icon: Icon, value, label }) => (
                         <div key={label} className="flex items-center gap-3 p-4 rounded-xl border border-border bg-bg">
                             <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-primary-subtle">

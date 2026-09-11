@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { CheckCircle, XCircle, Lock, Smartphone, Clock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import api, { apiError } from '../../api/client';
+import { formatNumber } from '../../lib/formatDate';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 
@@ -54,6 +56,7 @@ export default function PaymentModal({
     order,
     endpoint = 'payments',
 }) {
+    const { t } = useTranslation();
     const [service, setService] = useState('MTN');
     const [phone, setPhone] = useState('');
     const [status, setStatus] = useState('idle'); // idle | sending | waiting | success | failed
@@ -115,8 +118,8 @@ export default function PaymentModal({
     };
 
     const handlePay = async () => {
-        if (cleaned.length !== 9) return setError('Enter a valid 9-digit number, e.g. 677000000');
-        if (!detected) return setError('This is not a valid MTN or Orange Cameroon number');
+        if (cleaned.length !== 9) return setError(t('payModal.invalidNumberToast'));
+        if (!detected) return setError(t('payModal.notMtnOrOrange'));
 
         setError('');
         setStatus('sending');
@@ -166,7 +169,7 @@ export default function PaymentModal({
             onClose={handleClose}
             closeOnBackdrop={!busy}
             closeOnEscape={!busy}
-            title="Mobile Money Payment"
+            title={t('payModal.title')}
             size="sm"
         >
             <p className="text-sm -mt-2 mb-5 text-fg-secondary">{description}</p>
@@ -174,7 +177,7 @@ export default function PaymentModal({
             {/* Amount */}
             <div className="text-center py-4 mb-5 rounded-xl border border-primary/15 bg-primary-subtle">
                 <p className="text-3xl font-bold tabular-nums text-primary" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
-                    {Number(amount).toLocaleString()}
+                    {formatNumber(amount)}
                 </p>
                 <p className="text-sm mt-0.5 text-fg-secondary">FCFA</p>
             </div>
@@ -182,34 +185,35 @@ export default function PaymentModal({
             {status === 'waiting' ? (
                 <div className="text-center py-6">
                     <Smartphone className="w-14 h-14 mx-auto mb-3 text-primary animate-pulse" />
-                    <p className="text-lg font-bold mb-1">Check your phone</p>
+                    <p className="text-lg font-bold mb-1">{t('payModal.checkPhone')}</p>
                     <p className="text-sm text-fg-secondary">
-                        Enter your {service === 'MTN' ? 'MTN MoMo' : 'Orange Money'} PIN on {cleaned} to approve
-                        the payment. Keep this window open.
+                        {t('payModal.enterPin', {
+                            service: service === 'MTN' ? 'MTN MoMo' : 'Orange Money',
+                            phone: cleaned,
+                        })}
                     </p>
                 </div>
             ) : status === 'processing' ? (
                 <div className="text-center py-6">
                     <Clock className="w-14 h-14 mx-auto mb-3 text-fg-secondary" />
-                    <p className="text-lg font-bold mb-1">Still confirming</p>
+                    <p className="text-lg font-bold mb-1">{t('payModal.stillConfirming')}</p>
                     <p className="text-sm mb-5 text-fg-secondary">
-                        We haven't heard back from the operator yet. If you approved the payment,
-                        your access is unlocked automatically within a few minutes — no need to pay again.
+                        {t('payModal.stillConfirmingBody')}
                     </p>
-                    <Button onClick={handleClose} variant="secondary">Close</Button>
+                    <Button onClick={handleClose} variant="secondary">{t('common.close')}</Button>
                 </div>
             ) : status === 'success' ? (
                 <div className="text-center py-6">
                     <CheckCircle className="w-14 h-14 mx-auto mb-3 text-success" />
-                    <p className="text-lg font-bold mb-1">Payment Successful!</p>
-                    <p className="text-sm text-fg-secondary">Your purchase has been confirmed.</p>
+                    <p className="text-lg font-bold mb-1">{t('payModal.successTitle')}</p>
+                    <p className="text-sm text-fg-secondary">{t('payModal.successBody')}</p>
                 </div>
             ) : status === 'failed' ? (
                 <div className="text-center py-6">
                     <XCircle className="w-14 h-14 mx-auto mb-3 text-danger" />
-                    <p className="text-lg font-bold mb-1">Payment Failed</p>
-                    <p className="text-sm mb-5 text-fg-secondary">{error || 'Please try again.'}</p>
-                    <Button onClick={() => { setStatus('idle'); setError(''); }}>Try Again</Button>
+                    <p className="text-lg font-bold mb-1">{t('payModal.failedTitle')}</p>
+                    <p className="text-sm mb-5 text-fg-secondary">{error || t('payModal.tryAgainBody')}</p>
+                    <Button onClick={() => { setStatus('idle'); setError(''); }}>{t('payModal.tryAgain')}</Button>
                 </div>
             ) : (
                 <>
@@ -234,7 +238,7 @@ export default function PaymentModal({
 
                     {/* Phone input */}
                     <div className="mb-5">
-                        <label className="block text-sm font-medium mb-2">Phone Number</label>
+                        <label className="block text-sm font-medium mb-2">{t('payModal.phoneNumber')}</label>
                         <div className="relative">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-fg-secondary">+237</span>
                             <input
@@ -242,7 +246,8 @@ export default function PaymentModal({
                                 inputMode="numeric"
                                 value={phone}
                                 onChange={e => { setPhone(e.target.value); setError(''); }}
-                                placeholder="6XX XXX XXX"
+                                placeholder={t('payModal.phonePlaceholder')}
+                                aria-label={t('payModal.phoneNumber')}
                                 className="w-full pl-14 pr-4 py-3 rounded-xl border-2 border-border bg-bg text-fg text-sm focus:outline-none focus:border-primary"
                                 disabled={busy}
                             />
@@ -250,14 +255,14 @@ export default function PaymentModal({
                         {error ? (
                             <p className="text-xs mt-1.5 text-danger">{error}</p>
                         ) : cleaned.length === 9 && !detected ? (
-                            <p className="text-xs mt-1.5 text-danger">Not a valid MTN or Orange Cameroon number.</p>
+                            <p className="text-xs mt-1.5 text-danger">{t('payModal.invalidNumber')}</p>
                         ) : mismatch ? (
                             <p className="text-xs mt-1.5 text-fg-secondary">
-                                That's a {detected === 'MTN' ? 'MTN' : 'Orange'} number — switched for you.
+                                {t('payModal.switchedForYou', { service: detected === 'MTN' ? 'MTN' : 'Orange' })}
                             </p>
                         ) : (
                             <p className="text-xs mt-1.5 text-fg-secondary">
-                                You will receive a prompt on your phone to confirm the payment.
+                                {t('payModal.promptHint')}
                             </p>
                         )}
                     </div>
@@ -265,7 +270,7 @@ export default function PaymentModal({
                     {/* Actions */}
                     <div className="flex gap-3">
                         <Button onClick={handleClose} disabled={busy} variant="secondary" fullWidth>
-                            Cancel
+                            {t('common.cancel')}
                         </Button>
                         <Button
                             onClick={handlePay}
@@ -274,14 +279,14 @@ export default function PaymentModal({
                             fullWidth
                             className="hover:scale-[1.02]"
                         >
-                            {status === 'sending' ? 'Sending…' : `Pay ${Number(amount).toLocaleString()} FCFA`}
+                            {status === 'sending' ? t('payModal.sending') : t('payment.pay', { amount: formatNumber(amount) })}
                         </Button>
                     </div>
                 </>
             )}
 
             <p className="text-xs text-center mt-4 flex items-center justify-center gap-1 text-fg-secondary">
-                <Lock size={11} /> Secured by MeSomb · MTN MoMo &amp; Orange Money
+                <Lock size={11} /> {t('payModal.securedBy')}
             </p>
         </Modal>
     );

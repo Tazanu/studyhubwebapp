@@ -1,12 +1,14 @@
 import { motion } from 'framer-motion';
 import { GraduationCap, Award, Globe, Lightbulb, CheckCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Badge from '../ui/Badge';
 
 export default function TutorAbout({ tutor }) {
+    const { t } = useTranslation();
     return (
         <section className="px-4 sm:px-6 py-12">
             <div className="max-w-5xl mx-auto">
-                <h2 className="text-2xl font-bold mb-8" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>About</h2>
+                <h2 className="text-2xl font-bold mb-8" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>{t('tutorProfile.aboutTitle')}</h2>
 
                 <div className="grid lg:grid-cols-5 gap-8">
                     {/* Left: bio + philosophy */}
@@ -22,7 +24,7 @@ export default function TutorAbout({ tutor }) {
                         >
                             <div className="flex items-center gap-2 mb-2">
                                 <Lightbulb size={16} className="text-primary" />
-                                <span className="font-semibold text-sm">Teaching Philosophy</span>
+                                <span className="font-semibold text-sm">{t('tutorProfile.teachingPhilosophy')}</span>
                             </div>
                             <p className="text-sm leading-relaxed text-fg-secondary" style={{ lineHeight: 1.7 }}>
                                 {tutor.teachingPhilosophy}
@@ -31,7 +33,7 @@ export default function TutorAbout({ tutor }) {
 
                         {/* Specializations */}
                         <div>
-                            <h3 className="font-semibold text-sm mb-3 text-fg-secondary">SPECIALIZATIONS</h3>
+                            <h3 className="font-semibold text-sm mb-3 text-fg-secondary">{t('tutorProfile.specializationsCaps')}</h3>
                             <div className="flex flex-wrap gap-2">
                                 {tutor.specializations.map((spec, i) => (
                                     <Badge key={i} tone="success" size="md" icon={CheckCircle}>{spec}</Badge>
@@ -46,7 +48,7 @@ export default function TutorAbout({ tutor }) {
                         <div className="p-5 rounded-2xl border border-border bg-surface">
                             <div className="flex items-center gap-2 mb-3">
                                 <Globe size={16} className="text-primary" />
-                                <h3 className="font-semibold text-sm">Languages</h3>
+                                <h3 className="font-semibold text-sm">{t('tutorProfile.languages')}</h3>
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 {tutor.languages.map((lang, i) => (
@@ -61,7 +63,7 @@ export default function TutorAbout({ tutor }) {
                         <div className="p-5 rounded-2xl border border-border bg-surface">
                             <div className="flex items-center gap-2 mb-4">
                                 <GraduationCap size={16} className="text-primary" />
-                                <h3 className="font-semibold text-sm">Education</h3>
+                                <h3 className="font-semibold text-sm">{t('tutorProfile.education')}</h3>
                             </div>
                             <div className="space-y-4">
                                 {tutor.education.map((edu, i) => (
@@ -87,7 +89,7 @@ export default function TutorAbout({ tutor }) {
                         <div className="p-5 rounded-2xl border border-border bg-surface">
                             <div className="flex items-center gap-2 mb-3">
                                 <Award size={16} className="text-warning" />
-                                <h3 className="font-semibold text-sm">Certifications</h3>
+                                <h3 className="font-semibold text-sm">{t('tutorProfile.certifications')}</h3>
                             </div>
                             <div className="space-y-2">
                                 {tutor.certifications.map((cert, i) => (

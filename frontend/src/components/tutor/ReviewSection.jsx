@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { Shield, ChevronDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { formatDate } from '../../lib/formatDate';
 import Select from '../ui/Select';
 import Button from '../ui/Button';
 import StarRating from '../ui/StarRating';
 
 export default function ReviewSection({ reviews, ratingBreakdown, totalReviews, rating }) {
+  const { t } = useTranslation();
   const [sortBy, setSortBy] = useState('recent');
   const [showAll, setShowAll] = useState(false);
 
@@ -19,7 +22,7 @@ export default function ReviewSection({ reviews, ratingBreakdown, totalReviews, 
   return (
     <section className="px-6 py-12 border-t border-border">
       <div className="max-w-5xl mx-auto">
-        <h2 className="text-2xl font-bold mb-6" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Reviews & Ratings</h2>
+        <h2 className="text-2xl font-bold mb-6" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{t('tutorProfile.reviewsTitle')}</h2>
 
         <div className="grid md:grid-cols-3 gap-8 mb-8">
           <div className="text-center p-6 rounded-xl bg-surface">
@@ -27,7 +30,7 @@ export default function ReviewSection({ reviews, ratingBreakdown, totalReviews, 
             <div className="flex justify-center mb-2">
               <StarRating value={rating} size={20} />
             </div>
-            <p className="text-sm text-fg-secondary">{totalReviews} total reviews</p>
+            <p className="text-sm text-fg-secondary">{t('tutorProfile.totalReviews', { count: totalReviews ?? 0 })}</p>
           </div>
 
           <div className="md:col-span-2">
@@ -36,10 +39,10 @@ export default function ReviewSection({ reviews, ratingBreakdown, totalReviews, 
         </div>
 
         <div className="flex justify-between items-center mb-6">
-          <h3 className="font-semibold">Student Reviews</h3>
+          <h3 className="font-semibold">{t('tutorProfile.studentReviews')}</h3>
           <Select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="w-auto">
-            <option value="recent">Most Recent</option>
-            <option value="highest">Highest Rated</option>
+            <option value="recent">{t('tutorProfile.sortRecent')}</option>
+            <option value="highest">{t('tutorProfile.sortHighest')}</option>
           </Select>
         </div>
 
@@ -85,6 +88,7 @@ function RatingBreakdown({ breakdown, total }) {
 }
 
 function ReviewCard({ review }) {
+  const { t } = useTranslation();
   return (
     <div className="p-6 rounded-xl border border-border bg-surface">
       <div className="flex items-start gap-4">
@@ -95,11 +99,11 @@ function ReviewCard({ review }) {
               <div className="flex items-center gap-2">
                 <span className="font-semibold">{review.studentName}</span>
                 {review.verified && (
-                  <Shield className="w-4 h-4 text-success" title="Verified student" />
+                  <Shield className="w-4 h-4 text-success" title={t('tutorProfile.verifiedStudent')} />
                 )}
               </div>
               <div className="text-sm text-fg-secondary">
-                {review.subject} · {new Date(review.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                {t(`subjectName.${review.subject}`, { defaultValue: review.subject })} · {formatDate(review.date, { month: 'short', day: 'numeric', year: 'numeric' })}
               </div>
             </div>
             <StarRating value={review.rating} size={16} />

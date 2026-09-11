@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { Camera } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { getAvatarColor } from '../../data/normalizeTutor';
 import api from '../../api/client';
 import { toast } from 'sonner';
@@ -7,6 +8,7 @@ import { mediaUrl } from '../../lib/mediaUrl';
 
 
 export default function TutorAvatar({ src, name, tutorId, size = 64, rounded = 'rounded-xl', isOwn = false, onUpload, className = '' }) {
+    const { t } = useTranslation();
     const [imgKey, setImgKey] = useState(0);
     const [hovered, setHovered] = useState(false);
     const fileRef = useRef(null);
@@ -31,8 +33,8 @@ export default function TutorAvatar({ src, name, tutorId, size = 64, rounded = '
             const { data } = await api.patch('/users/profile', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
             onUpload?.(data.user);
             setImgKey(k => k + 1);
-            toast.success('Profile photo updated!');
-        } catch { toast.error('Upload failed'); }
+            toast.success(t('tutorProfile.photoUpdated'));
+        } catch { toast.error(t('tutorProfile.photoFailed')); }
     };
 
     return (
@@ -64,7 +66,7 @@ export default function TutorAvatar({ src, name, tutorId, size = 64, rounded = '
                     className={`absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/55 ${rounded}`}
                 >
                     <Camera size={size * 0.28} color="white" />
-                    <span className="text-white font-semibold" style={{ fontSize: Math.max(size * 0.13, 10) }}>Change</span>
+                    <span className="text-white font-semibold" style={{ fontSize: Math.max(size * 0.13, 10) }}>{t('tutorProfile.changePhoto')}</span>
                 </div>
             )}
 

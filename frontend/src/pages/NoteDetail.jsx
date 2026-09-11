@@ -6,7 +6,10 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { ArrowLeft, Download, Trash2, FileText, Image as ImageIcon, File, Lock, Calendar, User, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import api, { apiError } from '../api/client';
+import i18n from '../i18n';
+import { formatDate } from '../lib/formatDate';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
 import PaymentModal from '../components/tutor/PaymentModal';
@@ -25,6 +28,7 @@ function getFileIcon(fileType) {
 }
 
 export default function NoteDetail() {
+    const { t } = useTranslation();
     const { id } = useParams();
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -49,7 +53,7 @@ export default function NoteDetail() {
                 // assume access from client state alone.
                 setPurchased(!!data.purchased);
             } catch (err) {
-                toast.error('Note not found');
+                toast.error(i18n.t('noteDetail.notFound'));
                 navigate('/notes');
             } finally {
                 setLoading(false);
@@ -95,7 +99,7 @@ export default function NoteDetail() {
             }
             setNote(prev => ({ ...prev, downloads: (prev.downloads || 0) + 1 }));
         } catch (err) {
-            toast.error(apiError(err, err.message || 'Failed to open note'));
+            toast.error(apiError(err, err.message || t('noteDetail.openFailed')));
         } finally {
             setDownloading(false);
         }
@@ -110,10 +114,10 @@ export default function NoteDetail() {
         setDeleting(true);
         try {
             await api.delete(`/notes/${id}`);
-            toast.success('Note deleted');
+            toast.success(t('noteDetail.deleted'));
             navigate('/notes');
         } catch (err) {
-            toast.error(apiError(err, 'Failed to delete note'));
+            toast.error(apiError(err, t('noteDetail.deleteFailed')));
             setDeleting(false);
         }
     };
@@ -147,7 +151,7 @@ export default function NoteDetail() {
             <div className="pt-20 px-6 pb-16 max-w-4xl mx-auto">
                 {/* Back button */}
                 <Link to="/notes" className="inline-flex items-center gap-2 mb-6 text-sm text-fg-secondary transition-colors hover:text-primary">
-                    <ArrowLeft size={16} /> Back to Notes
+                    <ArrowLeft size={16} /> {t('noteDetail.back')}
                 </Link>
 
                 <motion.div
@@ -165,7 +169,7 @@ export default function NoteDetail() {
                             <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                                 {note.title}
                             </h1>
-                            <Badge tone="primary">{note.subject}</Badge>
+                            <Badge tone="primary">{t(`subjectName.${note.subject}`, { defaultValue: note.subject })}</Badge>
                         </div>
                     </div>
 
@@ -188,25 +192,25 @@ export default function NoteDetail() {
                     {/* Meta info */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 p-4 rounded-xl bg-surface-hover">
                         <div>
-                            <p className="text-xs mb-1 text-fg-secondary">Uploaded by</p>
+                            <p className="text-xs mb-1 text-fg-secondary">{t('noteDetail.uploadedBy')}</p>
                             <p className="text-sm font-semibold flex items-center gap-1">
                                 <User size={14} /> {note.users?.first_name} {note.users?.last_name}
                             </p>
                         </div>
                         <div>
-                            <p className="text-xs mb-1 text-fg-secondary">Downloads</p>
+                            <p className="text-xs mb-1 text-fg-secondary">{t('noteDetail.downloads')}</p>
                             <p className="text-sm font-semibold flex items-center gap-1">
                                 <Download size={14} /> {note.downloads || 0}
                             </p>
                         </div>
                         <div>
-                            <p className="text-xs mb-1 text-fg-secondary">File Type</p>
+                            <p className="text-xs mb-1 text-fg-secondary">{t('noteDetail.fileType')}</p>
                             <p className="text-sm font-semibold uppercase">.{note.file_type}</p>
                         </div>
                         <div>
-                            <p className="text-xs mb-1 text-fg-secondary">Uploaded</p>
+                            <p className="text-xs mb-1 text-fg-secondary">{t('noteDetail.uploaded')}</p>
                             <p className="text-sm font-semibold flex items-center gap-1">
-                                <Calendar size={14} /> {new Date(note.created_at).toLocaleDateString()}
+                                <Calendar size={14} /> {formatDate(note.created_at)}
                             </p>
                         </div>
                     </div>
@@ -214,7 +218,7 @@ export default function NoteDetail() {
                     {/* Group info if linked */}
                     {note.groups && (
                         <div className="mb-6 p-4 rounded-xl border border-border">
-                            <p className="text-xs mb-1 text-fg-secondary">Shared in group</p>
+                            <p className="text-xs mb-1 text-fg-secondary">{t('noteDetail.sharedInGroup')}</p>
                             <Link to={`/groups/${note.groups.id}`} className="text-sm font-semibold text-primary transition-colors hover:opacity-80">
                                 {note.groups.name}
                             </Link>
@@ -224,7 +228,7 @@ export default function NoteDetail() {
                     {/* Premium badge */}
                     {note.is_premium && (
                         <Badge tone="warning" size="md" className="mb-6 !text-sm !px-4 !py-3 w-fit" icon={Lock}>
-                            Premium Note. {note.price} XAF
+                            {t('noteDetail.premiumBadge', { price: note.price })}
                         </Badge>
                     )}
 
@@ -232,11 +236,11 @@ export default function NoteDetail() {
                     <div className="flex flex-wrap gap-3">
                         {isPremiumLocked ? (
                             <Button onClick={() => setShowPayment(true)} icon={Lock} size="lg" className="!bg-[image:linear-gradient(135deg,#f59e0b,#d97706)]">
-                                Purchase to unlock — {note.price} XAF
+                                {t('noteDetail.purchaseToUnlock', { price: note.price })}
                             </Button>
                         ) : (
                             <Button onClick={handleDownload} disabled={downloading} loading={downloading} icon={downloading ? undefined : Download} size="lg">
-                                {downloading ? 'Opening...' : 'Open Note'}
+                                {downloading ? t('noteDetail.opening') : t('noteDetail.openNote')}
                             </Button>
                         )}
 
@@ -244,15 +248,15 @@ export default function NoteDetail() {
                             confirmDelete.active ? (
                                 <div className="flex gap-2">
                                     <Button onClick={() => confirmDelete.run(handleDelete)} disabled={deleting} loading={deleting} variant="danger" size="lg">
-                                        Yes, delete
+                                        {t('noteDetail.confirmDelete')}
                                     </Button>
                                     <Button onClick={confirmDelete.cancel} variant="secondary" size="lg">
-                                        Cancel
+                                        {t('common.cancel')}
                                     </Button>
                                 </div>
                             ) : (
                                 <Button onClick={confirmDelete.ask} variant="outline" icon={Trash2} size="lg" className="!border-border !text-fg-secondary hover:!border-danger hover:!text-danger hover:!bg-transparent">
-                                    Delete Note
+                                    {t('noteDetail.deleteNote')}
                                 </Button>
                             )
                         )}
@@ -286,11 +290,11 @@ export default function NoteDetail() {
                                 )}
                                 <a href={viewerUrl.direct} download target="_blank" rel="noreferrer"
                                     className="text-sm px-3 py-1.5 rounded-lg font-semibold inline-flex items-center gap-1 bg-primary-solid text-white">
-                                    <Download size={14} /> Download
+                                    <Download size={14} /> {t('noteDetail.download')}
                                 </a>
                                 <button onClick={() => { setViewerUrl(null); setNumPages(null); setPageNumber(1); }}
                                     className="text-sm px-3 py-1.5 rounded-lg border border-border text-fg-secondary">
-                                    Close
+                                    {t('common.close')}
                                 </button>
                             </div>
                         </div>
@@ -303,18 +307,18 @@ export default function NoteDetail() {
                                 <Document
                                     file={viewerUrl.proxy}
                                     onLoadSuccess={({ numPages }) => { setNumPages(numPages); setPageNumber(1); }}
-                                    onLoadError={() => toast.error('Failed to load PDF')}
-                                    loading={<p className="text-white mt-10">Loading PDF...</p>}
-                                    error={<div className="text-white mt-20 text-center"><p className="mb-4">This file was uploaded before our storage migration and is no longer available.</p><p className="text-sm text-white/60">Please delete this note and re-upload the file.</p></div>}
+                                    onLoadError={() => toast.error(i18n.t('noteDetail.pdfLoadFailed'))}
+                                    loading={<p className="text-white mt-10">{t('noteDetail.loadingPdf')}</p>}
+                                    error={<div className="text-white mt-20 text-center"><p className="mb-4">{t('noteDetail.pdfMissingTitle')}</p><p className="text-sm text-white/60">{t('noteDetail.pdfMissingBody')}</p></div>}
                                 >
                                     <Page pageNumber={pageNumber} width={Math.min(window.innerWidth - 32, 800)} />
                                 </Document>
                             ) : (
                                 <div className="text-white mt-20 text-center">
-                                    <p className="mb-4">Preview not available for this file type.</p>
+                                    <p className="mb-4">{t('noteDetail.noPreview')}</p>
                                     <a href={viewerUrl.direct} download target="_blank" rel="noreferrer"
                                         className="px-4 py-2 rounded-lg font-semibold bg-primary-solid text-white">
-                                        Download File
+                                        {t('noteDetail.downloadFile')}
                                     </a>
                                 </div>
                             )}
@@ -334,10 +338,10 @@ export default function NoteDetail() {
                         setNote(data);
                         setPurchased(!!data.purchased);
                     } catch { setPurchased(true); }
-                    toast.success('Payment successful! You can now download this note.');
+                    toast.success(t('noteDetail.paymentSuccess'));
                 }}
                 amount={note?.price || 0}
-                description={`Premium Note: ${note?.title}`}
+                description={t('noteDetail.premiumNoteDescription', { title: note?.title ?? '' })}
                 order={{ type: 'paid_note', noteId: note?.id }}
             />
         </div>
