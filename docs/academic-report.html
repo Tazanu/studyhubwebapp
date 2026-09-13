@@ -1,0 +1,945 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>StudyHub — Academic Project Report</title>
+<style>
+@page { size: A4; margin: 22mm 20mm 20mm 24mm; }
+@page :first { margin: 0; }
+:root{
+  --ink:#111418; --soft:#4a5460; --rule:#c9d1da; --faint:#eef1f5;
+  --accent:#123a7a; --accent-soft:#eaf0fa; --warn:#fff8e6; --warnbd:#e0bf63;
+}
+*{box-sizing:border-box}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;font-family:Cambria,Georgia,"Times New Roman",serif;font-size:11pt;
+  line-height:1.75;color:var(--ink);text-align:justify;hyphens:auto}
+.cover{height:297mm;padding:26mm 24mm 18mm;display:flex;flex-direction:column;
+  text-align:center;page-break-after:always;border-top:9mm solid var(--accent)}
+.cover .inst{font-size:13pt;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:2mm}
+.cover .dept{font-size:10.5pt;color:var(--soft);margin-bottom:20mm}
+.cover .kicker{font-size:10pt;letter-spacing:.3em;text-transform:uppercase;color:var(--soft);margin-bottom:5mm}
+.cover h1{font-size:34pt;line-height:1.18;margin:0 0 4mm;font-weight:700;letter-spacing:-.01em}
+.cover .strap{font-size:13.5pt;color:var(--soft);font-style:italic;margin:0 auto 14mm;max-width:130mm;line-height:1.5}
+.cover .rule{width:46mm;height:2px;background:var(--accent);margin:0 auto 14mm}
+.cover .by{font-size:11pt;color:var(--soft);margin-bottom:3mm}
+.cover .who{font-size:16pt;font-weight:700;margin-bottom:16mm}
+.cover .spacer{flex:1}
+.cover .foot{font-size:10pt;color:var(--soft);line-height:1.9}
+.cover .foot b{color:var(--ink)}
+.chapter{page-break-before:always}
+.chapter-head{margin-bottom:8mm;padding-bottom:3mm;border-bottom:2.5px solid var(--accent)}
+.chapter-head .cnum{font-size:9.5pt;letter-spacing:.26em;text-transform:uppercase;
+  color:var(--accent);font-weight:700;display:block;margin-bottom:1.5mm}
+.chapter-head h2{font-size:21pt;margin:0;font-weight:700;letter-spacing:-.01em;line-height:1.2}
+h3{font-size:13pt;margin:8mm 0 2.5mm;font-weight:700;page-break-after:avoid}
+h4{font-size:11.4pt;margin:6mm 0 2mm;font-weight:700;color:var(--soft);page-break-after:avoid}
+p{margin:0 0 3.5mm}
+ul,ol{margin:0 0 3.5mm;padding-left:7mm}
+li{margin-bottom:1.8mm}
+.front{page-break-before:always}
+.front h2{font-size:18pt;margin:0 0 6mm;padding-bottom:2.5mm;border-bottom:2px solid var(--accent);text-align:left}
+.abstract{font-size:10.6pt;line-height:1.8}
+.keywords{margin-top:6mm;padding-top:3mm;border-top:1px solid var(--rule);font-size:10pt}
+.toc{list-style:none;padding:0;margin:0;text-align:left}
+.toc .ch{display:flex;gap:3mm;font-weight:700;padding:2mm 0 1mm;font-size:11pt;border-bottom:1px solid var(--faint)}
+.toc .ch .n{color:var(--accent);min-width:13mm}
+.toc .sub{list-style:none;padding:0 0 0 13mm;margin:0 0 2mm}
+.toc .sub li{display:flex;gap:3mm;font-size:10pt;color:var(--soft);margin:0;padding:.6mm 0}
+.toc .sub .n{min-width:12mm}
+table{width:100%;border-collapse:collapse;margin:2mm 0 3mm;font-size:9.6pt;
+  font-family:"Segoe UI",Arial,sans-serif;text-align:left;line-height:1.55}
+thead{display:table-header-group}
+tr{page-break-inside:avoid}
+th{background:var(--accent-soft);color:var(--accent);font-weight:700;padding:2.2mm 2.6mm;
+  border-top:1.5px solid var(--accent);border-bottom:1.5px solid var(--accent);
+  font-size:8.8pt;text-transform:uppercase;letter-spacing:.05em}
+td{padding:2.2mm 2.6mm;border-bottom:1px solid var(--rule);vertical-align:top}
+tbody tr:last-child td{border-bottom:1.5px solid var(--accent)}
+td.c{text-align:center}
+code{font-family:Consolas,"Courier New",monospace;font-size:9pt;background:var(--faint);padding:.3mm 1.2mm;border-radius:2px}
+.caption{font-family:"Segoe UI",Arial,sans-serif;font-size:9pt;color:var(--soft);
+  text-align:center;margin:0 0 6mm;line-height:1.5}
+.caption b{color:var(--ink)}
+figure{margin:5mm 0 2mm;page-break-inside:avoid}
+.fig{border:1px solid var(--rule);border-radius:3px;padding:5mm;background:#fbfcfe;
+  font-family:"Segoe UI",Arial,sans-serif;font-size:9pt;text-align:left}
+.lane{margin-bottom:3.5mm}
+.lane:last-child{margin-bottom:0}
+.lane-t{font-size:7.8pt;text-transform:uppercase;letter-spacing:.12em;color:var(--soft);font-weight:700;margin-bottom:1.5mm}
+.row{display:flex;gap:2.5mm;flex-wrap:wrap}
+.node{flex:1;min-width:30mm;border:1px solid #b9c9e2;background:var(--accent-soft);
+  border-radius:3px;padding:2.4mm;font-size:8.4pt;line-height:1.45}
+.node b{display:block;color:var(--accent);font-size:9pt;margin-bottom:.7mm}
+.node.g{background:#f3f5f8;border-color:var(--rule)}
+.node.g b{color:var(--ink)}
+.down{text-align:center;color:var(--accent);font-size:11pt;margin:1.5mm 0;line-height:1}
+pre{font-family:Consolas,"Courier New",monospace;font-size:8.6pt;line-height:1.55;
+  background:#f6f8fa;border:1px solid var(--rule);border-left:3px solid var(--accent);
+  padding:3mm 3.5mm;margin:2mm 0 4mm;white-space:pre-wrap;page-break-inside:avoid;text-align:left}
+.note,.warn{border-radius:3px;padding:3mm 3.5mm;margin:3mm 0 4mm;font-size:10pt;
+  page-break-inside:avoid;text-align:left;line-height:1.65}
+.note{background:var(--accent-soft);border-left:3px solid var(--accent)}
+.warn{background:var(--warn);border-left:3px solid var(--warnbd)}
+.note .l,.warn .l{display:block;font-family:"Segoe UI",Arial,sans-serif;font-weight:700;
+  font-size:8.4pt;text-transform:uppercase;letter-spacing:.08em;margin-bottom:1.2mm}
+.note .l{color:var(--accent)} .warn .l{color:#7d5800}
+.note p:last-child,.warn p:last-child{margin-bottom:0}
+.refs{list-style:none;padding:0;margin:0;font-size:10pt;text-align:left}
+.refs li{padding-left:11mm;text-indent:-11mm;margin-bottom:3mm;line-height:1.6}
+.refs .k{font-weight:700;color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="cover">
+  <div class="inst">University of Buea</div>
+  <div class="dept">Faculty of Engineering and Technology &nbsp;&middot;&nbsp; Department of Computer Engineering</div>
+  <div class="kicker">Final Year Project Report</div>
+  <h1>StudyHub</h1>
+  <p class="strap">A Web-Based Peer-to-Peer Collaborative Learning Platform with Integrated Mobile Money Payments for University Students</p>
+  <div class="rule"></div>
+  <div class="by">Submitted by</div>
+  <div class="who">Tazanu Stanley</div>
+  <div class="spacer"></div>
+  <div class="foot">
+    <div><b>Supervisor:</b> ________________________________</div>
+    <div><b>Academic Year:</b> 2025 / 2026</div>
+    <div><b>Date of Submission:</b> <span id="d"></span></div>
+    <div style="margin-top:5mm;font-size:9.4pt">In partial fulfilment of the requirements for the degree of<br>Bachelor of Engineering in Computer Engineering</div>
+  </div>
+</div>
+
+<div class="front">
+  <h2>Abstract</h2>
+  <div class="abstract">
+  <p>University students routinely hold the knowledge their peers need, yet that knowledge stays trapped in private messaging groups, personal hard drives and individual notebooks. A student who misses a lecture, is stuck on a problem set, or needs one-to-one help on a single topic has no dependable place to look. Existing alternatives each solve part of the problem and none of it well: institutional learning management systems distribute material downwards from lecturers but carry no peer-to-peer channel; global question-and-answer sites are strong on programming and weak on local curricula; commercial tutoring marketplaces price in foreign currency and settle by card, which excludes most students in Cameroon, where payment is overwhelmingly by mobile money.</p>
+  <p>This project designed, implemented and deployed <b>StudyHub</b>, a full-stack web application that consolidates four functions into a single authenticated platform: subject-based study groups with real-time messaging, a shared repository of course notes, a question-and-answer forum with voting and accepted answers, and a peer-tutoring marketplace with booking and payment. Payment is handled natively through MTN Mobile Money and Orange Money, the two instruments students actually hold.</p>
+  <p>The system was built as two independently deployed tiers. The client is a React&nbsp;19 single-page application, installable as a Progressive Web Application and usable on a degraded network; the server is an Express&nbsp;5 REST API backed by PostgreSQL through the Prisma ORM, with a Socket.IO channel for real-time messaging. The implementation comprises approximately 20,700 lines of source across 88 REST endpoints and a 25-table relational schema, and is deployed live on a three-service free-tier infrastructure.</p>
+  <p>Particular engineering attention was paid to three areas where the operating context imposed constraints a textbook design does not anticipate. First, <b>payment integrity</b>: mobile money settlement is asynchronous and unreliable, so the system resolves all prices server-side, grants entitlements idempotently, and runs a background reconciler that guarantees a successful charge eventually grants access even if the payer closes the browser. Second, <b>content protection</b>: paid material is stored under authenticated delivery and released only through a signed, expiring URL issued after an entitlement check, while free material is redirected to a CDN &mdash; a change that reduced a 3.19&nbsp;MB download from a 300-second timeout to 31 seconds on the same connection. Third, <b>usability under constraint</b>: the client tolerates a sleeping free-tier backend by retrying only transport-level failures, and the interface is fully bilingual in English and French, with 1,228 verified translation keys per language.</p>
+  <p>The system was verified through static analysis, production build validation, an automated locale-consistency checker, and structured manual testing across both languages and both colour themes. The work delivers a functioning, publicly deployed platform; it does not include an automated regression test suite or a formal user evaluation, and both are identified as the principal directions for further work.</p>
+  </div>
+  <div class="keywords">
+    <b>Keywords:</b> collaborative learning; peer-to-peer education; web application; React; Node.js; PostgreSQL; mobile money; Progressive Web Application; real-time communication; internationalisation; Cameroon.
+  </div>
+</div>
+<div class="front">
+  <h2>Table of Contents</h2>
+  <ul class="toc">
+    <li><div class="ch"><span class="n">1</span><span>Introduction</span></div>
+      <ul class="sub">
+        <li><span class="n">1.1</span><span>Background of the study</span></li>
+        <li><span class="n">1.2</span><span>Statement of the problem</span></li>
+        <li><span class="n">1.3</span><span>Aim and objectives</span></li>
+        <li><span class="n">1.4</span><span>Research questions</span></li>
+        <li><span class="n">1.5</span><span>Scope and delimitation</span></li>
+        <li><span class="n">1.6</span><span>Significance of the study</span></li>
+        <li><span class="n">1.7</span><span>Organisation of the report</span></li>
+      </ul></li>
+    <li><div class="ch"><span class="n">2</span><span>Literature Review and Related Work</span></div>
+      <ul class="sub">
+        <li><span class="n">2.1</span><span>Theoretical basis: peer-assisted learning</span></li>
+        <li><span class="n">2.2</span><span>Review of existing systems</span></li>
+        <li><span class="n">2.3</span><span>Comparative analysis</span></li>
+        <li><span class="n">2.4</span><span>Identified gap</span></li>
+      </ul></li>
+    <li><div class="ch"><span class="n">3</span><span>Methodology</span></div>
+      <ul class="sub">
+        <li><span class="n">3.1</span><span>Development methodology</span></li>
+        <li><span class="n">3.2</span><span>Requirements elicitation</span></li>
+        <li><span class="n">3.3</span><span>Functional requirements</span></li>
+        <li><span class="n">3.4</span><span>Non-functional requirements</span></li>
+        <li><span class="n">3.5</span><span>Technology selection and justification</span></li>
+        <li><span class="n">3.6</span><span>Development environment</span></li>
+      </ul></li>
+    <li><div class="ch"><span class="n">4</span><span>System Design</span></div>
+      <ul class="sub">
+        <li><span class="n">4.1</span><span>Architectural design</span></li>
+        <li><span class="n">4.2</span><span>Use-case model</span></li>
+        <li><span class="n">4.3</span><span>Database design</span></li>
+        <li><span class="n">4.4</span><span>Process design: payment sequence</span></li>
+        <li><span class="n">4.5</span><span>Interface design</span></li>
+      </ul></li>
+    <li><div class="ch"><span class="n">5</span><span>Implementation</span></div>
+      <ul class="sub">
+        <li><span class="n">5.1</span><span>Authentication and authorisation</span></li>
+        <li><span class="n">5.2</span><span>Collaboration subsystem</span></li>
+        <li><span class="n">5.3</span><span>Content subsystem and access control</span></li>
+        <li><span class="n">5.4</span><span>Tutoring and payment subsystem</span></li>
+        <li><span class="n">5.5</span><span>Quality gate and moderation</span></li>
+        <li><span class="n">5.6</span><span>Internationalisation</span></li>
+        <li><span class="n">5.7</span><span>Resilience and offline capability</span></li>
+      </ul></li>
+    <li><div class="ch"><span class="n">6</span><span>Testing and Validation</span></div>
+      <ul class="sub">
+        <li><span class="n">6.1</span><span>Testing strategy</span></li>
+        <li><span class="n">6.2</span><span>Static analysis and build validation</span></li>
+        <li><span class="n">6.3</span><span>Automated consistency checking</span></li>
+        <li><span class="n">6.4</span><span>Functional test cases and results</span></li>
+        <li><span class="n">6.5</span><span>Defects found and resolved</span></li>
+        <li><span class="n">6.6</span><span>Threats to validity</span></li>
+      </ul></li>
+    <li><div class="ch"><span class="n">7</span><span>Results and Discussion</span></div>
+      <ul class="sub">
+        <li><span class="n">7.1</span><span>Objectives achieved</span></li>
+        <li><span class="n">7.2</span><span>Measured outcomes</span></li>
+        <li><span class="n">7.3</span><span>Discussion of design decisions</span></li>
+        <li><span class="n">7.4</span><span>Constraints imposed by context</span></li>
+      </ul></li>
+    <li><div class="ch"><span class="n">8</span><span>Conclusion and Future Work</span></div>
+      <ul class="sub">
+        <li><span class="n">8.1</span><span>Conclusion</span></li>
+        <li><span class="n">8.2</span><span>Limitations</span></li>
+        <li><span class="n">8.3</span><span>Recommendations for future work</span></li>
+      </ul></li>
+    <li><div class="ch"><span class="n">&mdash;</span><span>References</span></div></li>
+    <li><div class="ch"><span class="n">A</span><span>Appendix A &mdash; API endpoint summary</span></div></li>
+    <li><div class="ch"><span class="n">B</span><span>Appendix B &mdash; Database schema summary</span></div></li>
+    <li><div class="ch"><span class="n">C</span><span>Appendix C &mdash; Configuration reference</span></div></li>
+  </ul>
+</div>
+<div class="chapter">
+  <div class="chapter-head"><span class="cnum">Chapter One</span><h2>Introduction</h2></div>
+
+  <h3>1.1&nbsp;&nbsp;Background of the study</h3>
+  <p>Higher education depends on more than the formal transmission of material from lecturer to student. A substantial part of what a student learns is acquired laterally: from a classmate who has already understood a derivation, from a set of notes taken in a lecture one happened to miss, from an argument worked through with peers the evening before an assessment. This lateral channel is well documented in the education literature as peer-assisted learning, and it is largely informal.</p>
+  <p>In practice, the informality is the problem. At a typical Cameroonian university the channel exists almost entirely inside private WhatsApp groups, personal laptops and paper notebooks. Material circulates, but it circulates within closed circles, disappears when a group is archived, and is undiscoverable by anyone outside it. A student in the same department, taking the same course, may have no route to a resource that another student produced a week earlier.</p>
+  <p>Two further constraints shape the local context. Bandwidth is expensive and intermittent, which makes heavyweight platforms impractical and makes any design that assumes a stable connection fragile in use. Payment is overwhelmingly by mobile money rather than by card, so any system that intends to move money between students must settle through MTN Mobile Money or Orange Money; a card-only checkout excludes the intended users almost entirely.</p>
+
+  <h3>1.2&nbsp;&nbsp;Statement of the problem</h3>
+  <p>There is no single, accessible, locally appropriate platform on which university students can share academic resources, resolve specific academic difficulties, and obtain paid one-to-one help from their peers. The absence manifests in four concrete ways:</p>
+  <ol>
+    <li><b>Knowledge is siloed.</b> Notes and explanations exist but are trapped in private channels and personal storage, so they benefit a handful of people rather than a cohort.</li>
+    <li><b>Help is unreliable and untracked.</b> A question asked in a chat group scrolls out of view within hours. There is no record of which answer was correct, no accumulation of a searchable body of resolved problems, and no incentive for the person who answered.</li>
+    <li><b>Tutoring is informal and unsafe.</b> Peer tutoring is arranged by word of mouth with no verification of competence, no agreed rate, no schedule and no payment record, which exposes both parties.</li>
+    <li><b>Existing platforms do not fit.</b> International alternatives assume card payment, foreign currency pricing, generous bandwidth and a curriculum that is not the local one.</li>
+  </ol>
+
+  <h3>1.3&nbsp;&nbsp;Aim and objectives</h3>
+  <p><b>Aim.</b> To design, implement and deploy a secure, accessible web-based platform that consolidates peer-to-peer academic collaboration and paid peer tutoring for university students, using payment instruments appropriate to the local context.</p>
+  <p>The aim is decomposed into the following specific objectives:</p>
+  <table>
+    <thead><tr><th style="width:16mm">No.</th><th>Objective</th></tr></thead>
+    <tbody>
+      <tr><td class="c">O1</td><td>To analyse the requirements of student collaboration and identify the shortcomings of existing systems in the local context.</td></tr>
+      <tr><td class="c">O2</td><td>To design a scalable client&ndash;server architecture, together with a normalised relational data model, supporting collaboration, content sharing and commerce.</td></tr>
+      <tr><td class="c">O3</td><td>To implement authenticated study groups with real-time messaging, a shared note repository, and a question-and-answer forum with reputation.</td></tr>
+      <tr><td class="c">O4</td><td>To implement a peer-tutoring marketplace with application review, availability scheduling and booking.</td></tr>
+      <tr><td class="c">O5</td><td>To integrate mobile money payment with verifiable settlement, ensuring a successful charge always grants the purchased entitlement.</td></tr>
+      <tr><td class="c">O6</td><td>To enforce access control on paid content such that it is unreachable without a recorded purchase.</td></tr>
+      <tr><td class="c">O7</td><td>To ensure the platform remains usable under constrained network conditions and on mobile devices.</td></tr>
+      <tr><td class="c">O8</td><td>To deliver the interface in both English and French, reflecting Cameroon's official bilingualism.</td></tr>
+      <tr><td class="c">O9</td><td>To deploy the system publicly and validate it against the stated requirements.</td></tr>
+    </tbody>
+  </table>
+  <p class="caption"><b>Table 1.1</b> &mdash; Specific objectives of the project.</p>
+
+  <h3>1.4&nbsp;&nbsp;Research questions</h3>
+  <ol>
+    <li>What functions must a peer-to-peer academic platform provide in order to displace the informal channels students currently rely upon?</li>
+    <li>How can an asynchronous, failure-prone mobile money settlement process be integrated such that entitlement is granted exactly once and never lost?</li>
+    <li>How can purchased digital content be protected from unauthorised access while remaining inexpensive to deliver at scale?</li>
+    <li>What design measures allow a web application on free-tier infrastructure to remain usable over an intermittent connection?</li>
+  </ol>
+
+  <h3>1.5&nbsp;&nbsp;Scope and delimitation</h3>
+  <p><b>In scope.</b> A responsive web application, installable as a Progressive Web Application, covering: account management with role-based access; study groups with real-time chat; upload, discovery and download of course notes, both free and paid; a question-and-answer forum with voting, accepted answers and reputation; a tutor directory with applications, administrative review, availability and booking; mobile money payment with receipts; an administrative console; and a bilingual interface.</p>
+  <p><b>Out of scope.</b> Native mobile applications for Android or iOS; video conferencing within the platform (sessions are arranged, not hosted); automated assessment or grading; integration with any university's existing student information system; and card or bank payment instruments.</p>
+
+  <h3>1.6&nbsp;&nbsp;Significance of the study</h3>
+  <p>For students, the platform converts a scattered informal practice into a durable, searchable resource, and makes it possible to obtain targeted help without a prior social connection to the person able to give it. For those who tutor, it creates a verifiable record of competence and a payment mechanism they can actually use, turning unpaid favours into modest income. Methodologically, the project contributes a documented treatment of two problems under-addressed in general web-development literature: reliable entitlement granting over an asynchronous mobile money rail, and delivery of protected digital goods on constrained infrastructure.</p>
+
+  <h3>1.7&nbsp;&nbsp;Organisation of the report</h3>
+  <p>Chapter Two reviews peer-assisted learning and comparable systems, and identifies the gap addressed. Chapter Three sets out the development methodology, the elicited requirements and the justification for each technology selected. Chapter Four presents the architectural, data and process design. Chapter Five documents the implementation of each subsystem. Chapter Six describes the testing strategy, results and defects found. Chapter Seven discusses the outcomes against the objectives. Chapter Eight concludes and identifies further work.</p>
+</div>
+<div class="chapter">
+  <div class="chapter-head"><span class="cnum">Chapter Two</span><h2>Literature Review and Related Work</h2></div>
+
+  <h3>2.1&nbsp;&nbsp;Theoretical basis: peer-assisted learning</h3>
+  <p>The pedagogical premise of this project is that students learn effectively from one another. Two established ideas support it. Vygotsky's notion of the zone of proximal development holds that a learner progresses furthest when assisted by someone whose understanding is only modestly ahead of their own &mdash; a description that fits a classmate more closely than it fits a lecturer. Constructivist accounts of learning further hold that knowledge is built by the learner rather than transferred intact, which implies that the act of explaining a concept benefits the explainer as much as the recipient.</p>
+  <p>Both ideas argue for a system that is symmetric: every participant is simultaneously a potential consumer and a potential producer of help. This principle shaped the design directly. There is no separate class of "content provider"; any student may upload notes, answer questions, or apply to tutor, and the reputation mechanism rewards contribution rather than consumption.</p>
+
+  <h3>2.2&nbsp;&nbsp;Review of existing systems</h3>
+
+  <h4>2.2.1&nbsp;&nbsp;Institutional learning management systems</h4>
+  <p>Platforms such as Moodle and Google Classroom are the standard vehicle for course administration. Their orientation is vertical: a lecturer publishes, students receive. Where discussion features exist they are typically per-course forums with weak discovery and no reputation. They are also institution-bound &mdash; a student cannot obtain help from a peer at another university, or in a subject outside their enrolled courses &mdash; and self-hosted deployments impose an administrative burden the students themselves cannot discharge.</p>
+
+  <h4>2.2.2&nbsp;&nbsp;General question-and-answer platforms</h4>
+  <p>Stack Overflow and the wider Stack Exchange network demonstrate convincingly that voting, accepted answers and reputation produce a durable, searchable knowledge base. The mechanism is sound and this project adopts it. The limitation is coverage: these platforms are strongest in software engineering, apply strict topicality rules that exclude coursework-style questions, and hold essentially nothing specific to a Cameroonian curriculum. They also offer no mechanism for arranging sustained one-to-one help.</p>
+
+  <h4>2.2.3&nbsp;&nbsp;Commercial note-sharing services</h4>
+  <p>Course Hero and Studocu aggregate student-generated study material at scale and confirm demand. Two characteristics make them unsuitable here. Pricing is in foreign currency with card settlement, which excludes the target users on payment grounds alone. More fundamentally, their economics reward volume of uploads rather than quality, and the resulting quality variance is a known criticism; this project responds with an explicit quality gate and human review for paid material (Section 5.5).</p>
+
+  <h4>2.2.4&nbsp;&nbsp;Online tutoring marketplaces</h4>
+  <p>Preply, Wyzant and comparable services implement the marketplace pattern this project adopts for tutoring: profiles, verification, scheduling, booking and payment. They are designed for cross-border tutoring at international rates, settle by card, and take a substantial commission. None operates meaningfully in the Cameroonian student market at student-affordable rates.</p>
+
+  <h4>2.2.5&nbsp;&nbsp;Informal messaging groups</h4>
+  <p>The incumbent, and the system any replacement must actually beat, is WhatsApp. Its advantages are decisive: universal adoption, negligible data cost, and zero onboarding friction. Its deficiencies are equally clear. Content is ephemeral and unsearchable; a question scrolls away within hours; files are lost when a device is replaced; there is no notion of a correct answer; membership is by invitation, so discovery is impossible; and there is no payment or accountability mechanism for tutoring.</p>
+
+  <h3>2.3&nbsp;&nbsp;Comparative analysis</h3>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:34mm">System</th>
+        <th class="c">Peer-to-peer</th>
+        <th class="c">Persistent &amp; searchable</th>
+        <th class="c">Quality signal</th>
+        <th class="c">Tutor booking</th>
+        <th class="c">Mobile money</th>
+        <th class="c">Low bandwidth</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Moodle / Google Classroom</td><td class="c">No</td><td class="c">Partial</td><td class="c">No</td><td class="c">No</td><td class="c">No</td><td class="c">Partial</td></tr>
+      <tr><td>Stack Exchange</td><td class="c">Yes</td><td class="c">Yes</td><td class="c">Yes</td><td class="c">No</td><td class="c">No</td><td class="c">Yes</td></tr>
+      <tr><td>Course Hero / Studocu</td><td class="c">Yes</td><td class="c">Yes</td><td class="c">Weak</td><td class="c">No</td><td class="c">No</td><td class="c">No</td></tr>
+      <tr><td>Preply / Wyzant</td><td class="c">Partial</td><td class="c">n/a</td><td class="c">Yes</td><td class="c">Yes</td><td class="c">No</td><td class="c">No</td></tr>
+      <tr><td>WhatsApp groups</td><td class="c">Yes</td><td class="c">No</td><td class="c">No</td><td class="c">No</td><td class="c">No</td><td class="c">Yes</td></tr>
+      <tr><td><b>StudyHub</b></td><td class="c"><b>Yes</b></td><td class="c"><b>Yes</b></td><td class="c"><b>Yes</b></td><td class="c"><b>Yes</b></td><td class="c"><b>Yes</b></td><td class="c"><b>Yes</b></td></tr>
+    </tbody>
+  </table>
+  <p class="caption"><b>Table 2.1</b> &mdash; Comparison of existing systems against the capabilities required in the target context. Assessments are based on the publicly documented feature sets and payment options of each platform.</p>
+
+  <h3>2.4&nbsp;&nbsp;Identified gap</h3>
+  <p>No reviewed system combines all six capabilities. The strongest individual mechanisms are well proven and are deliberately reused: the reputation and accepted-answer model from Stack Exchange, and the profile-schedule-book-pay marketplace pattern from the tutoring services. What is absent is their integration into one platform, settled through mobile money and engineered for an intermittent connection. That integration is the contribution of this work.</p>
+  <div class="note">
+    <span class="l">Design consequence</span>
+    <p>Because the incumbent is WhatsApp rather than a competing web platform, the design is judged against a low-friction, near-zero-cost baseline. This drove three decisions: the application is installable and works partly offline so it behaves like a native app; the first load is optimised and a sleeping backend is handled gracefully rather than surfacing as an error; and group chat is real-time, since a slower-than-WhatsApp chat would not be adopted regardless of its other merits.</p>
+  </div>
+</div>
+<div class="chapter">
+  <div class="chapter-head"><span class="cnum">Chapter Three</span><h2>Methodology</h2></div>
+
+  <h3>3.1&nbsp;&nbsp;Development methodology</h3>
+  <p>An iterative and incremental methodology was adopted in preference to a sequential waterfall approach. The justification is that several requirements &mdash; particularly the behaviour of the mobile money provider under failure &mdash; could not be specified accurately in advance and were only discovered by building against the live service. A methodology that fixed the specification before implementation would have fixed it wrongly.</p>
+  <p>Development proceeded in increments, each producing a deployable system. The version history records 65 commits between 27&nbsp;July and 11&nbsp;September 2026, and the database migration sequence provides an independent record of how the model evolved:</p>
+  <table>
+    <thead><tr><th style="width:22mm">Migration</th><th style="width:38mm">Name</th><th>Increment it accompanied</th></tr></thead>
+    <tbody>
+      <tr><td class="c">0001</td><td><code>init</code></td><td>Core schema: users, groups, notes, questions, tutors, transactions.</td></tr>
+      <tr><td class="c">0002</td><td><code>session_credits</code></td><td>Prepaid tutoring packs, added once per-session payment proved cumbersome for repeat bookings.</td></tr>
+      <tr><td class="c">0003</td><td><code>message_reactions_and_soft_delete</code></td><td>Chat reactions, and soft deletion so a removed message leaves a visible trace rather than silently altering a conversation.</td></tr>
+      <tr><td class="c">0004</td><td><code>premium_note_review</code></td><td>Human moderation queue for paid uploads, added after recognising that automated checks cannot assess correctness.</td></tr>
+      <tr><td class="c">0005</td><td><code>uploader_trust</code></td><td>Support for bypassing review once a contributor has an established record.</td></tr>
+      <tr><td class="c">0006</td><td><code>contact_messages</code></td><td>Contact form persistence with an administrative inbox.</td></tr>
+    </tbody>
+  </table>
+  <p class="caption"><b>Table 3.1</b> &mdash; Schema migrations as a record of incremental development.</p>
+
+  <h3>3.2&nbsp;&nbsp;Requirements elicitation</h3>
+  <p>Requirements were derived from three sources: observation of how students currently exchange academic material in informal channels; the feature analysis of comparable systems presented in Chapter Two, which established both a baseline of expected functionality and the gaps to be filled; and constraints imposed by the operating environment, namely the prevalence of mobile money, the cost and instability of bandwidth, the predominance of mobile devices, and the official bilingualism of Cameroon.</p>
+  <div class="warn">
+    <span class="l">Methodological limitation</span>
+    <p>Requirements were not elicited through a formal structured instrument such as a distributed questionnaire or recorded interview programme, and no statistical characterisation of the user population was produced. The requirements presented below are therefore reasoned rather than surveyed. This is a genuine weakness of the methodology and is revisited in Section 6.6 and Section 8.2.</p>
+  </div>
+
+  <h3>3.3&nbsp;&nbsp;Functional requirements</h3>
+  <table>
+    <thead><tr><th style="width:16mm">ID</th><th style="width:32mm">Area</th><th>Requirement</th><th class="c" style="width:18mm">Priority</th></tr></thead>
+    <tbody>
+      <tr><td class="c">FR-01</td><td>Accounts</td><td>A user shall register with name, email and password, and authenticate to obtain a session.</td><td class="c">Must</td></tr>
+      <tr><td class="c">FR-02</td><td>Accounts</td><td>A user shall maintain a profile recording university, field of study, biography and photograph.</td><td class="c">Must</td></tr>
+      <tr><td class="c">FR-03</td><td>Accounts</td><td>The system shall distinguish student, tutor and administrator roles and restrict operations accordingly.</td><td class="c">Must</td></tr>
+      <tr><td class="c">FR-04</td><td>Groups</td><td>A user shall create a study group and specify whether joining is open or requires approval.</td><td class="c">Must</td></tr>
+      <tr><td class="c">FR-05</td><td>Groups</td><td>Members shall exchange messages in real time, with file attachments, replies, editing and emoji reactions.</td><td class="c">Must</td></tr>
+      <tr><td class="c">FR-06</td><td>Groups</td><td>A group owner shall approve or deny join requests and remove members.</td><td class="c">Should</td></tr>
+      <tr><td class="c">FR-07</td><td>Notes</td><td>A user shall upload a note with title, description, subject and tags, and browse and filter the repository.</td><td class="c">Must</td></tr>
+      <tr><td class="c">FR-08</td><td>Notes</td><td>A user shall preview PDF and image notes within the application before downloading.</td><td class="c">Should</td></tr>
+      <tr><td class="c">FR-09</td><td>Q&amp;A</td><td>A user shall post a question with optional voice recording and images, and receive answers.</td><td class="c">Must</td></tr>
+      <tr><td class="c">FR-10</td><td>Q&amp;A</td><td>Users shall vote on questions and answers; the asker shall mark one answer as accepted.</td><td class="c">Must</td></tr>
+      <tr><td class="c">FR-11</td><td>Q&amp;A</td><td>The system shall accumulate reputation from a user's contributions and display standing.</td><td class="c">Should</td></tr>
+      <tr><td class="c">FR-12</td><td>Tutoring</td><td>A user shall apply to tutor, stating subjects, experience and hourly rate.</td><td class="c">Must</td></tr>
+      <tr><td class="c">FR-13</td><td>Tutoring</td><td>An administrator shall approve, reject or revoke a tutor application.</td><td class="c">Must</td></tr>
+      <tr><td class="c">FR-14</td><td>Tutoring</td><td>An approved tutor shall publish weekly availability; a student shall book an available slot.</td><td class="c">Must</td></tr>
+      <tr><td class="c">FR-15</td><td>Payment</td><td>A student shall pay by MTN Mobile Money or Orange Money, with the operator detected from the number.</td><td class="c">Must</td></tr>
+      <tr><td class="c">FR-16</td><td>Payment</td><td>A completed payment shall grant the corresponding entitlement exactly once and issue a receipt.</td><td class="c">Must</td></tr>
+      <tr><td class="c">FR-17</td><td>Payment</td><td>A user shall abandon a payment in progress without risk of being charged without receiving access.</td><td class="c">Must</td></tr>
+      <tr><td class="c">FR-18</td><td>Content</td><td>Paid content shall be inaccessible to any user without a recorded purchase.</td><td class="c">Must</td></tr>
+      <tr><td class="c">FR-19</td><td>Content</td><td>Paid uploads shall pass an automated quality check and human review before sale.</td><td class="c">Should</td></tr>
+      <tr><td class="c">FR-20</td><td>Platform</td><td>Users shall receive in-application notifications of events concerning them.</td><td class="c">Should</td></tr>
+      <tr><td class="c">FR-21</td><td>Platform</td><td>An administrator shall manage users, review queues and view platform statistics.</td><td class="c">Must</td></tr>
+      <tr><td class="c">FR-22</td><td>Platform</td><td>A visitor shall contact the operators through a public form protected against automated submission.</td><td class="c">Could</td></tr>
+    </tbody>
+  </table>
+  <p class="caption"><b>Table 3.2</b> &mdash; Functional requirements, prioritised by MoSCoW classification.</p>
+</div>
+<div class="chapter" style="page-break-before:auto">
+  <h3>3.4&nbsp;&nbsp;Non-functional requirements</h3>
+  <table>
+    <thead><tr><th style="width:16mm">ID</th><th style="width:32mm">Attribute</th><th>Requirement and acceptance criterion</th></tr></thead>
+    <tbody>
+      <tr><td class="c">NFR-01</td><td>Security &mdash; credentials</td><td>Passwords shall be stored only as a salted adaptive hash. Criterion: bcrypt at a work factor of at least 12; no plaintext in storage or logs.</td></tr>
+      <tr><td class="c">NFR-02</td><td>Security &mdash; transport</td><td>All production traffic shall be encrypted. Criterion: HTTP requests redirected to HTTPS; HSTS asserted.</td></tr>
+      <tr><td class="c">NFR-03</td><td>Security &mdash; access</td><td>Authorisation shall be enforced server-side on every protected operation, never by hiding the interface alone.</td></tr>
+      <tr><td class="c">NFR-04</td><td>Security &mdash; abuse</td><td>Authentication and payment endpoints shall be rate-limited. Criterion: at most 10 login attempts per address per 15 minutes.</td></tr>
+      <tr><td class="c">NFR-05</td><td>Integrity &mdash; pricing</td><td>Monetary amounts shall never be accepted from the client. Criterion: every charge resolved from the database at the time of the transaction.</td></tr>
+      <tr><td class="c">NFR-06</td><td>Reliability</td><td>A successful charge shall always result in the entitlement being granted, including if the client disconnects during settlement.</td></tr>
+      <tr><td class="c">NFR-07</td><td>Usability &mdash; mobile</td><td>The interface shall be operable on a 360&nbsp;px viewport without horizontal scrolling.</td></tr>
+      <tr><td class="c">NFR-08</td><td>Usability &mdash; network</td><td>A transport failure caused by a sleeping server shall be recovered transparently and communicated, not surfaced as an error.</td></tr>
+      <tr><td class="c">NFR-09</td><td>Accessibility</td><td>Text and interface contrast shall meet WCAG 2.1 level AA. Criterion: 4.5:1 for body text, 3:1 for interface components.</td></tr>
+      <tr><td class="c">NFR-10</td><td>Internationalisation</td><td>The complete interface shall be available in English and French, with the choice persisted across visits.</td></tr>
+      <tr><td class="c">NFR-11</td><td>Performance</td><td>Note downloads shall not be proxied through the application server where the content is unprotected.</td></tr>
+      <tr><td class="c">NFR-12</td><td>Maintainability</td><td>The database schema shall be version-controlled and applied only through reviewed migrations.</td></tr>
+      <tr><td class="c">NFR-13</td><td>Portability</td><td>The client shall be installable as a Progressive Web Application on mobile and desktop.</td></tr>
+      <tr><td class="c">NFR-14</td><td>Privacy</td><td>Analytics shall not employ cookies or collect personally identifying data.</td></tr>
+    </tbody>
+  </table>
+  <p class="caption"><b>Table 3.3</b> &mdash; Non-functional requirements with acceptance criteria.</p>
+
+  <h3>3.5&nbsp;&nbsp;Technology selection and justification</h3>
+  <p>Each major technology was selected against the requirements above rather than by familiarity alone. The reasoning is recorded below, including the alternatives rejected.</p>
+  <table>
+    <thead><tr><th style="width:30mm">Decision</th><th style="width:30mm">Selected</th><th style="width:34mm">Alternatives considered</th><th>Justification</th></tr></thead>
+    <tbody>
+      <tr><td>Client framework</td><td>React 19 with Vite</td><td>Vue, Angular, server-rendered templates</td><td>A single-page application suits an interface with a persistent chat connection and frequent partial updates. React's ecosystem supplied mature libraries for every secondary need. Vite was chosen over a bundler-based toolchain for build speed and native ES module handling.</td></tr>
+      <tr><td>Styling</td><td>Tailwind CSS v4</td><td>CSS modules, styled-components, Bootstrap</td><td>Utility classes keep styling local to markup and avoid an unbounded stylesheet. Version 4's <code>@theme inline</code> was decisive: it keeps generated utilities bound to CSS custom properties, which is what makes the runtime light/dark switch possible without a rebuild (Section 4.5).</td></tr>
+      <tr><td>Server runtime</td><td>Node.js with Express 5</td><td>Django, Laravel, Spring Boot</td><td>A single language across both tiers reduces context switching and permits shared validation logic. Node's event-driven model suits the workload, which is dominated by concurrent I/O rather than computation. Express 5 propagates asynchronous handler rejections to the error middleware automatically, removing a class of silent failure.</td></tr>
+      <tr><td>Database</td><td>PostgreSQL</td><td>MySQL, MongoDB</td><td>The domain is strongly relational &mdash; memberships, votes, bookings and entitlements are all join-table relationships requiring referential integrity. A document store would have required these invariants to be enforced in application code. PostgreSQL additionally provides native array columns, used for tags and images.</td></tr>
+      <tr><td>Data access</td><td>Prisma ORM</td><td>Raw SQL, Sequelize, TypeORM</td><td>Declarative schema as the single source of truth, with generated migrations and a type-aware client. This directly satisfies NFR-12; hand-written SQL would have made schema evolution across 25 tables error-prone.</td></tr>
+      <tr><td>Real-time transport</td><td>Socket.IO</td><td>Raw WebSocket, SSE, polling</td><td>Provides room semantics, automatic reconnection and transport fallback. Rooms map naturally onto study groups. Raw WebSocket would have required reimplementing all three.</td></tr>
+      <tr><td>Payment</td><td>MeSomb</td><td>Direct MTN and Orange APIs, Stripe, Flutterwave</td><td>A single integration covering both operators. Direct integration would have required two separate agreements and two distinct settlement flows. Card processors were excluded as inapplicable to the user population.</td></tr>
+      <tr><td>File storage</td><td>Cloudinary</td><td>Local disk, Amazon S3</td><td>Local storage was rejected because the chosen host provides an ephemeral filesystem that is discarded on redeployment. Cloudinary additionally provides CDN delivery, transformation, and an authenticated delivery mode used to protect paid content (Section 5.3).</td></tr>
+      <tr><td>Session management</td><td>Stateless JWT</td><td>Server-side sessions</td><td>Avoids shared session state, permitting the API to scale horizontally and simplifying the WebSocket handshake. The accepted cost is the absence of immediate revocation, discussed in Section 8.2.</td></tr>
+      <tr><td>Analytics</td><td>Plausible</td><td>Google Analytics</td><td>Cookieless and collecting no personal data, satisfying NFR-14 and removing the legal requirement for a consent gate.</td></tr>
+    </tbody>
+  </table>
+  <p class="caption"><b>Table 3.4</b> &mdash; Technology decisions with alternatives and justification.</p>
+
+  <h3>3.6&nbsp;&nbsp;Development environment</h3>
+  <p>Development was conducted on Windows 11 using Visual Studio Code, with Git for version control and a GitHub repository as the origin. Both application tiers reside in a single repository, from which both hosting providers deploy automatically on a push to the default branch. Quality tooling comprised ESLint for static analysis, the Vite production build as a compilation gate, and a purpose-written locale consistency checker described in Section 6.3.</p>
+</div>
+<div class="chapter">
+  <div class="chapter-head"><span class="cnum">Chapter Four</span><h2>System Design</h2></div>
+
+  <h3>4.1&nbsp;&nbsp;Architectural design</h3>
+  <p>The system adopts a three-layer client&ndash;server architecture with the presentation layer deployed independently of the application layer. The separation is deliberate: static assets benefit from content-delivery distribution, whereas the application layer must hold long-lived WebSocket connections and run a background scheduler. These have incompatible hosting profiles, and the accepted cost of separating them is that the two tiers occupy different origins, making cross-origin policy a first-class design concern (Section 5.1).</p>
+
+  <figure>
+    <div class="fig">
+      <div class="lane">
+        <div class="lane-t">Presentation layer &mdash; client</div>
+        <div class="row">
+          <div class="node"><b>React 19 SPA</b>Routing, component state, two React contexts (authentication, theme), service worker for offline capability.</div>
+        </div>
+      </div>
+      <div class="down">&darr;&nbsp; HTTPS / JSON with bearer token &nbsp;&middot;&nbsp; WebSocket for chat &nbsp;&darr;</div>
+      <div class="lane">
+        <div class="lane-t">Delivery</div>
+        <div class="row">
+          <div class="node g"><b>Vercel CDN</b>Serves the compiled bundle. All paths rewritten to the application entry point.</div>
+        </div>
+      </div>
+      <div class="lane">
+        <div class="lane-t">Application layer</div>
+        <div class="row">
+          <div class="node"><b>Express 5 REST API</b>Middleware pipeline, 12 route modules, 88 endpoints.</div>
+          <div class="node"><b>Socket.IO server</b>Authenticated handshake, one room per study group.</div>
+          <div class="node"><b>Reconciler</b>Background settlement of pending payments.</div>
+        </div>
+      </div>
+      <div class="down">&darr;</div>
+      <div class="lane">
+        <div class="lane-t">Data and external services</div>
+        <div class="row">
+          <div class="node g"><b>PostgreSQL</b>25 tables via Prisma. Pooled connection for the application; direct connection for migrations.</div>
+          <div class="node g"><b>Cloudinary</b>Object storage and CDN. Authenticated delivery for paid content.</div>
+          <div class="node g"><b>MeSomb</b>Mobile money collection, asynchronous with polling.</div>
+        </div>
+      </div>
+    </div>
+    <p class="caption"><b>Figure 4.1</b> &mdash; System architecture. Each layer is deployed and scaled independently.</p>
+  </figure>
+
+  <h4>4.1.1&nbsp;&nbsp;Request pipeline</h4>
+  <p>Every authenticated request traverses a fixed middleware sequence. Ordering is significant and is enforced in the application entry point:</p>
+  <pre>Request
+  -> trust proxy          resolve true client address and protocol behind the host proxy
+  -> HTTPS redirect       308, preserving method and body on non-GET requests
+  -> security headers     CSP, HSTS, nosniff, frame-ancestors none
+  -> CORS                 explicit origin allow-list; wildcard impermissible with credentials
+  -> body parser          JSON, limited to 1 MB
+  -> rate limiter         selected by path
+  -> authenticate         verify token, populate request identity
+  -> authorise            role check, re-read from database
+  -> handler              Prisma query, response
+  -> error handler        log fully, return generic message</pre>
+
+  <h3>4.2&nbsp;&nbsp;Use-case model</h3>
+  <table>
+    <thead><tr><th style="width:26mm">Actor</th><th>Use cases</th></tr></thead>
+    <tbody>
+      <tr><td><b>Visitor</b><br>(unauthenticated)</td><td>View landing and informational pages; register; authenticate; submit the contact form.</td></tr>
+      <tr><td><b>Student</b></td><td>Manage profile; create, join and leave study groups; exchange group messages; upload, browse, preview and download notes; ask and answer questions; vote and accept answers; accumulate reputation; browse tutors; book a session; purchase a paid note; pay by mobile money; obtain a receipt.</td></tr>
+      <tr><td><b>Tutor</b><br>(extends Student)</td><td>Submit and maintain a tutor profile; publish weekly availability; accept, complete or decline bookings; publish paid notes subject to review.</td></tr>
+      <tr><td><b>Administrator</b><br>(extends Student)</td><td>Review tutor applications; moderate the paid-note queue; suspend or promote users; adjust publishing trust; inspect platform statistics and payment diagnostics; read the contact inbox.</td></tr>
+      <tr><td><b>Payment provider</b><br>(external)</td><td>Deliver the authorisation prompt to the payer's handset; report transaction status on request.</td></tr>
+    </tbody>
+  </table>
+  <p class="caption"><b>Table 4.1</b> &mdash; Actors and their use cases. Tutor and Administrator both extend Student; a promotion adds capability without removing any.</p>
+</div>
+<div class="chapter" style="page-break-before:auto">
+  <h3>4.3&nbsp;&nbsp;Database design</h3>
+  <p>The schema comprises 25 tables in third normal form, declared in a single Prisma schema file of 476 lines. Entities are grouped below by the subsystem they serve.</p>
+  <table>
+    <thead><tr><th style="width:28mm">Subsystem</th><th style="width:56mm">Entities</th><th>Principal relationships</th></tr></thead>
+    <tbody>
+      <tr><td><b>Identity</b></td><td><code>users</code></td><td>Central entity, referenced by every other subsystem. Holds role, reputation and active state.</td></tr>
+      <tr><td><b>Collaboration</b></td><td><code>groups</code>, <code>user_groups</code>, <code>group_join_requests</code>, <code>group_read_status</code></td><td><code>user_groups</code> resolves the many-to-many relation between users and groups and carries the member's role within the group.</td></tr>
+      <tr><td><b>Messaging</b></td><td><code>group_messages</code>, <code>group_message_reactions</code></td><td>Messages belong to a group and an author, and may reference a parent message through a self-referential key implementing replies.</td></tr>
+      <tr><td><b>Content</b></td><td><code>notes</code></td><td>Belongs to an uploader and optionally to a group. Carries a premium flag and price.</td></tr>
+      <tr><td><b>Knowledge</b></td><td><code>questions</code>, <code>answers</code>, <code>question_votes</code>, <code>answer_votes</code>, <code>question_bookmarks</code>, <code>question_followers</code>, <code>answer_comments</code></td><td>Votes are modelled as distinct entities rather than counters, so a uniqueness constraint makes double voting structurally impossible.</td></tr>
+      <tr><td><b>Tutoring</b></td><td><code>tutors</code>, <code>tutor_availability</code>, <code>bookings</code>, <code>session_credits</code></td><td><code>tutors</code> is a one-to-one extension of a user carrying application status. A booking references both parties and a slot.</td></tr>
+      <tr><td><b>Commerce</b></td><td><code>transactions</code>, <code>premium_notes</code>, <code>purchased_notes</code>, <code>premium_subscriptions</code></td><td><code>transactions</code> is the payment ledger; <code>purchased_notes</code> is the entitlement record consulted before any protected file is released.</td></tr>
+      <tr><td><b>Platform</b></td><td><code>notifications</code>, <code>contact_messages</code></td><td>Notifications reference a recipient and the entity that triggered them.</td></tr>
+    </tbody>
+  </table>
+  <p class="caption"><b>Table 4.2</b> &mdash; Entity groups and principal relationships.</p>
+
+  <h4>4.3.1&nbsp;&nbsp;Design decisions in the data model</h4>
+  <ul>
+    <li><b>Votes as entities.</b> Recording each vote as a row with a uniqueness constraint on voter and target makes repeat voting impossible at the storage layer. An integer counter would have pushed that guarantee into application code, where any path that forgets the check defeats it.</li>
+    <li><b>Soft deletion of messages.</b> A deleted message retains its row and is flagged, so the interface renders a placeholder rather than removing it. This preserves the coherence of a conversation others have already replied to.</li>
+    <li><b>Entitlement as a record, not a flag.</b> Access to paid content is determined by the existence of a <code>purchased_notes</code> row rather than a boolean, yielding an auditable record of who purchased what and when.</li>
+    <li><b>Trust computed, not stored.</b> Permission to publish paid material without review is derived at query time from recent review history. A stored flag requires something to remember to revoke it; a derived one lapses automatically when the history no longer supports it.</li>
+  </ul>
+
+  <h4>4.3.2&nbsp;&nbsp;Connection strategy</h4>
+  <p>The datasource declares two connection strings. The application uses a pooled endpoint, keeping concurrent connections within the limits of the hosting tier. Migrations use a direct endpoint, because the pooler operates in transaction mode and cannot carry the session-scoped advisory locks and type-creation statements that migrations require. Routing migrations through the pooled endpoint produces a failure whose message does not identify pooling as the cause, which is recorded here because it cost material debugging time.</p>
+</div>
+<div class="chapter" style="page-break-before:auto">
+  <h3>4.4&nbsp;&nbsp;Process design: payment sequence</h3>
+  <p>Payment is the most intricate process in the system, because the provider settles asynchronously and may never respond at all. The design therefore treats the browser as an observer of the outcome rather than as the authority on it.</p>
+  <pre>Student              Client           API                  Provider        Reconciler
+  |  enter number      |                |                      |                |
+  |------------------->| detect operator|                      |                |
+  |                    |--- initiate -->| resolve price        |                |
+  |                    |                | from DATABASE        |                |
+  |                    |                | create tx (pending)  |                |
+  |                    |                |---- collect -------->|                |
+  |                    |<-- txId -------|   (asynchronous)     |                |
+  |<=== USSD prompt ========================================== |                |
+  |                    |                |                      |                |
+  |  approve with PIN  |--- poll 3s --->|---- status --------->|                |
+  |                    |                |<--- SUCCESS ---------|                |
+  |                    |                | grant (idempotent)   |                |
+  |                    |<-- receipt ----|                      |                |
+  |                    |                |                      |                |
+  [ alternative path: browser closes before settlement ]       |                |
+  |                    |      X         |                      |<--- sweep -----|
+  |                    |                |<--- SUCCESS ---------|                |
+  |                    |                | grant (idempotent)   |                |
+  |<=== notification ======================                    |                |</pre>
+  <p class="caption"><b>Figure 4.2</b> &mdash; Payment sequence, including the path taken when the client disconnects before settlement completes.</p>
+  <div class="note">
+    <span class="l">Two invariants this design protects</span>
+    <p><b>Price integrity.</b> The client never transmits an amount. Every charge is resolved from the database when the transaction is created, so a modified request cannot alter what is charged.</p>
+    <p><b>Exactly-once granting.</b> The browser poll and the reconciler may observe success concurrently. Granting is therefore performed through a conditional status update, so exactly one of the racing callers performs the grant and the other observes that it has already occurred.</p>
+  </div>
+
+  <h3>4.5&nbsp;&nbsp;Interface design</h3>
+  <p>The interface is built on a token-based design system rather than per-page styling. One stylesheet defines a brand scale, neutral surfaces, semantic status colours, elevation and radii as CSS custom properties. Tailwind's <code>@theme inline</code> directive exposes these as utility classes that retain a <code>var()</code> reference instead of compiling to a fixed value, which is what permits the light and dark themes to switch at runtime by changing a single attribute on the document root, with no rebuild and no flash of restyled content.</p>
+  <p>Seventeen shared primitives implement every recurring visual element. Consolidating them replaced a situation in which the same component &mdash; a button, a modal, a status badge &mdash; had been implemented separately on each page and had drifted apart visually. Contrast ratios in both themes were chosen to satisfy NFR-09, which required separating the accent colour used for text from the one used as a fill behind white text, since a single value cannot satisfy both the 4.5:1 and 3:1 thresholds simultaneously.</p>
+  <p>The layout is mobile-first throughout, in recognition that the majority of the intended users will access the platform on a handset over a metered connection.</p>
+</div>
+<div class="chapter">
+  <div class="chapter-head"><span class="cnum">Chapter Five</span><h2>Implementation</h2></div>
+  <p>This chapter documents how each subsystem was realised, concentrating on decisions whose rationale is not evident from the code alone.</p>
+
+  <h3>5.1&nbsp;&nbsp;Authentication and authorisation</h3>
+  <p>Passwords are hashed with bcrypt at a work factor of twelve, satisfying NFR-01. Authentication issues a JSON Web Token carrying the user identifier, signed with a server-held secret and expiring after twenty-four hours. The client stores the token and attaches it to every request through an interceptor, so no call site handles the header individually.</p>
+  <p>Two details in the login path are worth recording. First, a bcrypt comparison is executed even when the submitted email matches no account, comparing against a discarded dummy hash. Without this, a non-existent account returns measurably faster than an incorrect password, permitting an attacker to enumerate registered addresses by timing alone. Second, role checks re-read the role from the database rather than trusting the claim embedded in the token, so that a revoked administrator loses access immediately instead of at token expiry.</p>
+  <p>Three authorisation middlewares are provided. <code>authenticate</code> requires a valid token. <code>optionalAuth</code> populates the identity when a token is present but never rejects, serving endpoints that are public yet render differently for a signed-in user &mdash; for instance, indicating whether the viewer already owns a paid note. <code>requireRole</code> is a factory enforcing one or more roles. The WebSocket handshake reuses the same verification, and group membership is checked against the database before a socket is admitted to a room, so room membership cannot be asserted by the client.</p>
+  <p>Because the two tiers occupy different origins, cross-origin policy is load-bearing rather than incidental. Origins are supplied by configuration as an explicit allow-list; a wildcard is impermissible because credentials are enabled. Two diagnostics were added after misconfiguration proved difficult to trace: a rejected origin is logged by name alongside the allow-list, exposing a trailing slash or scheme mismatch that is otherwise invisible; and a production server booting with only a local origin configured prints a prominent startup error, because that state rejects every browser request with an opaque status that presents as a client-side defect.</p>
+
+  <h3>5.2&nbsp;&nbsp;Collaboration subsystem</h3>
+  <p>Group messaging is delivered over Socket.IO, with one room per group. The server emits events for new messages, edits, deletions, reactions, typing state and presence. Message sending is optimistic: the message appears immediately in the sender's view marked as pending and is replaced when the server's copy arrives. The echo of the sender's own message is suppressed, since otherwise the author would see it twice.</p>
+  <p>A polling fallback is retained but deliberately subordinated. When the socket is connected the client polls every thirty seconds; when it is not, every four. The poll exists to repair events missed during a brief disconnection, not to drive the conversation. This matters on an unstable connection, where a socket may drop without the client observing a clean close.</p>
+  <p>Message editing is permitted within fifteen minutes of posting. Deletion is soft, as described in Section 4.3.1, and may be performed by the author or by a group administrator acting as moderator.</p>
+
+  <h3>5.3&nbsp;&nbsp;Content subsystem and access control</h3>
+  <p>Uploads are parsed by Multer and streamed directly to Cloudinary without touching the application's filesystem, which is necessary because the hosting platform provides an ephemeral disk that is discarded on every redeployment. Files are constrained to 20&nbsp;MB and validated against a MIME allow-list.</p>
+  <p>Delivery differs by whether the content is protected, and this distinction produced the single largest measured performance improvement in the project:</p>
+  <ul>
+    <li><b>Free content</b> is not proxied. The server responds with a redirect to the content-delivery URL, so the file is served by the CDN rather than streamed through a constrained application process.</li>
+    <li><b>Paid content</b> is uploaded under Cloudinary's authenticated delivery type, which is not retrievable from a plain URL. After confirming that an entitlement record exists for the requesting user and the requested note, the server issues a short-lived signed URL. Legacy files held locally are stored beneath a directory that the static middleware refuses outright, so the only route to them is through the entitlement check.</li>
+  </ul>
+  <div class="note">
+    <span class="l">Measured outcome (NFR-11)</span>
+    <p>Before the redirect was introduced, a 3.19&nbsp;MB PDF proxied through the application server did not complete within the 300-second client timeout. After the change, the same file on the same connection was delivered in 31 seconds. The improvement is attributable to removing a constrained single process from the data path, not to any change in the file.</p>
+  </div>
+
+  <h3>5.4&nbsp;&nbsp;Tutoring and payment subsystem</h3>
+  <p>All provider interaction is confined to a single adapter module, so that no route communicates with the payment SDK directly. The adapter normalises telephone numbers to a nine-digit local form, accepting the international and spaced variants students actually type; detects the operator from the prefix and rejects a mismatch between the detected operator and the selected service before any request is issued; and requests collection in asynchronous mode so the HTTP call returns immediately rather than blocking for the duration of the subscriber's interaction with the prompt.</p>
+  <p>Cancellation is not a local state change. When a payer abandons a payment, the server first interrogates the provider, because settlement may have completed between the decision to cancel and the arrival of the request. A reported success completes the order and grants access; a reported failure marks the transaction failed; an absent reference cancels, nothing having been charged; and a still-pending state is left pending and handed to the reconciler, with the user informed that confirmation is continuing. Without this, a user who cancelled a fraction of a second after approving would have been charged and left without access.</p>
+  <div class="warn">
+    <span class="l">Defect discovered during integration</span>
+    <p>The provider authenticates each request with a signature computed over the serialised request body. Any character above U+007F in that body causes rejection with a message indicating a bad signature &mdash; an error that directs attention to the credentials rather than to the payload. A single typographic dash in a note title was sufficient to break every purchase of that note while purchases of other notes continued to succeed, which made the fault appear intermittent and unrelated to content.</p>
+    <p>The resolution was a sanitising helper in the adapter that folds typographic punctuation to ASCII equivalents, removes any remaining character above U+007F, collapses whitespace and truncates to 120 characters. Every field transmitted to the provider passes through it. The episode is recorded because the initial diagnosis was wrong: the credentials were suspected first, and a diagnostic endpoint had to be written to establish that the deployed keys were byte-identical to the working local ones before attention moved to the payload.</p>
+  </div>
+</div>
+<div class="chapter" style="page-break-before:auto">
+  <h3>5.5&nbsp;&nbsp;Quality gate and moderation</h3>
+  <p>Charging for content creates an obligation to ensure it is worth paying for. Two mechanisms operate in sequence.</p>
+  <p>An automated gate examines each paid upload, extracting text from PDF documents by decompressing the relevant content streams and reading the text-showing operators, then measuring word count, page count, byte size and lexical variety. Variety is computed as a type-to-token ratio averaged over fixed windows rather than across the whole document, because an unwindowed ratio falls as length rises and would therefore penalise long documents purely for being long.</p>
+  <p>The scope of this gate is deliberately limited, and the limitation is documented in the source. No heuristic can distinguish a correct derivation from a confidently incorrect one. What the gate detects is material that is obviously unfit for sale: near-empty files, placeholder text, padding and unreadable scans. Correctness is the province of the human review queue, and the automated stage exists only to keep the obviously unfit from reaching it.</p>
+  <p>Human review is performed by an administrator, who must open and read the file before deciding. A rejection requires a written reason, which is transmitted to the author, on the principle that a rejection without an actionable explanation merely wastes the contributor's effort. Contributors with an established record bypass the queue, using the computed trust rule described in Section 4.3.1: at least three approvals and no rejections within the last ten reviewed uploads.</p>
+
+  <h3>5.6&nbsp;&nbsp;Internationalisation</h3>
+  <p>The interface is fully available in English and French, with 1,228 translation keys in each language, satisfying NFR-10. Language is detected in the order stored preference, then browser setting, then document attribute. A stored choice deliberately takes precedence over the browser, since a user who has explicitly selected a language should not have that selection overridden on a subsequent visit. Regional variants are mapped onto the base language, so that a browser reporting <code>fr-CM</code> resolves to French; without this mapping, Cameroonian browsers reporting a region would silently have received English, which is precisely the population the requirement exists to serve.</p>
+  <p>The governing implementation rule is that values which are stored or searched remain in English, and only their displayed labels are translated. Subjects, fields of study, availability days, question categories and booking statuses are all persisted. Translating the stored value would mean that a French-speaking tutor's subject never matched an English-speaking student's search for the same subject, and the two would silently fail to find one another.</p>
+  <p>Several consequences of this rule required specific handling. Plural forms are expressed through the internationalisation library's plural categories rather than by appending a character, because French pluralisation does not follow the English pattern. Dates and numbers are formatted in the active locale. The account-deletion confirmation compares typed input against the translated word, since translating only the visible instruction would have left French users typing the French word at a permanently disabled button. Transient notification text is resolved from the library instance rather than the React hook, which keeps the translation function out of data-fetching closures and their dependency arrays.</p>
+  <p>A consistency checker was written to prevent the two locale files from diverging as the application grows. It fails the build on four conditions: a key present in one language but absent from the other, differing interpolation placeholders between languages, a plural family missing a required form, and a key referenced in code but defined nowhere. It also reports keys identical in both languages and keys nothing references, without failing, since both are usually legitimate but merit inspection. Its value was demonstrated immediately, as described in Section 6.5.</p>
+
+  <h3>5.7&nbsp;&nbsp;Resilience and offline capability</h3>
+  <p>The hosting tier suspends the application server after approximately fifteen minutes without traffic, and the first request to reach a suspended instance is typically lost while the container starts. Untreated, a visitor arriving from a shared link encounters a failure on an entirely healthy service.</p>
+  <p>The client therefore retries, but narrowly. Only requests that received no response whatsoever are retried, at most twice and four seconds apart. Any request the server actually answered &mdash; including one answered with a server error &mdash; is not retried, because repeating a request the server did process risks duplicating its effect. While a retry is outstanding the client displays an explanatory banner, so the delay is accounted for rather than silent. This satisfies NFR-08.</p>
+  <p>The application is installable as a Progressive Web Application, satisfying NFR-13. Its service worker applies caching strategies chosen per resource class rather than uniformly: public statistics are served stale while revalidating; listings of groups, notes and questions prefer the network but fall back to cache, making them readable offline; and authentication, payment, messaging and tutor rates are never cached, because serving any of those from a stale copy would be actively harmful.</p>
+</div>
+<div class="chapter">
+  <div class="chapter-head"><span class="cnum">Chapter Six</span><h2>Testing and Validation</h2></div>
+
+  <h3>6.1&nbsp;&nbsp;Testing strategy</h3>
+  <p>Validation combined four techniques: continuous static analysis, production build validation as a compilation gate, a purpose-written automated consistency checker, and structured manual functional testing. The strategy and its principal weakness are stated plainly below.</p>
+  <div class="warn">
+    <span class="l">Principal weakness of the strategy</span>
+    <p>The project does not include an automated regression test suite. There is no unit, integration or end-to-end test framework configured, and no test runner in either package manifest. Verification of behaviour was performed by ad-hoc scripts written to exercise a specific change and by manual execution of test cases; the scripts were not retained as a maintained suite. Consequently there is no automated protection against regression, and every change is re-verified by hand. This is the most significant deficiency of the work and is the first recommendation in Section 8.3.</p>
+  </div>
+
+  <h3>6.2&nbsp;&nbsp;Static analysis and build validation</h3>
+  <p>ESLint runs across the client source with the React Hooks and React Refresh rule sets enabled. The codebase carries a known baseline of 42 errors and 13 warnings, predominantly effect-ordering advisories and unused bindings. The baseline was not eliminated; instead the working rule adopted was that no change may increase either count, which converts the tool into a usable regression signal despite the outstanding debt.</p>
+  <p>The production build is treated as the authoritative gate rather than the development server. This is a consequence of the styling approach: a mistyped design token resolves silently in development but fails the production build, so a change that runs correctly under the development server is not thereby validated.</p>
+
+  <h3>6.3&nbsp;&nbsp;Automated consistency checking</h3>
+  <p>A checker was written to enforce internal consistency between the two locale files, invoked through a package script. It fails on four conditions, each of which would otherwise reach production as visibly incorrect text:</p>
+  <table>
+    <thead><tr><th style="width:52mm">Condition detected</th><th>Symptom if undetected</th></tr></thead>
+    <tbody>
+      <tr><td>Key present in one language only</td><td>The interface falls back to the other language mid-page.</td></tr>
+      <tr><td>Interpolation placeholders differ between languages</td><td>A placeholder renders literally, e.g. the text <code>{{count}}</code> appearing on screen.</td></tr>
+      <tr><td>Plural family missing a required form</td><td>The key name itself is displayed instead of the text.</td></tr>
+      <tr><td>Key referenced in code but undefined</td><td>The raw key path is rendered to the user.</td></tr>
+    </tbody>
+  </table>
+  <p class="caption"><b>Table 6.1</b> &mdash; Conditions enforced by the locale consistency checker.</p>
+  <p>At final measurement the checker reported 1,228 keys in each language with no missing keys, no extra keys, no placeholder mismatches, no plural family defects and no undefined references.</p>
+
+  <h3>6.4&nbsp;&nbsp;Functional test cases and results</h3>
+  <p>Functional verification was conducted against the deployed system, exercising each requirement of Table 3.2. A representative selection is reproduced below; results are as observed at final verification.</p>
+  <table>
+    <thead><tr><th style="width:16mm">ID</th><th style="width:16mm">Req.</th><th>Test case and expected result</th><th class="c" style="width:16mm">Result</th></tr></thead>
+    <tbody>
+      <tr><td class="c">T-01</td><td class="c">FR-01</td><td>Register with a valid address, then authenticate. Expect a session and redirection to the dashboard.</td><td class="c">Pass</td></tr>
+      <tr><td class="c">T-02</td><td class="c">NFR-01</td><td>Inspect the stored password field after registration. Expect a bcrypt hash, never plaintext.</td><td class="c">Pass</td></tr>
+      <tr><td class="c">T-03</td><td class="c">NFR-04</td><td>Submit eleven failed logins within the window. Expect rejection after the tenth.</td><td class="c">Pass</td></tr>
+      <tr><td class="c">T-04</td><td class="c">FR-05</td><td>Post a message from one account; observe arrival in a second session without refresh.</td><td class="c">Pass</td></tr>
+      <tr><td class="c">T-05</td><td class="c">FR-05</td><td>Delete a message that has been replied to. Expect a placeholder, with the reply chain intact.</td><td class="c">Pass</td></tr>
+      <tr><td class="c">T-06</td><td class="c">FR-07</td><td>Upload a PDF note, then download it from a second account. Expect successful retrieval.</td><td class="c">Pass</td></tr>
+      <tr><td class="c">T-07</td><td class="c">FR-10</td><td>Vote on the same answer twice from one account. Expect the second vote to be refused.</td><td class="c">Pass</td></tr>
+      <tr><td class="c">T-08</td><td class="c">FR-15</td><td>Complete a purchase using an MTN number. Expect prompt, approval, entitlement and receipt.</td><td class="c">Pass</td></tr>
+      <tr><td class="c">T-09</td><td class="c">FR-17</td><td>Cancel a payment in progress before approving. Expect cancellation with no charge.</td><td class="c">Pass</td></tr>
+      <tr><td class="c">T-10</td><td class="c">NFR-06</td><td>Close the browser after approving, before settlement. Expect the reconciler to grant access subsequently.</td><td class="c">Pass</td></tr>
+      <tr><td class="c">T-11</td><td class="c">FR-18</td><td>Request a paid note's file URL directly without a purchase record. Expect refusal.</td><td class="c">Pass</td></tr>
+      <tr><td class="c">T-12</td><td class="c">NFR-05</td><td>Submit a purchase request with a modified amount. Expect the server-side price to be charged.</td><td class="c">Pass</td></tr>
+      <tr><td class="c">T-13</td><td class="c">FR-13</td><td>Approve a tutor application as administrator. Expect the tutor to appear in the directory.</td><td class="c">Pass</td></tr>
+      <tr><td class="c">T-14</td><td class="c">FR-19</td><td>Submit a near-empty file as a paid note. Expect the quality gate to withhold it from sale.</td><td class="c">Pass</td></tr>
+      <tr><td class="c">T-15</td><td class="c">NFR-10</td><td>Load the site with the browser reporting <code>fr-FR</code>. Expect French throughout and <code>lang="fr"</code> on the document.</td><td class="c">Pass</td></tr>
+      <tr><td class="c">T-16</td><td class="c">NFR-10</td><td>Select a language explicitly, then revisit with a conflicting browser language. Expect the stored choice to persist.</td><td class="c">Pass</td></tr>
+      <tr><td class="c">T-17</td><td class="c">NFR-07</td><td>Operate every page at a 360&nbsp;px viewport. Expect no horizontal overflow.</td><td class="c">Pass</td></tr>
+      <tr><td class="c">T-18</td><td class="c">NFR-08</td><td>Issue a first request to a suspended server. Expect transparent retry with an explanatory banner.</td><td class="c">Pass</td></tr>
+      <tr><td class="c">T-19</td><td class="c">NFR-02</td><td>Request the production API over plain HTTP. Expect a redirect preserving method and body.</td><td class="c">Pass</td></tr>
+      <tr><td class="c">T-20</td><td class="c">FR-21</td><td>Attempt an administrative endpoint as a student. Expect refusal on the server, not merely a hidden control.</td><td class="c">Pass</td></tr>
+    </tbody>
+  </table>
+  <p class="caption"><b>Table 6.2</b> &mdash; Representative functional test cases and observed results. Language and theme variants were exercised for each interface case.</p>
+</div>
+<div class="chapter" style="page-break-before:auto">
+  <h3>6.5&nbsp;&nbsp;Defects found and resolved</h3>
+  <p>The defects below were discovered during development and verification. They are reported in full, including those arising from an incorrect initial diagnosis, since the detection mechanism is as instructive as the fault.</p>
+  <table>
+    <thead><tr><th style="width:38mm">Defect</th><th style="width:34mm">Detected by</th><th>Cause and resolution</th></tr></thead>
+    <tbody>
+      <tr><td>Every tutor application failed with a server error</td><td>Manual testing</td><td>The insert named a column that does not exist in the schema, the field having been renamed. Corrected to the schema name. The failure affected the route from its creation.</td></tr>
+      <tr><td>Trust adjustment endpoint failed with a server error</td><td>Manual testing</td><td>A required module was never imported. Syntax checking passed because the reference is resolved only at execution. An automated test asserting on the status code of that call would have caught it; the ad-hoc check written at the time asserted on a subsequent call instead and reported a false pass.</td></tr>
+      <tr><td>All purchases of one note rejected as a bad signature</td><td>Manual testing</td><td>A typographic dash in the note title placed a non-ASCII character in the signed request body. Resolved by sanitising all provider-bound fields. The credentials were incorrectly suspected first and a diagnostic endpoint had to be written to exclude them.</td></tr>
+      <tr><td>Notification panel rendered at 106&nbsp;px on mobile</td><td>Visual inspection</td><td>A fixed-position element resolved against an ancestor carrying a transform rather than against the viewport. Resolved by rendering through a portal. An initial automated assertion had reported the element as within the viewport, which was true and useless; the fault was only apparent from the rendered output.</td></tr>
+      <tr><td>Login controls and 404 suggestions remained untranslated</td><td>Locale checker</td><td>Keys were defined but never referenced, the markup retaining literal English. Found by the checker's report of defined-but-unreferenced keys on pages believed complete.</td></tr>
+      <tr><td>Build failure: duplicate identifier</td><td>Production build</td><td>A component used the same short identifier for an interval handle, a data item and the translation function. Resolved by renaming. Two further instances of the same shadowing were found and corrected in other components.</td></tr>
+      <tr><td>Translation function referenced outside its component</td><td>ESLint</td><td>A child component called the function from its parent's scope. Reported as an undefined variable rather than shipping as a blank label.</td></tr>
+      <tr><td>Deployment rejected by the hosting platform</td><td>Deployment</td><td>Comment-style keys had been placed in a configuration file validated against a strict schema. Removed.</td></tr>
+      <tr><td>Duplicate meta description tags</td><td>Inspection of output</td><td>The framework de-duplicates title elements but not meta elements, so a generic description overrode per-page values. Resolved by updating the element directly rather than rendering a second one.</td></tr>
+      <tr><td>Policy documents named a non-existent contact address</td><td>Review</td><td>The privacy policy and terms directed data-subject requests to an address on a domain not under the operator's control, so every such request would have failed silently. Corrected to the operational address.</td></tr>
+      <tr><td>Cookie policy inaccurate after a feature addition</td><td>Review</td><td>The language toggle introduced a browser storage key that the policy's enumeration of stored items did not list, rendering the published policy incorrect about the system's own behaviour. The entry was added.</td></tr>
+    </tbody>
+  </table>
+  <p class="caption"><b>Table 6.3</b> &mdash; Defects found during development, with detection mechanism and resolution.</p>
+  <p>Two observations follow from this table. First, the defects that reached a user-visible state were predominantly those for which no automated signal existed: the two server errors and the layout fault were all found by a person exercising the interface. Second, where a mechanical check did exist &mdash; the build, the linter, the locale checker &mdash; it caught the fault before deployment in every instance. This is the empirical basis for the recommendation in Section 8.3 that an automated suite is the highest-value next investment.</p>
+
+  <h3>6.6&nbsp;&nbsp;Threats to validity</h3>
+  <ul>
+    <li><b>No formal user evaluation.</b> No usability study, questionnaire or controlled trial was conducted with the intended student population. Claims about usability rest on adherence to accepted design criteria such as WCAG contrast thresholds, not on measured user performance or reported satisfaction. No claim of demonstrated user acceptance is made anywhere in this report.</li>
+    <li><b>Single-operator testing.</b> Payment flows were exercised with a live MTN Mobile Money account. The Orange Money path shares the same adapter, normalisation and settlement logic and differs only in the operator identifier transmitted, but it was not exercised end-to-end with a live Orange subscription. It is therefore verified by construction rather than by observation.</li>
+    <li><b>No load testing.</b> The system has not been subjected to concurrent load. Statements about scalability are architectural arguments, not measurements.</li>
+    <li><b>Single-tester bias.</b> All manual testing was performed by the developer, who knows the intended paths. This systematically under-samples the unexpected sequences that unfamiliar users generate.</li>
+    <li><b>Limited device coverage.</b> Responsive behaviour was verified by viewport emulation and on a limited set of physical devices, not across the range of handsets in actual use.</li>
+  </ul>
+</div>
+<div class="chapter">
+  <div class="chapter-head"><span class="cnum">Chapter Seven</span><h2>Results and Discussion</h2></div>
+
+  <h3>7.1&nbsp;&nbsp;Objectives achieved</h3>
+  <table>
+    <thead><tr><th style="width:14mm">Obj.</th><th style="width:22mm">Status</th><th>Evidence</th></tr></thead>
+    <tbody>
+      <tr><td class="c">O1</td><td>Achieved</td><td>Requirements analysis and comparative review of five classes of existing system (Chapter 2, Table 2.1), yielding 22 functional and 14 non-functional requirements.</td></tr>
+      <tr><td class="c">O2</td><td>Achieved</td><td>Three-layer architecture (Figure 4.1) with a 25-table normalised schema under version-controlled migration.</td></tr>
+      <tr><td class="c">O3</td><td>Achieved</td><td>Groups with real-time messaging, note repository and Q&amp;A forum with voting, accepted answers and reputation, implemented and deployed.</td></tr>
+      <tr><td class="c">O4</td><td>Achieved</td><td>Tutor applications, administrative review, weekly availability and booking, with prepaid session packs.</td></tr>
+      <tr><td class="c">O5</td><td>Achieved</td><td>Mobile money integration with idempotent granting and background reconciliation; verified by T-08 through T-10.</td></tr>
+      <tr><td class="c">O6</td><td>Achieved</td><td>Authenticated delivery with signed, expiring URLs issued only after an entitlement check; verified by T-11.</td></tr>
+      <tr><td class="c">O7</td><td>Achieved</td><td>Progressive Web Application with per-resource caching, transport-failure recovery and mobile-first layout; verified by T-17 and T-18.</td></tr>
+      <tr><td class="c">O8</td><td>Achieved</td><td>1,228 verified keys per language with automated parity checking; verified by T-15 and T-16.</td></tr>
+      <tr><td class="c">O9</td><td>Partially achieved</td><td>The system is publicly deployed and validated against the stated requirements by structured manual testing. Validation did not include a formal user evaluation, which is why this objective is not claimed in full.</td></tr>
+    </tbody>
+  </table>
+  <p class="caption"><b>Table 7.1</b> &mdash; Attainment of objectives against evidence.</p>
+
+  <h3>7.2&nbsp;&nbsp;Measured outcomes</h3>
+  <table>
+    <thead><tr><th style="width:54mm">Measure</th><th style="width:30mm">Value</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td>Source lines, client</td><td class="c">approx. 14,700</td><td>26 route components, 17 shared primitives, 6 hooks.</td></tr>
+      <tr><td>Source lines, server</td><td class="c">approx. 6,000</td><td>12 route modules, 7 services, 7 middleware.</td></tr>
+      <tr><td>REST endpoints</td><td class="c">88</td><td>Enumerated in Appendix A.</td></tr>
+      <tr><td>Database tables</td><td class="c">25</td><td>Across 6 applied migrations.</td></tr>
+      <tr><td>Translation keys per language</td><td class="c">1,228</td><td>Parity verified automatically; no missing, extra or mismatched keys.</td></tr>
+      <tr><td>Note download, 3.19&nbsp;MB file</td><td class="c">300&nbsp;s &rarr; 31&nbsp;s</td><td>Before and after CDN redirect, same file and connection. The prior figure is a client timeout, not a completion.</td></tr>
+      <tr><td>Version control history</td><td class="c">65 commits</td><td>27 July to 11 September 2026.</td></tr>
+      <tr><td>Static analysis baseline</td><td class="c">42 errors, 13 warnings</td><td>Held constant; no change permitted to increase it.</td></tr>
+    </tbody>
+  </table>
+  <p class="caption"><b>Table 7.2</b> &mdash; Measured characteristics of the delivered system. All figures are counted from the repository at the final commit; none are estimates.</p>
+
+  <h3>7.3&nbsp;&nbsp;Discussion of design decisions</h3>
+  <p><b>Treating the browser as an observer of payment.</b> The most consequential decision in the system was to deny the client any authority over payment outcomes. A design in which the browser reports success, or in which the poll is the sole settlement path, is simpler and works under demonstration conditions. It fails in exactly the circumstances the target users experience most often: a dropped connection, a closed tab, a PIN entered after a delay. Moving the authority to a server-side reconciler cost additional complexity and a background process, and it is the reason a student who loses signal mid-payment still receives what they paid for.</p>
+  <p><b>Computing trust rather than storing it.</b> Deriving publication privileges from recent review history, instead of persisting a flag, eliminates a class of failure in which a privilege outlives the conduct that justified it. The general principle &mdash; that derived state cannot drift out of step with the facts it is derived from, whereas stored state requires discipline to maintain &mdash; applied in several places in the design.</p>
+  <p><b>Separating stored values from displayed labels.</b> The internationalisation rule that persisted values remain in English proved more consequential than anticipated. It is the difference between a bilingual interface and a partitioned platform in which francophone and anglophone users cannot find one another's content. The failure mode would have been silent: no error, simply empty search results for some pairs of users.</p>
+  <p><b>Designing against WhatsApp rather than against web platforms.</b> Because the incumbent is a free, universally installed messaging application, the acceptance threshold is set by it rather than by comparable web systems. This justified investment in installability, offline tolerance and first-load behaviour that would be difficult to defend against a purely feature-based comparison.</p>
+
+  <h3>7.4&nbsp;&nbsp;Constraints imposed by context</h3>
+  <p>Several characteristics of the delivered system are direct consequences of operating on free-tier infrastructure, and would not be present in a resourced deployment. The application server suspends when idle, necessitating the retry and notification behaviour of Section 5.7. Connection pooling limits dictated the dual database connection strategy of Section 4.3.2. The ephemeral filesystem of the hosting platform required that all uploads be externalised, which in turn made the CDN redirect of Section 5.3 both possible and necessary. These are not design preferences; they are adaptations, and they are documented as such so that a future maintainer does not mistake them for arbitrary complexity and remove them.</p>
+</div>
+<div class="chapter">
+  <div class="chapter-head"><span class="cnum">Chapter Eight</span><h2>Conclusion and Future Work</h2></div>
+
+  <h3>8.1&nbsp;&nbsp;Conclusion</h3>
+  <p>This project set out to address the absence of a single accessible platform on which university students could share academic resources, resolve specific difficulties and obtain paid peer tutoring, using payment instruments appropriate to the Cameroonian context. A full-stack web application meeting that description was designed, implemented and publicly deployed.</p>
+  <p>Eight of the nine stated objectives were achieved in full and the ninth in part, the shortfall being the absence of a formal user evaluation rather than any deficiency in the delivered functionality. The system integrates four capabilities that are elsewhere available only separately &mdash; collaborative groups, a shared content repository, a reputation-bearing question forum, and a tutoring marketplace &mdash; and settles payment through the mobile money instruments the intended users actually hold.</p>
+  <p>Beyond the functional result, the project produced engineering outcomes of wider applicability. The payment design demonstrates that reliable entitlement granting over an asynchronous and unreliable settlement rail is achievable through server-side price resolution, idempotent granting and background reconciliation, without requiring the client to remain connected. The content-delivery design shows that protected digital goods can be served securely from constrained infrastructure by separating the authorisation decision from the byte delivery, with a measured order-of-magnitude improvement in transfer time for unprotected content. The internationalisation work establishes a rule &mdash; that persisted values remain canonical while only labels are translated &mdash; whose violation would have silently partitioned the user base along linguistic lines.</p>
+  <p>The project also illustrates, through the defect record of Table 6.3, the practical value of mechanical verification. Every fault for which an automated check existed was caught before deployment; every fault that reached a user-visible state did so in an area where no such check existed.</p>
+
+  <h3>8.2&nbsp;&nbsp;Limitations</h3>
+  <p>The following limitations are stated so that the results are not read as claiming more than was demonstrated.</p>
+  <h4>Methodological</h4>
+  <ul>
+    <li>Requirements were reasoned from observation and comparative analysis rather than elicited through a formal instrument administered to the user population.</li>
+    <li>No user evaluation was conducted; no claim of measured usability or user acceptance is made.</li>
+    <li>All testing was performed by the developer, with the sampling bias that implies.</li>
+  </ul>
+  <h4>Technical</h4>
+  <ul>
+    <li>There is no automated regression test suite.</li>
+    <li>Sessions are stateless tokens, so a token remains valid until expiry even after sign-out or suspension. A short lifetime bounds the exposure; it does not remove it.</li>
+    <li>The static analysis baseline of 42 errors was held constant rather than eliminated.</li>
+    <li>The system has not been load tested; scalability claims are architectural rather than measured.</li>
+    <li>The Orange Money path is verified by construction rather than by live end-to-end execution.</li>
+  </ul>
+  <h4>Functional</h4>
+  <ul>
+    <li>Direct messaging to a tutor persists to browser storage only and is not transmitted; the feature is present in the interface but not functional end-to-end.</li>
+    <li>Session resource downloads on the tutor profile are simulated rather than served.</li>
+    <li>Notification preferences in settings are not persisted.</li>
+    <li>Email notification is not implemented; notifications are in-application only.</li>
+    <li>Server-composed text &mdash; notification bodies, certain payment messages and the rendered receipt &mdash; remains English-only, so translation coverage is complete for the interface but not for the system as a whole.</li>
+    <li>Two landing-page figures are placeholder values rather than measured statistics and should be connected to the live counters or removed before further promotion.</li>
+  </ul>
+
+  <h3>8.3&nbsp;&nbsp;Recommendations for future work</h3>
+  <table>
+    <thead><tr><th style="width:14mm">Rank</th><th style="width:44mm">Recommendation</th><th>Rationale</th></tr></thead>
+    <tbody>
+      <tr><td class="c">1</td><td>Establish an automated test suite</td><td>The evidence of Table 6.3 is that faults escaped precisely where no mechanical check existed. Priority should follow risk: entitlement granting and reconciliation first, then authorisation, then interface regression.</td></tr>
+      <tr><td class="c">2</td><td>Conduct a formal user evaluation</td><td>A study with the intended population would convert reasoned usability claims into measured ones, and would surface requirements that observation alone did not.</td></tr>
+      <tr><td class="c">3</td><td>Complete the server-side translation</td><td>Notification and receipt text is the remaining English-only surface, and it reaches users who selected French.</td></tr>
+      <tr><td class="c">4</td><td>Implement tutor messaging properly</td><td>The capability is advertised in the interface but does not function, which is worse for trust than its absence.</td></tr>
+      <tr><td class="c">5</td><td>Introduce token revocation</td><td>A short-lived access token with a refresh mechanism, or a revocation list, would close the window in which a suspended account retains access.</td></tr>
+      <tr><td class="c">6</td><td>Conduct load testing</td><td>Required before any claim about concurrent capacity, and before migrating off free-tier infrastructure on the basis of measured need.</td></tr>
+      <tr><td class="c">7</td><td>Add email notification</td><td>In-application notification is insufficient for events the user must act upon while not using the platform, such as a booking request.</td></tr>
+      <tr><td class="c">8</td><td>Extend payment instruments</td><td>Additional local rails would widen access, and a wallet abstraction would reduce the coupling to a single aggregator.</td></tr>
+    </tbody>
+  </table>
+  <p class="caption"><b>Table 8.1</b> &mdash; Recommendations for further work, in priority order.</p>
+</div>
+<div class="chapter">
+  <div class="chapter-head"><span class="cnum">References</span><h2>References</h2></div>
+  <div class="warn">
+    <span class="l">Note on sources</span>
+    <p>This report is primarily an engineering artefact, and the majority of its sources are the official specifications and documentation of the technologies employed. The two pedagogical references below should be verified against a library catalogue before submission, as bibliographic details were not confirmed against an indexing database during preparation.</p>
+  </div>
+
+  <h4>Pedagogy</h4>
+  <ol class="refs">
+    <li><span class="k">[1]</span> Vygotsky, L. S. (1978). <i>Mind in Society: The Development of Higher Psychological Processes.</i> Cambridge, MA: Harvard University Press.</li>
+    <li><span class="k">[2]</span> Topping, K. J. (2005). Trends in peer learning. <i>Educational Psychology</i>, 25(6), 631&ndash;645.</li>
+  </ol>
+
+  <h4>Standards and specifications</h4>
+  <ol class="refs" start="3">
+    <li><span class="k">[3]</span> World Wide Web Consortium (2018). <i>Web Content Accessibility Guidelines (WCAG) 2.1.</i> W3C Recommendation. Available at: https://www.w3.org/TR/WCAG21/</li>
+    <li><span class="k">[4]</span> Jones, M., Bradley, J. and Sakimura, N. (2015). <i>JSON Web Token (JWT).</i> RFC 7519, Internet Engineering Task Force. Available at: https://datatracker.ietf.org/doc/html/rfc7519</li>
+    <li><span class="k">[5]</span> Provos, N. and Mazi&egrave;res, D. (1999). A Future-Adaptable Password Scheme. In <i>Proceedings of the USENIX Annual Technical Conference.</i></li>
+    <li><span class="k">[6]</span> OWASP Foundation. <i>OWASP Top Ten Web Application Security Risks.</i> Available at: https://owasp.org/www-project-top-ten/</li>
+    <li><span class="k">[7]</span> European Parliament and Council (2016). <i>Regulation (EU) 2016/679 &mdash; General Data Protection Regulation.</i> Official Journal of the European Union.</li>
+    <li><span class="k">[8]</span> World Wide Web Consortium. <i>Web Application Manifest.</i> W3C Working Draft. Available at: https://www.w3.org/TR/appmanifest/</li>
+  </ol>
+
+  <h4>Technical documentation</h4>
+  <ol class="refs" start="9">
+    <li><span class="k">[9]</span> Meta Open Source. <i>React Documentation.</i> Available at: https://react.dev/</li>
+    <li><span class="k">[10]</span> Vite. <i>Vite Documentation.</i> Available at: https://vite.dev/</li>
+    <li><span class="k">[11]</span> OpenJS Foundation. <i>Express Documentation.</i> Available at: https://expressjs.com/</li>
+    <li><span class="k">[12]</span> Prisma Data, Inc. <i>Prisma ORM Documentation.</i> Available at: https://www.prisma.io/docs</li>
+    <li><span class="k">[13]</span> The PostgreSQL Global Development Group. <i>PostgreSQL Documentation.</i> Available at: https://www.postgresql.org/docs/</li>
+    <li><span class="k">[14]</span> Tailwind Labs. <i>Tailwind CSS Documentation.</i> Available at: https://tailwindcss.com/docs</li>
+    <li><span class="k">[15]</span> Socket.IO. <i>Socket.IO Documentation.</i> Available at: https://socket.io/docs/</li>
+    <li><span class="k">[16]</span> Cloudinary Ltd. <i>Cloudinary Documentation.</i> Available at: https://cloudinary.com/documentation</li>
+    <li><span class="k">[17]</span> Hachther LLC. <i>MeSomb Developer Documentation.</i> Available at: https://mesomb.hachther.com/en/api/v1.1/</li>
+    <li><span class="k">[18]</span> Google. <i>Workbox Documentation.</i> Available at: https://developer.chrome.com/docs/workbox/</li>
+    <li><span class="k">[19]</span> i18next. <i>i18next Documentation.</i> Available at: https://www.i18next.com/</li>
+  </ol>
+
+  <h4>Project artefacts</h4>
+  <ol class="refs" start="20">
+    <li><span class="k">[20]</span> Tazanu, S. (2026). <i>StudyHub source repository.</i> Available at: https://github.com/Tazanu/studyhubwebapp</li>
+    <li><span class="k">[21]</span> Tazanu, S. (2026). <i>StudyHub deployed application.</i> Available at: https://studyhubwebapp.vercel.app</li>
+    <li><span class="k">[22]</span> Tazanu, S. (2026). <i>StudyHub Technical Documentation.</i> Repository path: <code>docs/StudyHub-Technical-Documentation.pdf</code></li>
+  </ol>
+</div>
+<div class="chapter">
+  <div class="chapter-head"><span class="cnum">Appendix A</span><h2>API Endpoint Summary</h2></div>
+  <p>The API exposes 88 endpoints across twelve modules, all prefixed <code>/api</code> except the health probe. A complete per-endpoint reference is provided in the accompanying technical documentation [22]; this appendix summarises the surface.</p>
+  <table>
+    <thead><tr><th style="width:30mm">Module</th><th class="c" style="width:18mm">Endpoints</th><th>Responsibility</th></tr></thead>
+    <tbody>
+      <tr><td><code>/auth</code></td><td class="c">4</td><td>Registration, authentication, current identity, password change.</td></tr>
+      <tr><td><code>/groups</code></td><td class="c">21</td><td>Group lifecycle, membership, join requests, messaging, reactions, typing state, read tracking.</td></tr>
+      <tr><td><code>/notes</code></td><td class="c">6</td><td>Listing, upload, download accounting, gated file retrieval, deletion.</td></tr>
+      <tr><td><code>/qa</code></td><td class="c">14</td><td>Questions, answers, voting, acceptance, bookmarks, follows, comments, categories.</td></tr>
+      <tr><td><code>/tutors</code></td><td class="c">13</td><td>Directory, applications, availability, bookings, session credits.</td></tr>
+      <tr><td><code>/premium</code></td><td class="c">10</td><td>Paid catalogue, purchase, cancellation, receipts, entitlement checks, publishing status.</td></tr>
+      <tr><td><code>/payments</code></td><td class="c">3</td><td>Generic initiation, status polling, transaction history.</td></tr>
+      <tr><td><code>/admin</code></td><td class="c">14</td><td>Statistics, user administration, tutor review, paid-note moderation, payment diagnostics.</td></tr>
+      <tr><td><code>/users</code></td><td class="c">5</td><td>Public profiles, contribution statistics, leaderboard, profile maintenance.</td></tr>
+      <tr><td><code>/notifications</code></td><td class="c">3</td><td>Retrieval and read-state management.</td></tr>
+      <tr><td><code>/contact</code></td><td class="c">3</td><td>Public submission and administrative inbox.</td></tr>
+      <tr><td><code>/stats</code></td><td class="c">1</td><td>Public platform counters.</td></tr>
+      <tr><td><code>/health</code></td><td class="c">1</td><td>Liveness probe; unprefixed and unrestricted.</td></tr>
+    </tbody>
+  </table>
+  <p class="caption"><b>Table A.1</b> &mdash; API surface by module.</p>
+
+  <h3>A.2&nbsp;&nbsp;Real-time event vocabulary</h3>
+  <table>
+    <thead><tr><th style="width:38mm">Event</th><th style="width:24mm">Direction</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>group:join</code></td><td>client to server</td><td>Request admission to a group room; membership verified server-side.</td></tr>
+      <tr><td><code>group:leave</code></td><td>client to server</td><td>Depart a room.</td></tr>
+      <tr><td><code>typing:start</code>, <code>typing:stop</code></td><td>client to server</td><td>Composition state.</td></tr>
+      <tr><td><code>group:joined</code></td><td>server to client</td><td>Admission confirmed.</td></tr>
+      <tr><td><code>message:new</code></td><td>server to room</td><td>A message was posted.</td></tr>
+      <tr><td><code>message:edit</code></td><td>server to room</td><td>A message was amended within the permitted window.</td></tr>
+      <tr><td><code>message:delete</code></td><td>server to room</td><td>A message was soft-deleted.</td></tr>
+      <tr><td><code>message:reaction</code></td><td>server to room</td><td>Reactions on a message changed.</td></tr>
+      <tr><td><code>typing:update</code></td><td>server to room</td><td>Current set of composing users.</td></tr>
+      <tr><td><code>user:joined</code>, <code>user:left</code></td><td>server to room</td><td>Presence change.</td></tr>
+    </tbody>
+  </table>
+  <p class="caption"><b>Table A.2</b> &mdash; Socket.IO event vocabulary.</p>
+</div>
+<div class="chapter">
+  <div class="chapter-head"><span class="cnum">Appendix B</span><h2>Database Schema Summary</h2></div>
+  <table>
+    <thead><tr><th style="width:46mm">Table</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>users</code></td><td>Identity, credentials, profile, role, reputation, active state.</td></tr>
+      <tr><td><code>groups</code></td><td>Study group definition, subject and join policy.</td></tr>
+      <tr><td><code>user_groups</code></td><td>Membership, resolving the many-to-many relation and carrying in-group role.</td></tr>
+      <tr><td><code>group_join_requests</code></td><td>Pending admissions to approval-gated groups.</td></tr>
+      <tr><td><code>group_read_status</code></td><td>Per-user read position, supporting unread indicators.</td></tr>
+      <tr><td><code>group_messages</code></td><td>Messages with optional attachment, reply reference, edit and soft-delete flags.</td></tr>
+      <tr><td><code>group_message_reactions</code></td><td>Emoji reactions attributed to a user and message.</td></tr>
+      <tr><td><code>notes</code></td><td>Uploaded material with subject, tags, file reference, download count, premium flag and price.</td></tr>
+      <tr><td><code>questions</code></td><td>Forum questions with subject, category, tags, optional audio and images, view and vote counts.</td></tr>
+      <tr><td><code>answers</code></td><td>Answers with optional audio and images, vote count and acceptance flag.</td></tr>
+      <tr><td><code>question_votes</code>, <code>answer_votes</code></td><td>Individual votes, uniquely constrained per voter and target.</td></tr>
+      <tr><td><code>question_bookmarks</code>, <code>question_followers</code></td><td>Personal saving and subscription to activity.</td></tr>
+      <tr><td><code>answer_comments</code></td><td>Comments attached to answers.</td></tr>
+      <tr><td><code>tutors</code></td><td>Tutor extension of a user: subjects, biography, experience, rate, application status.</td></tr>
+      <tr><td><code>tutor_availability</code></td><td>Weekly recurring availability slots.</td></tr>
+      <tr><td><code>bookings</code></td><td>Sessions booked between a student and tutor, with date, times, amount and status.</td></tr>
+      <tr><td><code>session_credits</code></td><td>Prepaid session packs and remaining balance.</td></tr>
+      <tr><td><code>transactions</code></td><td>Payment ledger: amount, operator, payer, provider reference, status.</td></tr>
+      <tr><td><code>premium_notes</code></td><td>Paid material with price, review state, quality report and publication flag.</td></tr>
+      <tr><td><code>purchased_notes</code></td><td>Entitlement record consulted before any protected file is released.</td></tr>
+      <tr><td><code>premium_subscriptions</code></td><td>Publisher subscription periods.</td></tr>
+      <tr><td><code>notifications</code></td><td>In-application notifications with type, recipient and read state.</td></tr>
+      <tr><td><code>contact_messages</code></td><td>Public contact submissions with read state.</td></tr>
+    </tbody>
+  </table>
+  <p class="caption"><b>Table B.1</b> &mdash; Database tables and their purpose. Twenty-five tables in total; vote and bookmark tables are grouped above for brevity.</p>
+</div>
+
+<div class="chapter">
+  <div class="chapter-head"><span class="cnum">Appendix C</span><h2>Configuration Reference</h2></div>
+  <p>The system is configured entirely through environment variables; no credential is committed to version control. Variable <i>names</i> only are reproduced here.</p>
+  <h3>C.1&nbsp;&nbsp;Application server</h3>
+  <table>
+    <thead><tr><th style="width:54mm">Variable</th><th class="c" style="width:20mm">Required</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>DATABASE_URL</code></td><td class="c">Yes</td><td>Pooled database connection used by the running application.</td></tr>
+      <tr><td><code>DIRECT_URL</code></td><td class="c">Yes</td><td>Direct database connection, used only for migrations.</td></tr>
+      <tr><td><code>JWT_SECRET</code></td><td class="c">Yes</td><td>Token signing secret.</td></tr>
+      <tr><td><code>JWT_EXPIRES_IN</code></td><td class="c">No</td><td>Token lifetime; defaults to 24 hours.</td></tr>
+      <tr><td><code>BCRYPT_ROUNDS</code></td><td class="c">No</td><td>Password hashing work factor; defaults to 12.</td></tr>
+      <tr><td><code>ALLOWED_ORIGINS</code></td><td class="c">Yes</td><td>Comma-separated permitted client origins.</td></tr>
+      <tr><td><code>FRONTEND_URL</code></td><td class="c">Fallback</td><td>Used when the allow-list is unset.</td></tr>
+      <tr><td><code>CLOUDINARY_CLOUD_NAME</code>, <code>CLOUDINARY_API_KEY</code>, <code>CLOUDINARY_API_SECRET</code></td><td class="c">Yes</td><td>Object storage credentials.</td></tr>
+      <tr><td><code>MESOMB_APPLICATION_KEY</code>, <code>MESOMB_ACCESS_KEY</code>, <code>MESOMB_SECRET_KEY</code></td><td class="c">Yes</td><td>Payment provider credentials, verified read-only at startup.</td></tr>
+      <tr><td><code>NODE_ENV</code></td><td class="c">Yes</td><td>Must be <code>production</code> on a deployed server; gates the HTTPS redirect.</td></tr>
+      <tr><td><code>PORT</code></td><td class="c">No</td><td>Supplied by the platform; defaults to 5000 locally.</td></tr>
+      <tr><td><code>RATE_*</code></td><td class="c">No</td><td>Five window and maximum pairs overriding the rate limits.</td></tr>
+      <tr><td><code>RECONCILE_INTERVAL_MS</code>, <code>RECONCILE_LOOKBACK_MS</code>, <code>RECONCILE_ABANDON_MS</code></td><td class="c">No</td><td>Settlement sweep timing.</td></tr>
+    </tbody>
+  </table>
+  <h3>C.2&nbsp;&nbsp;Client</h3>
+  <table>
+    <thead><tr><th style="width:54mm">Variable</th><th class="c" style="width:20mm">Required</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>VITE_API_URL</code></td><td class="c">Yes</td><td>API base address. Inlined at build time; a change requires redeployment.</td></tr>
+      <tr><td><code>VITE_SITE_URL</code></td><td class="c">Recommended</td><td>Public origin, used to generate absolute sitemap and canonical URLs.</td></tr>
+      <tr><td><code>VITE_PLAUSIBLE_DOMAIN</code></td><td class="c">No</td><td>Enables analytics; omission disables it cleanly.</td></tr>
+    </tbody>
+  </table>
+  <div class="warn">
+    <span class="l">Deployment caution</span>
+    <p>Client variables are compiled into the bundle at build time rather than read at run time. Altering one in a hosting dashboard has no effect until the project is rebuilt. An incorrect API address therefore produces a client that loads perfectly and then fails every request, presenting as a server outage when it is a build configuration fault.</p>
+  </div>
+  <p style="margin-top:8mm;font-size:9.4pt;color:#4a5460;border-top:1px solid #c9d1da;padding-top:3mm">
+    End of report. Prepared from the project repository at commit <span id="c">b6e46f4</span>. No credential values appear in this document.
+  </p>
+</div>
+
+<script>
+  document.getElementById('d').textContent =
+    new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+</script>
+</body>
+</html>
