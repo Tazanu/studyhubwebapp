@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Understanding StudyHub</title>
+<style>
+@page { size: A4; margin: 20mm 18mm 18mm 18mm; }
+@page :first { margin: 0; }
+:root{
+  --ink:#16202b; --soft:#55637a; --faint:#8a97ab;
+  --rule:#d9e1ea; --wash:#f4f7fb;
+  --brand:#0b5c8a; --brand-soft:#e8f2f9;
+  --warn:#fff6e8; --warnbd:#e0b05c;
+  --good:#edf7f1; --goodbd:#79b894;
+  --bad:#fdeeee;  --badbd:#d08a8a;
+}
+*{box-sizing:border-box}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;font-family:"Segoe UI",Calibri,Arial,sans-serif;font-size:10.6pt;
+  line-height:1.72;color:var(--ink)}
+.cover{height:297mm;padding:34mm 24mm 20mm;display:flex;flex-direction:column;
+  page-break-after:always;background:#0b2033;color:#fff}
+.cover .eyebrow{font-size:10.5pt;letter-spacing:.3em;text-transform:uppercase;color:#6fb3d8;margin-bottom:6mm}
+.cover h1{font-size:42pt;line-height:1.08;margin:0 0 5mm;font-weight:700;letter-spacing:-.02em}
+.cover .sub{font-size:15pt;color:#b8d2e4;max-width:135mm;line-height:1.55;margin:0 0 auto}
+.cover .who{border-top:1px solid rgba(255,255,255,.2);padding-top:6mm;font-size:10.5pt;color:#9fbdd4;line-height:1.9}
+.cover .who b{color:#fff;display:block;margin-bottom:1mm}
+.part{page-break-before:always;padding-top:4mm}
+.part-tag{font-size:9pt;letter-spacing:.24em;text-transform:uppercase;color:var(--brand);font-weight:700;margin-bottom:2mm}
+.part h2{font-size:23pt;margin:0 0 3mm;font-weight:700;letter-spacing:-.01em;line-height:1.18}
+.part .intro{font-size:12pt;color:var(--soft);margin:0 0 7mm;line-height:1.6}
+h3{font-size:14pt;margin:9mm 0 3mm;font-weight:700;color:var(--ink);page-break-after:avoid}
+h4{font-size:11.2pt;margin:6mm 0 2mm;font-weight:700;color:var(--brand);page-break-after:avoid}
+p{margin:0 0 3.5mm}
+ul,ol{margin:0 0 3.5mm;padding-left:6mm}
+li{margin-bottom:2mm}
+code{font-family:Consolas,"Courier New",monospace;font-size:9.2pt;background:var(--wash);
+  padding:.4mm 1.3mm;border-radius:2px;color:#0c4a6e}
+pre{font-family:Consolas,"Courier New",monospace;font-size:8.7pt;line-height:1.6;
+  background:#0f1d2b;color:#d6e4f0;border-radius:4px;padding:4mm 4.5mm;margin:3mm 0 4mm;
+  white-space:pre-wrap;page-break-inside:avoid}
+pre .c{color:#7d93a8;font-style:italic}
+pre .k{color:#7fc4e8}
+pre .s{color:#a8d8a0}
+.box{border-radius:4px;padding:3.5mm 4mm;margin:3.5mm 0 4.5mm;page-break-inside:avoid;font-size:10.2pt;line-height:1.65}
+.box .l{display:block;font-weight:700;font-size:8.4pt;text-transform:uppercase;letter-spacing:.09em;margin-bottom:1.5mm}
+.why{background:var(--brand-soft);border-left:3px solid var(--brand)}
+.why .l{color:var(--brand)}
+.gotcha{background:var(--warn);border-left:3px solid var(--warnbd)}
+.gotcha .l{color:#8a6208}
+.break{background:var(--bad);border-left:3px solid var(--badbd)}
+.break .l{color:#9c3b3b}
+.ok{background:var(--good);border-left:3px solid var(--goodbd)}
+.ok .l{color:#2c6b4a}
+.box p:last-child{margin-bottom:0}
+table{width:100%;border-collapse:collapse;margin:3mm 0 4.5mm;font-size:9.5pt;line-height:1.5}
+thead{display:table-header-group}
+tr{page-break-inside:avoid}
+th{background:var(--brand-soft);color:#0a4a70;text-align:left;font-weight:700;padding:2.2mm 2.6mm;
+  font-size:8.6pt;text-transform:uppercase;letter-spacing:.05em;border-bottom:1.5px solid #b5d4e6}
+td{padding:2.2mm 2.6mm;border-bottom:1px solid var(--rule);vertical-align:top}
+tbody tr:nth-child(even) td{background:#fafcfe}
+.step{display:flex;gap:3.5mm;margin-bottom:4mm;page-break-inside:avoid}
+.step .n{flex:0 0 7mm;height:7mm;border-radius:50%;background:var(--brand);color:#fff;
+  font-weight:700;font-size:10pt;text-align:center;line-height:7mm}
+.step .t{flex:1}
+.step .t b{display:block;margin-bottom:.8mm;font-size:11pt}
+.step .t p{margin:0 0 1.5mm;color:var(--soft);font-size:10.2pt}
+.caption{font-size:9pt;color:var(--faint);margin:-2mm 0 5mm;font-style:italic}
+.toc{list-style:none;padding:0;margin:0}
+.toc .p{font-weight:700;color:var(--brand);font-size:9pt;letter-spacing:.14em;
+  text-transform:uppercase;margin:5mm 0 1.5mm}
+.toc li.i{display:flex;gap:3mm;padding:1.3mm 0;border-bottom:1px dotted var(--rule);font-size:10.3pt}
+.toc li.i .n{color:var(--brand);font-weight:700;min-width:7mm}
+</style>
+</head>
+<body>
+<div class="cover">
+  <div class="eyebrow">A guide to your own codebase</div>
+  <h1>Understanding<br>StudyHub</h1>
+  <p class="sub">How the system actually works &mdash; traced end to end, in plain language, using the real code.</p>
+  <div class="who">
+    <b>Written for</b>
+    Tazanu Stanley &mdash; to understand, explain and defend the technical side of StudyHub.<br>
+    Assumes you can program, but assumes nothing about web architecture, ORMs or payment rails.
+  </div>
+</div>
+
+<div class="part">
+  <div class="part-tag">Contents</div>
+  <h2>What is in here</h2>
+  <p class="intro">This is not the handover document. That one tells another developer where things are. This one explains <em>why they are that way</em> and <em>what would break without them</em>.</p>
+  <ul class="toc">
+    <li class="p">Part One &mdash; Orientation</li>
+    <li class="i"><span class="n">1</span><span>The shape of the whole thing</span></li>
+    <li class="i"><span class="n">2</span><span>The words you need first</span></li>
+    <li class="p">Part Two &mdash; Follow the data</li>
+    <li class="i"><span class="n">3</span><span>Journey: someone opens your site</span></li>
+    <li class="i"><span class="n">4</span><span>Journey: someone logs in</span></li>
+    <li class="i"><span class="n">5</span><span>Journey: loading the notes page</span></li>
+    <li class="i"><span class="n">6</span><span>Journey: buying a premium note</span></li>
+    <li class="i"><span class="n">7</span><span>Journey: sending a chat message</span></li>
+    <li class="p">Part Three &mdash; The pieces</li>
+    <li class="i"><span class="n">8</span><span>The frontend, by the problems it solves</span></li>
+    <li class="i"><span class="n">9</span><span>The backend, and what middleware really is</span></li>
+    <li class="i"><span class="n">10</span><span>The database, Prisma and migrations</span></li>
+    <li class="i"><span class="n">11</span><span>Files, and why they are not on your server</span></li>
+    <li class="p">Part Four &mdash; Decisions worth understanding</li>
+    <li class="i"><span class="n">12</span><span>Nine choices, and what each one costs</span></li>
+    <li class="p">Part Five &mdash; Working with it</li>
+    <li class="i"><span class="n">13</span><span>Where to look for what</span></li>
+    <li class="i"><span class="n">14</span><span>Changing something without breaking it</span></li>
+    <li class="i"><span class="n">15</span><span>Glossary</span></li>
+  </ul>
+</div>
+<div class="part">
+  <div class="part-tag">Part One &mdash; Orientation</div>
+  <h2>1. The shape of the whole thing</h2>
+  <p class="intro">Before any detail: StudyHub is not one program. It is three separate things that talk to each other over the internet, and almost every confusion about how it works comes from forgetting that.</p>
+
+  <h3>The three parts</h3>
+  <table>
+    <thead><tr><th style="width:26mm">Part</th><th style="width:34mm">Where it runs</th><th>What it is responsible for</th></tr></thead>
+    <tbody>
+      <tr><td><b>Frontend</b></td><td>In the visitor's browser, on their phone or laptop</td><td>Everything the user sees and touches. Buttons, pages, forms, the chat window. It holds <em>no</em> authority &mdash; it asks the backend for everything and displays whatever comes back.</td></tr>
+      <tr><td><b>Backend</b></td><td>On a server at Render, somewhere in Frankfurt</td><td>All the decisions. Who is allowed to do what, what things cost, whether a payment succeeded. This is the only part you can trust.</td></tr>
+      <tr><td><b>Database</b></td><td>On a server at Neon</td><td>Remembering things. Every user, note, message, booking and transaction. It only stores and retrieves; it makes no decisions.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box why">
+    <span class="l">The one idea that explains most of the design</span>
+    <p><b>The frontend cannot be trusted.</b> It runs on someone else's computer. A determined user can open the browser's developer tools, change any value, and send whatever they like to your backend.</p>
+    <p>So every rule that matters is enforced on the backend. The frontend hides the "Delete" button from a non-owner as a <em>courtesy</em>; the backend refuses the delete as the actual <em>rule</em>. If you only remember one thing from this document, make it this one.</p>
+  </div>
+
+  <h3>Why they are separate</h3>
+  <p>You could have built this as one program that generates HTML on the server. Many sites work that way. You did not, for two reasons:</p>
+  <ul>
+    <li><b>Different hosting needs.</b> The frontend is just files &mdash; HTML, JavaScript, images. Files are best served from a CDN: a network of servers worldwide that each keep a copy, so a visitor is served from somewhere near them. The backend cannot work that way: it holds live chat connections open and runs a background timer, which needs one long-lived process.</li>
+    <li><b>The chat.</b> Real-time messaging needs a connection that stays open. That is a fundamentally different thing from "send a page, forget the visitor".</li>
+  </ul>
+  <p>The cost of separating them is that they live at different addresses, and browsers block a page at one address from calling another by default. That rule is called CORS, and you had to configure it explicitly. We come back to that in section 9.</p>
+
+  <h3>How a request actually travels</h3>
+<pre><span class="c">// A student taps "My Notes" on their phone in Buea</span>
+
+ Phone browser
+      |  https://studyhubwebapp.vercel.app        <span class="c">1. loads the app (once)</span>
+      v
+   Vercel CDN  ---> sends back HTML + JavaScript
+      |
+      |  the JavaScript now runs in the browser and asks for data:
+      |  GET https://studyhubwebapp-1.onrender.com/api/notes
+      v
+   Render (your Express backend)
+      |  checks the token, decides what this user may see
+      v
+   Neon (PostgreSQL)  ---> rows come back
+      |
+      v
+   Render turns rows into JSON ---> back to the phone ---> React draws the list</pre>
+  <p class="caption">Two separate round trips: one for the app itself, then one for each piece of data it needs.</p>
+
+  <div class="box gotcha">
+    <span class="l">This explains a bug you already hit</span>
+    <p>Early on, your deployed site loaded perfectly but every action failed. That is this diagram going wrong at step two: the app itself came from Vercel fine, but it had been built with the wrong backend address, so every data request went nowhere. The page looked healthy because the page <em>was</em> healthy &mdash; only the second hop was broken.</p>
+  </div>
+</div>
+<div class="part">
+  <div class="part-tag">Part One &mdash; Orientation</div>
+  <h2>2. The words you need first</h2>
+  <p class="intro">Everything after this uses these terms. Read once, refer back as needed. A fuller glossary is in section 15.</p>
+
+  <table>
+    <thead><tr><th style="width:34mm">Term</th><th>What it actually means, in your system</th></tr></thead>
+    <tbody>
+      <tr><td><b>API</b></td><td>The list of things your backend will do if asked. Each one is a URL plus a method: <code>POST /api/auth/login</code>, <code>GET /api/notes</code>. You have 88 of these. "Calling the API" just means the frontend sending one of those requests.</td></tr>
+      <tr><td><b>Endpoint</b></td><td>One entry in that list. <code>GET /api/notes/:id</code> is an endpoint; the <code>:id</code> is a slot the caller fills in.</td></tr>
+      <tr><td><b>Request / response</b></td><td>One exchange. The frontend sends a request (method, URL, headers, maybe a body of JSON). The backend sends back a response (a status number and usually JSON).</td></tr>
+      <tr><td><b>Status code</b></td><td>A number saying how it went. <code>200</code> fine. <code>401</code> you are not logged in. <code>403</code> you are logged in but not allowed. <code>404</code> no such thing. <code>500</code> the server broke.</td></tr>
+      <tr><td><b>JSON</b></td><td>The text format both sides use to exchange data. Looks like a JavaScript object: <code>{"id": 7, "title": "Calculus notes"}</code>.</td></tr>
+      <tr><td><b>Token</b></td><td>A signed string proving who you are, issued at login. The frontend attaches it to every later request. Covered properly in section 4.</td></tr>
+      <tr><td><b>Middleware</b></td><td>A function that runs <em>before</em> your actual handler and can stop the request. Your authentication check is middleware. Section 9 explains it fully &mdash; it is the single most important backend concept to grasp.</td></tr>
+      <tr><td><b>Component</b></td><td>On the frontend: a reusable piece of interface, written as a function that returns markup. <code>Button</code> is a component. So is a whole page.</td></tr>
+      <tr><td><b>State</b></td><td>Data a component remembers between redraws &mdash; what you typed, whether a modal is open, the notes that came back from the API. When state changes, React redraws.</td></tr>
+      <tr><td><b>ORM</b></td><td>A translator between your code and the database, so you write <code>prisma.notes.findMany(...)</code> instead of SQL. Yours is Prisma. Section 10.</td></tr>
+      <tr><td><b>Migration</b></td><td>A recorded, numbered change to the database structure. You have six. They are how the database shape is version-controlled alongside the code.</td></tr>
+      <tr><td><b>Environment variable</b></td><td>A setting supplied from outside the code &mdash; database passwords, API keys. Kept out of the code so secrets never reach GitHub.</td></tr>
+      <tr><td><b>CDN</b></td><td>A worldwide network of servers that each cache a copy of your files, so visitors are served from nearby. Vercel is one; Cloudinary gives you another for uploads.</td></tr>
+      <tr><td><b>Idempotent</b></td><td>Safe to do twice. Granting a purchase is idempotent in your system: if two things both try to grant it, the student still ends up with exactly one copy of the access, not two. Critical in section 6.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box why">
+    <span class="l">Two that people mix up constantly</span>
+    <p><b>401 vs 403.</b> 401 means "I do not know who you are" &mdash; log in. 403 means "I know exactly who you are, and you may not do this." Your admin routes return 403 to a logged-in student, not 401.</p>
+    <p><b>Authentication vs authorisation.</b> Authentication is <em>who are you</em> (the token check). Authorisation is <em>what may you do</em> (the role check). Your code separates them into two different middlewares for exactly this reason.</p>
+  </div>
+</div>
+<div class="part">
+  <div class="part-tag">Part Two &mdash; Follow the data</div>
+  <h2>3. Journey: someone opens your site</h2>
+  <p class="intro">The simplest journey, and it already contains three things that surprise people.</p>
+
+  <div class="step"><div class="n">1</div><div class="t"><b>The browser asks Vercel for the page</b>
+  <p>Vercel sends back a nearly empty <code>index.html</code> plus a bundle of JavaScript. The page at this instant is blank. There is no content in the HTML at all.</p></div></div>
+
+  <div class="step"><div class="n">2</div><div class="t"><b>The JavaScript runs and draws the page</b>
+  <p>React takes over, reads the URL, decides which page component matches, and builds the interface in the browser. This is what "single-page application" means: the server sends one shell, and JavaScript draws everything inside it.</p></div></div>
+
+  <div class="step"><div class="n">3</div><div class="t"><b>The app checks whether you are already logged in</b>
+  <p><code>AuthContext</code> looks in <code>localStorage</code> for a saved token. If there is one, it calls <code>GET /api/auth/me</code> to ask the backend whether it is still valid, and only then shows you as signed in.</p></div></div>
+
+  <div class="step"><div class="n">4</div><div class="t"><b>The page requests whatever data it needs</b>
+  <p>The notes page asks for notes, the dashboard asks for statistics. Each is a separate API call. This is why you sometimes see the layout appear before the content fills in.</p></div></div>
+
+  <h3>The surprising parts</h3>
+
+  <div class="box why">
+    <span class="l">Why does it check the token with the server?</span>
+    <p>It would be faster to trust the saved token and show the interface immediately. Your code does not, and it is right not to: the token might have expired, or the account might have been suspended since. Asking <code>/api/auth/me</code> means a banned user cannot keep using the app just because their browser still holds an old token.</p>
+    <p>You can see this in <code>AuthContext.jsx</code> &mdash; if the check fails, it calls <code>logout()</code> and clears everything.</p>
+  </div>
+
+  <div class="box gotcha">
+    <span class="l">The URL rewrite that makes refresh work</span>
+    <p>Your routes like <code>/notes/42</code> only exist inside the JavaScript. The server has no file at that path. So if someone refreshes the page there, the server would normally return 404.</p>
+    <p><code>vercel.json</code> fixes this with a rewrite: <em>every</em> path returns <code>index.html</code>. The browser loads the app, React reads the URL, and draws the right page. Without those four lines in <code>vercel.json</code>, every refresh on any page but the home page would 404.</p>
+  </div>
+
+  <div class="box break">
+    <span class="l">What happens if the backend is asleep</span>
+    <p>Render's free tier shuts the backend down after about fifteen minutes of no traffic. The first request afterwards is usually lost while the container starts, which takes 30&ndash;50 seconds.</p>
+    <p>Without handling, a visitor from a shared link sees a broken site. Your <code>api/client.js</code> handles it: if a request gets <em>no response at all</em>, it waits four seconds and tries again, up to twice, and shows a "waking the server" banner meanwhile.</p>
+    <p>Note the precision: only requests that got <em>no response</em> are retried. If the server answered &mdash; even with an error &mdash; it is not retried, because repeating a request the server already processed could, for example, charge someone twice.</p>
+  </div>
+</div>
+<div class="part">
+  <div class="part-tag">Part Two &mdash; Follow the data</div>
+  <h2>4. Journey: someone logs in</h2>
+  <p class="intro">This is the journey worth understanding in most detail, because authentication is where most real-world security mistakes live &mdash; and because two decisions in your code here are subtle enough that an examiner may ask about them.</p>
+
+  <h3>What happens, step by step</h3>
+
+  <div class="step"><div class="n">1</div><div class="t"><b>The form sends email and password</b>
+  <p><code>POST /api/auth/login</code> with a JSON body. Over HTTPS, so it is encrypted in transit &mdash; nobody on the network sees the password.</p></div></div>
+
+  <div class="step"><div class="n">2</div><div class="t"><b>The backend looks up the user and checks the password</b>
+  <p>Here is the actual code, and the comment in it is the interesting part:</p></div></div>
+
+<pre><span class="c">// backend/src/routes/auth.js</span>
+const user = await prisma.users.findUnique({ where: { email } });
+
+<span class="c">// Always run bcrypt compare to prevent timing attacks</span>
+const dummyHash = <span class="s">'$2a$12$invalidhashfortimingprotectiononly...'</span>;
+const isValidPassword = user
+    ? await bcrypt.compare(password, user.password)
+    : await bcrypt.compare(password, dummyHash).then(() => <span class="k">false</span>);
+
+<span class="k">if</span> (!user || !isValidPassword) {
+    <span class="k">return</span> res.status(401).json({ error: <span class="s">'Invalid credentials'</span> });
+}</pre>
+
+  <div class="box why">
+    <span class="l">Why compare a password for a user that does not exist?</span>
+    <p>Because bcrypt is deliberately slow &mdash; roughly 200&ndash;300 milliseconds. If you skipped the comparison when the email was not found, that response would come back almost instantly, while a wrong password for a <em>real</em> account would take 300ms.</p>
+    <p>An attacker can measure that difference. They submit a list of email addresses with any password, and the fast responses tell them which accounts do not exist &mdash; which means the slow ones <em>do</em>. That is an account enumeration attack, and it is the first step toward targeting real users.</p>
+    <p>Running the comparison anyway, against a throwaway hash, makes both cases take the same time. The result is discarded. You are burning 300ms on purpose to leak nothing.</p>
+  </div>
+
+  <div class="step"><div class="n">3</div><div class="t"><b>The backend issues a token</b>
+  <p>If the password is right and the account is active, it creates a JWT &mdash; a JSON Web Token.</p></div></div>
+
+<pre>const token = jwt.sign(
+    { userId: user.id, email: user.email },   <span class="c">// the contents</span>
+    JWT_SECRET,                                <span class="c">// the signing key</span>
+    { expiresIn: <span class="s">'24h'</span> }                       <span class="c">// how long it lasts</span>
+);</pre>
+
+  <h3>What a token actually is</h3>
+  <p>A JWT is three pieces of text joined by dots. The middle piece is just your data, encoded &mdash; <b>not encrypted</b>. Anyone holding the token can read the user id and email inside it. Paste one into jwt.io and you will see.</p>
+  <p>What makes it trustworthy is the third piece: a signature, computed from the contents plus your <code>JWT_SECRET</code>. Change a single character of the contents and the signature no longer matches. Since only your server knows the secret, only your server can produce a valid signature.</p>
+
+  <div class="box gotcha">
+    <span class="l">Two consequences that follow directly</span>
+    <p><b>Never put a secret in a token.</b> It is readable. Yours holds only a user id and email, which is correct.</p>
+    <p><b>Your server stores nothing.</b> There is no session table. The token itself carries the proof. This is why the backend could run on ten machines without them needing to share anything &mdash; and also why you cannot cancel a token before it expires. Section 12 covers that trade-off.</p>
+  </div>
+
+  <div class="step"><div class="n">4</div><div class="t"><b>The frontend saves it and attaches it to everything afterwards</b></div></div>
+
+<pre><span class="c">// frontend/src/context/AuthContext.jsx</span>
+function login(userData, token) {
+    localStorage.setItem(<span class="s">'token'</span>, token);
+    localStorage.setItem(<span class="s">'user'</span>, JSON.stringify(userData));
+    api.defaults.headers.common[<span class="s">'Authorization'</span>] = `Bearer ${token}`;
+    setUser(userData);
+}</pre>
+
+  <p><code>localStorage</code> is browser storage that survives closing the tab, which is why you stay logged in. The last line tells Axios to attach the token to every future request automatically, so no individual API call has to remember to do it.</p>
+
+  <div class="step"><div class="n">5</div><div class="t"><b>Every later request is checked by one middleware</b>
+  <p>This is the whole of <code>middleware/auth.js</code>, and it guards most of your 88 endpoints:</p></div></div>
+
+<pre>function authenticate(req, res, next) {
+    const authHeader = req.headers.authorization;
+    <span class="k">if</span> (!authHeader || !authHeader.startsWith(<span class="s">'Bearer '</span>)) {
+        <span class="k">return</span> res.status(401).json({ error: <span class="s">'Authentication required'</span> });
+    }
+    const token = authHeader.split(<span class="s">' '</span>)[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);  <span class="c">// throws if tampered</span>
+
+    req.userId = decoded.userId;    <span class="c">// hand the identity to the real handler</span>
+    next();                          <span class="c">// allow the request to continue</span>
+}</pre>
+
+  <p>Note <code>next()</code>. That is the mechanism: call it and the request proceeds to the actual route handler; return a response instead and the request stops here. Every protected route in your system passes through these twenty lines.</p>
+
+  <div class="box ok">
+    <span class="l">The pattern to recognise</span>
+    <p><code>req.userId</code> is set here and read everywhere downstream. When a route needs to know "who is asking", it never trusts a user id sent in the request body &mdash; it uses <code>req.userId</code>, which came from a cryptographically verified token. That single discipline prevents a whole category of attacks where someone claims to be another user.</p>
+  </div>
+</div>
+<div class="part">
+  <div class="part-tag">Part Two &mdash; Follow the data</div>
+  <h2>5. Journey: loading the notes page</h2>
+  <p class="intro">A routine authenticated read. Worth tracing because it shows the standard shape every one of your routes follows &mdash; once you can read this, you can read most of the backend.</p>
+
+  <h3>The route, in full</h3>
+<pre><span class="c">// backend/src/routes/notes.js</span>
+router.get(<span class="s">'/'</span>, optionalAuth, async (req, res) =&gt; {
+  <span class="k">try</span> {
+    const { subject, group_id, uploaded_by } = req.query;   <span class="c">// 1. read filters</span>
+
+    const where = { is_active: <span class="k">true</span> };                       <span class="c">// 2. build the query</span>
+    <span class="k">if</span> (subject)     where.subject     = subject;
+    <span class="k">if</span> (group_id)    where.group_id    = parseInt(group_id);
+    <span class="k">if</span> (uploaded_by) where.uploaded_by = parseInt(uploaded_by);
+
+    const notes = await prisma.notes.findMany({             <span class="c">// 3. ask the database</span>
+      where,
+      include: { users: { select: { id: <span class="k">true</span>, first_name: <span class="k">true</span>, last_name: <span class="k">true</span> } } },
+      orderBy: { created_at: <span class="s">'desc'</span> }
+    });
+
+    const presented = await Promise.all(                     <span class="c">// 4. decide what to reveal</span>
+      notes.map(async n =&gt; presentNote(n, await canAccessNote(req.userId, n)))
+    );
+
+    res.json(presented);                                     <span class="c">// 5. send JSON back</span>
+  } <span class="k">catch</span> (error) {
+    console.error(<span class="s">'Get notes error:'</span>, error);
+    res.status(500).json({ error: <span class="s">'Failed to fetch notes'</span> });
+  }
+});</pre>
+
+  <h3>Reading it line by line</h3>
+  <table>
+    <thead><tr><th style="width:30mm">Part</th><th>What it does and why</th></tr></thead>
+    <tbody>
+      <tr><td><code>optionalAuth</code></td><td>Middleware that sets <code>req.userId</code> <em>if</em> a valid token is present, but does not reject when there is none. Used because this page is viewable logged-out, yet renders differently when signed in &mdash; it can mark which paid notes you already own. The stricter <code>authenticate</code> would have blocked visitors entirely.</td></tr>
+      <tr><td><code>req.query</code></td><td>The bits after <code>?</code> in the URL. <code>/api/notes?subject=Mathematics</code> arrives as <code>{ subject: 'Mathematics' }</code>.</td></tr>
+      <tr><td><code>where</code></td><td>Built up conditionally, so one endpoint serves all filter combinations. <code>is_active: true</code> is always applied &mdash; deleted notes are flagged, not removed, and this is what keeps them hidden.</td></tr>
+      <tr><td><code>include</code></td><td>Fetches the uploader's row alongside each note, in one query. Without it you would fetch notes, then loop and fetch each author separately &mdash; the classic "N+1 query" performance mistake.</td></tr>
+      <tr><td><code>select</code></td><td>Inside the include: takes only id, first and last name. Deliberate. Without it Prisma returns the <em>whole</em> user row, including the password hash and email, and you would be publishing them in the API response.</td></tr>
+      <tr><td><code>presentNote</code></td><td>Strips the file path out of any note the viewer has not paid for, so the response never contains a link they could not legitimately use.</td></tr>
+      <tr><td><code>try / catch</code></td><td>Logs the real error on the server, returns a generic message to the client. Never send a stack trace to a browser &mdash; it tells an attacker about your internals.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box why">
+    <span class="l">The shape every route follows</span>
+    <p>Middleware guards &rarr; read the input &rarr; build the query &rarr; ask Prisma &rarr; shape the output &rarr; respond. Then <code>try/catch</code> around all of it. Open any of your twelve route files and you will find the same skeleton. Learning it once is learning all of them.</p>
+  </div>
+
+  <div class="box break">
+    <span class="l">What breaks if you drop the `select`</span>
+    <p>A one-word omission turns this endpoint into a data leak: every note in the list would carry its uploader's full record, hashed password included. The hash is not directly reversible, but publishing it lets an attacker attempt offline cracking at their leisure. This is the kind of mistake that is invisible in the browser &mdash; the page looks identical &mdash; and obvious in the network tab.</p>
+  </div>
+</div>
+<div class="part">
+  <div class="part-tag">Part Two &mdash; Follow the data</div>
+  <h2>6. Journey: buying a premium note</h2>
+  <p class="intro">The hardest journey in the system, and the one you should understand best. Everything difficult about it comes from one fact: <b>mobile money does not answer immediately, and sometimes never answers at all.</b></p>
+
+  <h3>Why this is harder than a card payment</h3>
+  <p>A card payment is roughly synchronous: you send the details, you wait a second or two, you get a yes or no. Mobile money is not. The sequence is:</p>
+  <ol>
+    <li>You tell the provider to collect money from a phone number.</li>
+    <li>The provider returns immediately &mdash; saying only "I have accepted the instruction", not "I got the money".</li>
+    <li>The operator pushes a prompt to the payer's handset.</li>
+    <li>The payer types their PIN. Or does not. Or does, eight minutes later. Or their battery dies.</li>
+    <li>At some point the transaction reaches a final state. You only find out by asking.</li>
+  </ol>
+  <p>So the question the design has to answer is: <em>who is responsible for finding out what happened?</em> If the answer is "the browser", the system is broken for anyone whose connection is unreliable &mdash; which is most of your users.</p>
+
+  <h3>The flow</h3>
+  <div class="step"><div class="n">1</div><div class="t"><b>Student enters a phone number</b>
+  <p>The frontend detects the operator from the prefix (MTN or Orange) and refuses a number that does not match the selected service, before anything is sent.</p></div></div>
+
+  <div class="step"><div class="n">2</div><div class="t"><b>The backend creates a transaction and asks the provider</b>
+  <p>Critically, it looks up the price itself. The request from the browser contains <em>which note</em>, never <em>how much</em>. A transaction row is written with status <code>pending</code>, then the collect instruction goes out.</p></div></div>
+
+  <div class="step"><div class="n">3</div><div class="t"><b>The browser polls</b>
+  <p>Every three seconds for up to three minutes: "is transaction 482 done yet?" The UI shows "check your phone" meanwhile.</p></div></div>
+
+  <div class="step"><div class="n">4</div><div class="t"><b>On success, access is granted and a receipt issued</b></div></div>
+
+  <div class="step"><div class="n">5</div><div class="t"><b>If the browser gives up, the reconciler finishes the job</b>
+  <p>A background timer on the server sweeps pending transactions, asks the provider about each, and completes the ones that succeeded &mdash; whether or not anyone is still watching.</p></div></div>
+
+  <div class="box why">
+    <span class="l">Why the reconciler is the most important part</span>
+    <p>Imagine without it. A student approves the payment, then their connection drops, or they close the tab, or they walk out of signal. The money has left their account. Nothing is watching for the confirmation. They have paid and received nothing, and your only recovery is them emailing you.</p>
+    <p>The reconciler makes this impossible. The browser poll is a convenience that makes the common case feel fast; the reconciler is the actual guarantee. That is why the document says <em>the browser is an observer, not the authority</em>.</p>
+  </div>
+
+  <h3>Two invariants, and how each is enforced</h3>
+  <table>
+    <thead><tr><th style="width:38mm">Invariant</th><th>How it is enforced</th></tr></thead>
+    <tbody>
+      <tr><td><b>The price cannot be altered</b></td><td>The client never sends an amount. The server reads the price from the <code>premium_notes</code> row when it creates the transaction. A tampered request has nothing to tamper with &mdash; the field it would change is not consulted.</td></tr>
+      <tr><td><b>Access is granted exactly once</b></td><td>The browser poll and the reconciler can both see "success" at the same moment. Granting is done with a <em>conditional update</em>: change the status to completed <b>only if</b> it is currently pending. The database guarantees only one of the two wins; the loser sees it was already done and stops. This is what "idempotent" means in practice.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Cancellation is not what you would expect</h3>
+  <p>When a student clicks "cancel this payment", the server does not simply mark it cancelled. It asks the provider first, because the payment may have succeeded in the seconds between the student deciding to cancel and the request arriving.</p>
+  <table>
+    <thead><tr><th style="width:36mm">Provider says</th><th>Server does</th></tr></thead>
+    <tbody>
+      <tr><td>Success</td><td>Completes the order and grants access. They paid; they get the note.</td></tr>
+      <tr><td>Failed</td><td>Marks it failed.</td></tr>
+      <tr><td>No reference yet</td><td>Cancels &mdash; nothing was ever charged.</td></tr>
+      <tr><td>Still pending</td><td>Leaves it pending, hands it to the reconciler, tells the user it is still confirming.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box gotcha">
+    <span class="l">The bug that cost the most time, and why</span>
+    <p>The provider signs each request with a hash computed over the request body. Any character above U+007F &mdash; anything outside plain ASCII &mdash; makes the signature invalid, and it reports this as <b>"Bad signature"</b>.</p>
+    <p>That message points at your credentials. The credentials were fine. A single typographic dash (&mdash;) in one note's title was putting a non-ASCII character into the signed body. Every purchase of <em>that</em> note failed; purchases of other notes worked. So the fault looked random and unrelated to content.</p>
+    <p>The fix is a sanitiser in <code>mobileMoney.js</code> that folds typographic punctuation to ASCII, strips anything remaining above U+007F, and truncates. <b>Any new field you ever send to the provider must pass through it.</b></p>
+    <p>The wider lesson: an error message naming one subsystem is evidence, not proof. I diagnosed the credentials first and was wrong.</p>
+  </div>
+</div>
+<div class="part">
+  <div class="part-tag">Part Two &mdash; Follow the data</div>
+  <h2>7. Journey: sending a chat message</h2>
+  <p class="intro">Everything so far used the same pattern: the browser asks, the server answers, the connection closes. Chat cannot work that way, and this section explains why and what replaces it.</p>
+
+  <h3>The problem with normal requests</h3>
+  <p>HTTP is one-directional. The browser asks; the server answers. The server has no way to say "something happened" on its own &mdash; it can only reply to a question.</p>
+  <p>So how does a message from another person reach your screen? Two options:</p>
+  <table>
+    <thead><tr><th style="width:26mm">Approach</th><th>How it works</th><th>Cost</th></tr></thead>
+    <tbody>
+      <tr><td><b>Polling</b></td><td>The browser asks "anything new?" every few seconds, forever.</td><td>Wasteful &mdash; almost every request returns nothing &mdash; and messages are delayed by up to the interval. On metered mobile data this costs the user real money.</td></tr>
+      <tr><td><b>WebSocket</b></td><td>One connection opened once and held open. Either side can send at any time.</td><td>The server must keep the connection alive, which is why the backend cannot be a serverless function.</td></tr>
+    </tbody>
+  </table>
+  <p>Your system uses WebSocket, through a library called Socket.IO, and keeps polling as a slow fallback.</p>
+
+  <h3>Rooms</h3>
+  <p>With a hundred people connected, a message to group 7 must reach only group 7's members. Socket.IO solves this with <em>rooms</em>: each connection joins <code>group:7</code>, and the server broadcasts to the room rather than to everyone.</p>
+
+  <h3>Authenticating a socket</h3>
+  <p>A WebSocket has no <code>Authorization</code> header on every message &mdash; there is only one connection. So the token is checked once, during the handshake:</p>
+<pre><span class="c">// backend/src/socket.js</span>
+io.use(async (socket, next) =&gt; {
+    const token = socket.handshake.auth.token;
+    <span class="k">if</span> (!token) <span class="k">return</span> next(<span class="k">new</span> Error(<span class="s">'Authentication token required'</span>));
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    <span class="c">// ... identity attached to the socket, used for every later event</span>
+});</pre>
+  <p>Same secret, same verification as the REST API &mdash; one notion of identity across both channels. And when a socket asks to join <code>group:7</code>, the server checks membership <em>in the database</em>. It does not take the client's word for which rooms it may enter.</p>
+
+  <h3>What happens when you hit send</h3>
+  <div class="step"><div class="n">1</div><div class="t"><b>The message appears instantly on your own screen</b>
+  <p>Before the server has heard anything. This is an <em>optimistic update</em>: assume it will work, show it immediately, mark it pending. It makes the app feel as fast as WhatsApp.</p></div></div>
+  <div class="step"><div class="n">2</div><div class="t"><b>The message is saved and broadcast</b>
+  <p>The server writes it to <code>group_messages</code>, then emits <code>message:new</code> to everyone in the room.</p></div></div>
+  <div class="step"><div class="n">3</div><div class="t"><b>Other members' screens update</b>
+  <p>Their clients are listening for that event and add the message. No refresh, no polling delay.</p></div></div>
+  <div class="step"><div class="n">4</div><div class="t"><b>Your own copy is reconciled</b>
+  <p>Your client receives the broadcast too &mdash; of a message it already drew. It recognises its own pending message and replaces it rather than adding a duplicate.</p></div></div>
+
+  <div class="box gotcha">
+    <span class="l">Why you would otherwise see your own messages twice</span>
+    <p>Step 1 draws it; step 4 broadcasts it back. Without the de-duplication in step 4, every message you sent would appear twice on your screen and once on everyone else's &mdash; a bug that only the sender ever sees, which makes it easy to miss in testing.</p>
+  </div>
+
+  <div class="box why">
+    <span class="l">Why polling is still there</span>
+    <p>Sockets drop, often without a clean disconnect, especially on mobile networks. Your client polls every 30 seconds while the socket is connected, and every 4 seconds when it is not. The slow poll exists to repair events missed during a brief drop &mdash; it heals gaps, it does not drive the chat.</p>
+  </div>
+
+  <div class="box why">
+    <span class="l">Why deleted messages leave a trace</span>
+    <p>Deleting removes the text but keeps the row, flagged as deleted, and the interface shows "This message was deleted". If the row were actually removed, any reply to it would suddenly be answering nothing, and a conversation others had read would silently change meaning. Migration 0003 added this deliberately.</p>
+  </div>
+</div>
+<div class="part">
+  <div class="part-tag">Part Three &mdash; The pieces</div>
+  <h2>8. The frontend, by the problems it solves</h2>
+  <p class="intro">Fourteen libraries sounds like a lot. Each is there for a specific problem; here is the problem each one solves, so you can justify any of them if asked.</p>
+
+  <table>
+    <thead><tr><th style="width:34mm">Library</th><th style="width:52mm">The problem without it</th><th>What it gives you</th></tr></thead>
+    <tbody>
+      <tr><td><b>React</b></td><td>Updating the page by hand means finding elements and editing them, and keeping that consistent as the app grows is where bugs breed.</td><td>You describe what the page <em>should</em> look like for a given state; React works out the minimal changes. You never touch the DOM directly.</td></tr>
+      <tr><td><b>React Router</b></td><td>A single-page app has no server-side pages, so nothing maps a URL to a screen. Back button and refresh break.</td><td>Maps URLs to components. <code>/notes/42</code> renders <code>NoteDetail</code> with id 42. Back, forward and bookmarks work as expected.</td></tr>
+      <tr><td><b>Axios</b></td><td>Every API call would repeat the same token header, timeout, and error handling.</td><td>One configured instance in <code>api/client.js</code>. Token attached automatically, 45-second timeout, cold-start retry, 401 handling &mdash; all in one place.</td></tr>
+      <tr><td><b>Tailwind</b></td><td>A stylesheet that grows forever, where nobody dares delete a rule because they cannot tell what uses it.</td><td>Styling written in the markup as utility classes. Deleting a component deletes its styling with it.</td></tr>
+      <tr><td><b>Framer Motion</b></td><td>Animation in raw CSS gets awkward for things entering and leaving, especially lists.</td><td>Declarative animation that handles elements being removed, which plain CSS cannot do well.</td></tr>
+      <tr><td><b>Socket.IO client</b></td><td>Raw WebSocket has no reconnection, no rooms, no fallback.</td><td>All three, plus automatic reconnection after a drop.</td></tr>
+      <tr><td><b>i18next</b></td><td>Two languages means either two copies of every page, or hand-rolled lookup with no plural handling.</td><td>One set of pages, text looked up by key. Correct plural rules per language.</td></tr>
+      <tr><td><b>react-pdf</b></td><td>A student must download a note before knowing whether it is useful.</td><td>Renders PDFs in the page.</td></tr>
+      <tr><td><b>Sonner</b></td><td>Feedback via <code>alert()</code>, which blocks the page and looks like 1998.</td><td>Toast notifications.</td></tr>
+      <tr><td><b>Recharts</b></td><td>Drawing a chart by hand in SVG.</td><td>The dashboard activity chart.</td></tr>
+      <tr><td><b>Vite</b></td><td>Browsers want one optimised bundle; you want many small files while developing.</td><td>Instant updates while coding; an optimised bundle for production.</td></tr>
+      <tr><td><b>vite-plugin-pwa</b></td><td>No offline capability, not installable to a home screen.</td><td>Generates the service worker and manifest that make it installable and partly offline.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>The two ideas that matter most</h3>
+
+  <h4>State, and why the page redraws</h4>
+  <p>A component holds state &mdash; what you typed, whether a modal is open, the notes that came back. When state changes, React redraws that component. You never write "find this element and change its text"; you change the state and let React work it out.</p>
+
+  <h4>Context, for the few things everything needs</h4>
+  <p>Most state belongs to one component. Two things do not: <em>who is logged in</em> and <em>light or dark theme</em>. Passing those down through every layer would be miserable, so they live in a Context &mdash; a value any component can reach directly. That is all <code>AuthContext</code> and <code>ThemeContext</code> are.</p>
+
+  <div class="box why">
+    <span class="l">Why there is no Redux</span>
+    <p>If asked why you did not use a state-management library: because you did not need one. Two contexts cover the genuinely global state; everything else is local to a component or fetched when a page opens. Adding Redux would have been ceremony without benefit.</p>
+  </div>
+
+  <div class="box why">
+    <span class="l">The design system, and the theme switch</span>
+    <p>Seventeen components in <code>components/ui/</code> &mdash; Button, Modal, Badge, Input and so on &mdash; exist because the same button had previously been written separately on each page and had drifted apart.</p>
+    <p>Colours are CSS custom properties, and Tailwind's <code>@theme inline</code> keeps the generated utility classes pointing at those variables rather than baking in a fixed colour. That is precisely why flipping one attribute on the document root reskins the entire app instantly, with no rebuild.</p>
+  </div>
+</div>
+<div class="part">
+  <div class="part-tag">Part Three &mdash; The pieces</div>
+  <h2>9. The backend, and what middleware really is</h2>
+  <p class="intro">If you understand middleware, you understand the backend. It is one idea, applied about ten times in a row.</p>
+
+  <h3>Middleware is a chain of gates</h3>
+  <p>A request arriving at your server does not go straight to the code that answers it. It passes through a line of functions, each of which may inspect it, change it, or stop it. Each gate either calls <code>next()</code> &mdash; pass it along &mdash; or sends a response itself, ending the request there.</p>
+
+<pre>Request arrives
+  |
+  v  trust proxy ......... work out the real client IP behind Render's proxy
+  v  HTTPS redirect ...... plain HTTP? send a 308 to the https:// address
+  v  helmet .............. attach security headers
+  v  CORS ................ is this origin allowed to call us? no -> stop, 403
+  v  body parser ......... turn the JSON body into a JavaScript object (max 1 MB)
+  v  rate limiter ........ too many requests from this IP? stop, 429
+  v  authenticate ........ valid token? no -> stop, 401.  yes -> set req.userId
+  v  requireRole('admin')  right role? no -> stop, 403
+  |
+  v  YOUR ROUTE HANDLER ... finally runs; queries the database, replies
+  |
+  v  error handler ....... anything threw? log it fully, reply with something generic</pre>
+
+  <p>Order is not cosmetic. <code>authenticate</code> must run before <code>requireRole</code>, because the role check needs to know who the user is. The body parser must run before any handler that reads <code>req.body</code>, or the body is not there yet.</p>
+
+  <h3>What each gate is actually for</h3>
+  <table>
+    <thead><tr><th style="width:34mm">Gate</th><th>Why it exists</th></tr></thead>
+    <tbody>
+      <tr><td><b>trust proxy</b></td><td>Render terminates HTTPS at its own proxy and forwards plain HTTP to you. Without this setting your server thinks every request is insecure and sees the proxy's IP instead of the visitor's &mdash; which would make rate limiting count all users as one person.</td></tr>
+      <tr><td><b>HTTPS redirect</b></td><td>Sends plain HTTP to the secure address. Uses status <b>308</b>, not 301, because 308 preserves the method and body &mdash; a redirected POST stays a POST with its data intact.</td></tr>
+      <tr><td><b>helmet</b></td><td>Sets a dozen security headers: do not guess file types, do not allow framing, only load scripts from this origin, always use HTTPS next time.</td></tr>
+      <tr><td><b>CORS</b></td><td>Browsers block a page on one origin from calling another unless the other explicitly permits it. Your frontend and backend are on different origins, so this permission is mandatory, not optional.</td></tr>
+      <tr><td><b>rate limiter</b></td><td>Caps requests per IP. Login is capped at 10 per 15 minutes, which makes password guessing impractical. Payment initiation has its own tighter cap.</td></tr>
+      <tr><td><b>authenticate</b></td><td>The token check from section 4.</td></tr>
+      <tr><td><b>error handler</b></td><td>Catches anything that threw. Logs the real error with its stack on the server; returns a generic message to the client. A stack trace in a response tells an attacker your file paths and library versions.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box gotcha">
+    <span class="l">CORS is the one that will bite you again</span>
+    <p>A CORS failure presents as "the frontend is broken" &mdash; every request fails, with an opaque browser error and nothing useful in the response. The cause is almost always a trivial mismatch: a trailing slash, <code>http</code> where it should be <code>https</code>, or a new deployment URL not added to the list.</p>
+    <p>Because it is so hard to trace, the code has two deliberate aids. A rejected origin is logged <em>by name</em> alongside the allow-list, so you can see the mismatch. And if a production server starts with only <code>localhost</code> configured, it prints a loud error at startup rather than silently rejecting every visitor.</p>
+    <p><b>If the deployed site suddenly fails on everything, check <code>ALLOWED_ORIGINS</code> first.</b></p>
+  </div>
+
+  <h3>Routes, services and the reason for the split</h3>
+  <p>Your backend has twelve route files and seven service files. The distinction is worth keeping:</p>
+  <ul>
+    <li><b>Routes</b> handle the web layer &mdash; read the request, call something, shape the response. They should stay thin.</li>
+    <li><b>Services</b> hold the real logic &mdash; pricing and entitlement, the payment adapter, the reconciler, file access, the quality gate.</li>
+  </ul>
+  <p>The reason is duplication. Both <code>payments.js</code> and <code>premium.js</code> take money, and if each contained its own pricing logic they would eventually disagree &mdash; and a disagreement about money is the worst kind. Both call <code>entitlements.js</code> instead, so there is exactly one implementation of "what does this cost and who may now have it".</p>
+
+  <div class="box ok">
+    <span class="l">A good rule when adding features</span>
+    <p>If a route handler grows past about forty lines, or if you find yourself copying logic into a second route, that logic wants to be a service.</p>
+  </div>
+</div>
+<div class="part">
+  <div class="part-tag">Part Three &mdash; The pieces</div>
+  <h2>10. The database, Prisma and migrations</h2>
+  <p class="intro">Twenty-five tables, and one file that defines all of them.</p>
+
+  <h3>Why a relational database</h3>
+  <p>Your data is full of relationships: a user belongs to many groups, a group has many members, a note has one uploader, a booking joins a student to a tutor. A relational database enforces those links &mdash; it will refuse to store a note whose uploader does not exist.</p>
+  <p>If asked why not MongoDB: because you would have to enforce every one of those rules in application code, and any path that forgot would quietly corrupt the data. The database doing it means it cannot be forgotten.</p>
+
+  <h3>What Prisma does</h3>
+  <p>Without an ORM you would write SQL strings, and build them by joining text &mdash; which is how SQL injection happens. Prisma gives you three things:</p>
+  <ul>
+    <li><b>One schema file</b> defining every table, in <code>prisma/schema.prisma</code>. The single source of truth.</li>
+    <li><b>A generated client</b> so you write <code>prisma.notes.findMany({ where: { subject: 'Maths' } })</code> and get back objects. Values are parameterised, so injection is not possible by construction.</li>
+    <li><b>Migrations</b> &mdash; recorded changes that bring any database to the current shape.</li>
+  </ul>
+
+  <h3>Migrations, and why they matter</h3>
+  <p>Your database has changed six times. Each change is a numbered, committed file. This means your local database, the production database and a teammate's can all be brought to the same shape by running the same sequence &mdash; and the shape of your data is version-controlled next to the code that depends on it.</p>
+  <p>The alternative is editing tables by hand, after which nobody can reproduce the structure and production drifts away from development. <b>Never alter the deployed database by hand.</b> Change the schema file, generate a migration, commit it.</p>
+
+<pre><span class="c"># after editing schema.prisma</span>
+npx prisma migrate dev --name add_something   <span class="c"># local: create + apply + regenerate</span>
+npx prisma migrate deploy                     <span class="c"># production: apply only, never create</span>
+npx prisma studio                             <span class="c"># browse the data in a GUI</span></pre>
+
+  <h3>The two connection strings</h3>
+  <p>This trips people up, so it is worth understanding rather than memorising.</p>
+  <table>
+    <thead><tr><th style="width:30mm">Variable</th><th style="width:26mm">Which endpoint</th><th>Used for, and why</th></tr></thead>
+    <tbody>
+      <tr><td><code>DATABASE_URL</code></td><td>Pooled<br>(<code>-pooler</code> in the hostname)</td><td>The running app. A pooler shares a small set of real connections among many requests, which keeps you inside the free tier's connection limit.</td></tr>
+      <tr><td><code>DIRECT_URL</code></td><td>Direct</td><td>Migrations only. The pooler works in transaction mode and cannot carry session-level operations &mdash; and migrations need exactly those: advisory locks and type creation.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box gotcha">
+    <span class="l">The failure this causes</span>
+    <p>Run a migration through the pooled URL and it fails with a message that says nothing about pooling. You can lose an hour to it. The giveaway is <code>-pooler</code> in the hostname: present means the app's URL, absent means the migrations' URL.</p>
+  </div>
+
+  <h3>Two modelling decisions worth being able to defend</h3>
+  <div class="box why">
+    <span class="l">Votes are rows, not a counter</span>
+    <p>A <code>votes</code> integer on each question would be simpler. Instead each vote is its own row in <code>question_votes</code>, with a uniqueness constraint on (voter, question).</p>
+    <p>Why: with a counter, nothing stops the same person voting fifty times except application code remembering to check &mdash; and any new code path that forgets defeats it. With a constraint, the database physically refuses the second vote. The guarantee sits where it cannot be bypassed.</p>
+  </div>
+  <div class="box why">
+    <span class="l">Entitlement is a row, not a flag</span>
+    <p>Access to a paid note is "does a <code>purchased_notes</code> row exist for this user and note", not a boolean somewhere. That also gives you an audit trail: who bought what, when, and under which transaction. A flag would have told you only that <em>someone</em> had access, with no way to reconstruct why.</p>
+  </div>
+</div>
+<div class="part">
+  <div class="part-tag">Part Three &mdash; The pieces</div>
+  <h2>11. Files, and why they are not on your server</h2>
+  <p class="intro">Every avatar, note, chat attachment and voice recording goes to Cloudinary rather than to disk. There is a hard reason and a useful one.</p>
+
+  <h3>The hard reason: the disk disappears</h3>
+  <p>Render gives your app an <em>ephemeral</em> filesystem. Every time you deploy, the container is rebuilt from scratch and anything written to disk is gone. Had you stored uploads locally, every deployment would have destroyed every file students had uploaded since the last one.</p>
+  <p>This is not a Render quirk &mdash; it is normal for modern hosting. Application servers are treated as disposable. Anything that must survive goes to a database or an object store.</p>
+
+  <h3>The useful reason: delivery</h3>
+  <p>Cloudinary is also a CDN. A student in Buea downloading a note gets it from a nearby edge server rather than from Frankfurt, and it never passes through your single Node process.</p>
+
+  <h3>Two delivery paths</h3>
+  <table>
+    <thead><tr><th style="width:28mm">Content</th><th>How it reaches the user</th></tr></thead>
+    <tbody>
+      <tr><td><b>Free</b></td><td>The API responds with a <b>redirect</b> to the Cloudinary URL. Your server says "go and get it there" and steps out of the way entirely.</td></tr>
+      <tr><td><b>Paid</b></td><td>Uploaded under Cloudinary's <em>authenticated</em> delivery type, which cannot be fetched from a plain URL at all. The server checks for a purchase row, and only then generates a short-lived <b>signed URL</b>.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box ok">
+    <span class="l">The one performance measurement in the project</span>
+    <p>Before the redirect, a 3.19&nbsp;MB PDF streamed through the API did not finish within the 300-second client timeout. After, the same file on the same connection arrived in 31 seconds.</p>
+    <p>Be precise about this if you quote it: 300 seconds is a <em>timeout</em>, not a completion. The honest claim is "undeliverable before, 31 seconds after" &mdash; not a tenfold speedup of something that previously worked. The gain comes from removing a constrained single process from the data path.</p>
+  </div>
+
+  <div class="box why">
+    <span class="l">What a signed URL is</span>
+    <p>A normal URL works for anyone who has it, forever. A signed URL carries a cryptographic signature and an expiry, both checked by Cloudinary. Alter any part of it and it stops working; wait past the expiry and it stops working.</p>
+    <p>So the <em>decision</em> (has this person paid?) is made by your server, while the <em>delivery</em> is done by Cloudinary. You get the access control without the bandwidth.</p>
+    <p>Be careful not to overclaim this in a defence. It prevents access <em>without purchase</em>. It does not prevent a legitimate buyer from sharing the file afterwards &mdash; no system can.</p>
+  </div>
+</div>
+
+<div class="part">
+  <div class="part-tag">Part Four &mdash; Decisions</div>
+  <h2>12. Nine choices, and what each one costs</h2>
+  <p class="intro">Every engineering decision buys something and costs something. If you can name both sides for each of these, you can defend the system.</p>
+
+  <table>
+    <thead><tr><th style="width:38mm">Decision</th><th style="width:52mm">What it buys</th><th>What it costs</th></tr></thead>
+    <tbody>
+      <tr><td><b>Hash passwords with bcrypt, never encrypt</b></td><td>Encryption is reversible; hashing is not. If the database leaks, nobody can recover the passwords. bcrypt is also deliberately slow, so guessing at scale is impractical.</td><td>About 300ms per login, intentionally. You cannot ever show a user their password &mdash; only reset it.</td></tr>
+      <tr><td><b>Stateless JWT instead of server sessions</b></td><td>No session storage. The API could run on many machines with nothing shared. The WebSocket handshake reuses the same check.</td><td><b>You cannot revoke a token.</b> Sign out or ban an account and the existing token still works until it expires. The 24-hour expiry bounds the damage but does not remove it. This is a genuine weakness &mdash; name it before an examiner does.</td></tr>
+      <tr><td><b>Re-read the role from the database</b></td><td>A demotion takes effect immediately rather than at token expiry.</td><td>One extra query per protected admin request. Worth it.</td></tr>
+      <tr><td><b>Resolve prices server-side</b></td><td>A tampered request cannot change what is charged, because the field it would alter is never read.</td><td>None worth mentioning. This is simply correct.</td></tr>
+      <tr><td><b>Background reconciler</b></td><td>A successful charge always grants access, even if the payer disconnects. The guarantee behind the whole payment flow.</td><td>A background process, and transactions can sit pending for a while before resolving.</td></tr>
+      <tr><td><b>Redirect free downloads to the CDN</b></td><td>Large files become deliverable at all, and your server stays free to handle requests.</td><td>The file URL is public &mdash; which is fine, because the content is free.</td></tr>
+      <tr><td><b>Soft-delete messages</b></td><td>Conversations stay coherent; replies do not end up answering nothing.</td><td>Rows are never truly removed, so the table only grows.</td></tr>
+      <tr><td><b>Compute uploader trust, never store it</b></td><td>Trust lapses by itself when the recent record no longer supports it. Nothing has to remember to revoke a flag.</td><td>A small query each time instead of reading one column.</td></tr>
+      <tr><td><b>Translate labels, never stored values</b></td><td>Subjects and categories stay comparable across languages, so French and English users find each other's content.</td><td>Every display of a stored value needs a lookup with a fallback. The failure mode if you forget is <em>silent</em> &mdash; no error, just empty search results.</td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="part">
+  <div class="part-tag">Part Five &mdash; Working with it</div>
+  <h2>13. Where to look for what</h2>
+  <p class="intro">A map for when you need to change something and do not know where it lives.</p>
+
+  <table>
+    <thead><tr><th style="width:52mm">I want to change&hellip;</th><th>Look in</th></tr></thead>
+    <tbody>
+      <tr><td>What a page looks like</td><td><code>frontend/src/pages/</code> &mdash; one file per screen</td></tr>
+      <tr><td>A button, modal, badge &mdash; anywhere it appears</td><td><code>frontend/src/components/ui/</code></td></tr>
+      <tr><td>Colours, spacing, the dark theme</td><td><code>frontend/src/index.css</code> &mdash; the design tokens</td></tr>
+      <tr><td>Any text the user reads</td><td><code>frontend/src/i18n/locales/en.json</code> and <code>fr.json</code> &mdash; <b>both</b></td></tr>
+      <tr><td>Which URL shows which page</td><td><code>frontend/src/App.jsx</code></td></tr>
+      <tr><td>How API calls behave (timeout, retry, token)</td><td><code>frontend/src/api/client.js</code></td></tr>
+      <tr><td>What an endpoint does</td><td><code>backend/src/routes/</code> &mdash; named after the area</td></tr>
+      <tr><td>Pricing or granting access</td><td><code>backend/src/services/entitlements.js</code></td></tr>
+      <tr><td>Anything touching the payment provider</td><td><code>backend/src/services/mobileMoney.js</code> &mdash; and nowhere else</td></tr>
+      <tr><td>Who may do what</td><td><code>backend/src/middleware/</code></td></tr>
+      <tr><td>The shape of the data</td><td><code>backend/prisma/schema.prisma</code></td></tr>
+      <tr><td>Startup, security headers, CORS, rate limits</td><td><code>backend/src/index.js</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Reading an unfamiliar route</h3>
+  <p>Open any route file and read in this order: the middleware on the route line (who may call this), then the first few lines of the handler (what input it takes), then the Prisma call (what it touches), then what it sends back. That is usually enough to understand it without reading every line.</p>
+</div>
+
+<div class="part">
+  <div class="part-tag">Part Five &mdash; Working with it</div>
+  <h2>14. Changing something without breaking it</h2>
+
+  <h3>The checks you have</h3>
+  <table>
+    <thead><tr><th style="width:44mm">Command</th><th>What it catches</th></tr></thead>
+    <tbody>
+      <tr><td><code>npm run build</code></td><td><b>The real gate.</b> A mistyped design token resolves silently in development and fails here. If the build fails, do not deploy.</td></tr>
+      <tr><td><code>npm run lint</code></td><td>Undefined variables, unused imports, bad hook usage. The baseline is 42 errors and 13 warnings, all pre-existing &mdash; your change should not increase either number.</td></tr>
+      <tr><td><code>npm run check:i18n</code></td><td>A key missing from one language, mismatched placeholders, an incomplete plural, a key used but never defined. Run it after any text change.</td></tr>
+      <tr><td><code>npx prisma studio</code></td><td>Not a check, but the fastest way to see what actually landed in the database.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box break">
+    <span class="l">The check you do not have</span>
+    <p>There is no automated test suite. Nothing verifies that the reconciler still grants exactly once, or that a student cannot reach a note they did not buy. Those are currently guaranteed by code review and by you testing manually.</p>
+    <p>This is the project's biggest weakness and you should say so if asked. The evidence is in your own defect record: every fault caught before deployment was caught by a mechanical check, and every fault that reached users was in an area with no check.</p>
+  </div>
+
+  <h3>A safe routine for a change</h3>
+  <div class="step"><div class="n">1</div><div class="t"><b>Make the change</b><p>If it touches text, update both <code>en.json</code> and <code>fr.json</code>.</p></div></div>
+  <div class="step"><div class="n">2</div><div class="t"><b>Run the checks</b><p><code>npm run build</code>, then <code>lint</code>, then <code>check:i18n</code> if text changed.</p></div></div>
+  <div class="step"><div class="n">3</div><div class="t"><b>Exercise it by hand</b><p>The actual path a user takes. If it touches the interface, check both languages and both themes, and narrow the window to phone width.</p></div></div>
+  <div class="step"><div class="n">4</div><div class="t"><b>Commit and push</b><p>Both hosts deploy automatically. If the schema changed, run <code>npx prisma migrate deploy</code> against the <em>direct</em> URL.</p></div></div>
+  <div class="step"><div class="n">5</div><div class="t"><b>Check the deployed site</b><p>Not just that it loads &mdash; exercise the thing you changed.</p></div></div>
+
+  <h3>Things that will bite you</h3>
+  <table>
+    <thead><tr><th style="width:46mm">Symptom</th><th>Almost always</th></tr></thead>
+    <tbody>
+      <tr><td>Everything fails after a deploy</td><td>CORS. Check <code>ALLOWED_ORIGINS</code> includes the exact origin &mdash; scheme, no trailing slash.</td></tr>
+      <tr><td>Site loads, every request fails</td><td><code>VITE_API_URL</code> wrong or changed without a redeploy. It is baked in at <em>build</em> time.</td></tr>
+      <tr><td>First visit after a quiet spell is slow</td><td>Render cold start. Expected; the banner explains it to the user.</td></tr>
+      <tr><td>Payment says "Bad signature"</td><td>Either wrong keys, or a non-ASCII character reached the provider. See section 6.</td></tr>
+      <tr><td><code>EPERM</code> on <code>prisma generate</code></td><td>The dev server is holding the engine file. Stop the backend first.</td></tr>
+      <tr><td>Uploads fail with a 500</td><td><code>CLOUDINARY_*</code> not set.</td></tr>
+      <tr><td>French text shows a key name</td><td>Missing key. <code>npm run check:i18n</code> will name it.</td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="part">
+  <div class="part-tag">Part Five &mdash; Working with it</div>
+  <h2>15. Glossary</h2>
+  <p class="intro">Everything in one place.</p>
+
+  <table>
+    <thead><tr><th style="width:38mm">Term</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><b>API</b></td><td>The set of operations your backend exposes. Yours has 88.</td></tr>
+      <tr><td><b>Axios</b></td><td>The library the frontend uses to call the API.</td></tr>
+      <tr><td><b>bcrypt</b></td><td>Password hashing designed to be slow, so guessing is impractical. Yours runs at work factor 12.</td></tr>
+      <tr><td><b>CDN</b></td><td>Content Delivery Network &mdash; servers worldwide caching your files so users are served from nearby.</td></tr>
+      <tr><td><b>Component</b></td><td>A reusable piece of interface in React.</td></tr>
+      <tr><td><b>Context</b></td><td>React's way of sharing a value with any component without passing it down manually. You have two: auth and theme.</td></tr>
+      <tr><td><b>CORS</b></td><td>The browser rule that a page on one origin may not call another unless permitted. Required because your two tiers are on different origins.</td></tr>
+      <tr><td><b>Endpoint</b></td><td>One operation in the API: a method plus a path.</td></tr>
+      <tr><td><b>Entitlement</b></td><td>The record that someone is allowed something they paid for. A row in <code>purchased_notes</code>.</td></tr>
+      <tr><td><b>Environment variable</b></td><td>Configuration supplied from outside the code, so secrets stay out of GitHub.</td></tr>
+      <tr><td><b>Hashing</b></td><td>One-way transformation. Unlike encryption it cannot be reversed, which is exactly why passwords use it.</td></tr>
+      <tr><td><b>Idempotent</b></td><td>Safe to perform more than once with the same end result. Your purchase granting is.</td></tr>
+      <tr><td><b>JSON</b></td><td>The text format for data exchange between frontend and backend.</td></tr>
+      <tr><td><b>JWT</b></td><td>JSON Web Token. A signed, <em>readable</em> token proving identity. Yours lasts 24 hours.</td></tr>
+      <tr><td><b>localStorage</b></td><td>Browser storage that survives closing the tab. Holds your token, theme and language.</td></tr>
+      <tr><td><b>Middleware</b></td><td>A function running before the route handler that can inspect, modify or stop a request.</td></tr>
+      <tr><td><b>Migration</b></td><td>A recorded, numbered change to the database structure. You have six.</td></tr>
+      <tr><td><b>Optimistic update</b></td><td>Showing a change immediately, before the server confirms. Used in chat so it feels instant.</td></tr>
+      <tr><td><b>ORM</b></td><td>Object-Relational Mapper. Lets you query the database in JavaScript instead of SQL. Yours is Prisma.</td></tr>
+      <tr><td><b>Origin</b></td><td>Scheme + domain + port. <code>https://studyhubwebapp.vercel.app</code> is one origin.</td></tr>
+      <tr><td><b>Polling</b></td><td>Repeatedly asking "anything new?". Your fallback when the socket is down.</td></tr>
+      <tr><td><b>Pooled connection</b></td><td>A shared set of database connections reused across requests, to stay within tier limits.</td></tr>
+      <tr><td><b>PWA</b></td><td>Progressive Web App &mdash; a website installable to a home screen that works partly offline.</td></tr>
+      <tr><td><b>Rate limiting</b></td><td>Capping requests per IP per time window, to blunt brute-force and abuse.</td></tr>
+      <tr><td><b>Reconciler</b></td><td>Your background sweep that settles payments the browser stopped watching.</td></tr>
+      <tr><td><b>Route</b></td><td>Backend: code answering one endpoint. Frontend: a URL mapped to a page.</td></tr>
+      <tr><td><b>Service</b></td><td>A backend module holding domain logic, called by routes.</td></tr>
+      <tr><td><b>Service worker</b></td><td>Background browser script enabling offline behaviour and caching.</td></tr>
+      <tr><td><b>Signed URL</b></td><td>A time-limited, tamper-proof link. Used to release paid files after an entitlement check.</td></tr>
+      <tr><td><b>Soft delete</b></td><td>Flagging a row as deleted rather than removing it.</td></tr>
+      <tr><td><b>SPA</b></td><td>Single-Page Application. One HTML shell; JavaScript draws every screen.</td></tr>
+      <tr><td><b>State</b></td><td>Data a component remembers between redraws.</td></tr>
+      <tr><td><b>Timing attack</b></td><td>Deducing secrets from how long a response takes. Your login defends against it deliberately.</td></tr>
+      <tr><td><b>Token</b></td><td>See JWT.</td></tr>
+      <tr><td><b>WebSocket</b></td><td>A connection held open so either side can send at any time. Used for chat.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box ok">
+    <span class="l">If you remember five things</span>
+    <p><b>1.</b> The frontend cannot be trusted; every rule is enforced on the backend.<br>
+    <b>2.</b> Middleware is a chain of gates, and <code>next()</code> is what lets a request through.<br>
+    <b>3.</b> The browser observes payments; the reconciler is what guarantees them.<br>
+    <b>4.</b> Stored values stay English; only labels are translated.<br>
+    <b>5.</b> <code>npm run build</code> is the real gate, not the dev server.</p>
+  </div>
+
+  <p style="margin-top:8mm;padding-top:3mm;border-top:1px solid #d9e1ea;font-size:9pt;color:#8a97ab">
+    Companion to <em>StudyHub &mdash; Technical Documentation</em> (reference) and <em>StudyHub &mdash; Academic Project Report</em> (evaluation). This one is the explanation.
+  </p>
+</div>
+
+</body>
+</html>
